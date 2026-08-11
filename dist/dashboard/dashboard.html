@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal File Converter & AI Toolkit - Dashboard</title>
+  <script type="module" crossorigin src="/dashboard/dashboard.js"></script>
+  <link rel="modulepreload" crossorigin href="/chunks/jspdf.es.min-BoSFaMf7.js">
+  <link rel="stylesheet" crossorigin href="/dashboard/dashboard.css">
+</head>
+<body class="dark-theme">
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon">⚡</div>
+        <h2>Universal Converter</h2>
+      </div>
+      <nav class="sidebar-menu">
+        <button class="menu-item active" data-tab="converter">📂 Batch File Converter</button>
+        <button class="menu-item" data-tab="devtools">💻 Developer Tools</button>
+        <button class="menu-item" data-tab="security">🛡️ Watermark & Security</button>
+        <button class="menu-item" data-tab="settings">⚙️ Settings & Auto-Convert</button>
+      </nav>
+      <div class="sidebar-footer">
+        <p>Manifest V3 • 100% Offline</p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Tab 1: Batch Converter -->
+      <section id="tab-converter" class="tab-page active">
+        <header class="page-header">
+          <h1>Batch File Converter Studio</h1>
+          <p>Kéo thả hàng loạt file hoặc thư mục để chuyển đổi định dạng 100% client-side</p>
+        </header>
+        <div class="workspace-grid">
+          <div class="drop-card" id="dash-drop-zone">
+            <div class="drop-icon">📁</div>
+            <h3>Kéo & thả file vào đây</h3>
+            <p>Hoặc bấm để chọn từ máy tính</p>
+            <input type="file" id="dash-file-input" multiple hidden>
+          </div>
+          <div class="config-card">
+            <h3>Cấu hình xuất dữ liệu</h3>
+            <div class="form-group">
+              <label>Loại định dạng đích:</label>
+              <select id="dash-target-format" class="dash-select">
+                <option value="png">PNG Image (.png)</option>
+                <option value="jpg">JPEG Image (.jpg)</option>
+                <option value="webp">WebP Image (.webp)</option>
+                <option value="pdf">PDF Document (.pdf)</option>
+                <option value="docx">Word Document (.docx)</option>
+                <option value="json">JSON (.json)</option>
+                <option value="csv">CSV Table (.csv)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Chất lượng nén: <span id="dash-quality-val">90%</span></label>
+              <input type="range" id="dash-quality-range" min="10" max="100" value="90">
+            </div>
+            <button id="dash-convert-btn" class="dash-btn primary">Chuyển đổi & Đóng gói ZIP</button>
+          </div>
+        </div>
+        <div id="dash-queue-list" class="dash-queue"></div>
+      </section>
+
+      <!-- Tab 2: Dev Tools -->
+      <section id="tab-devtools" class="tab-page">
+        <header class="page-header">
+          <h1>Developer Code Tools</h1>
+          <p>Tự động sinh mã nguồn TypeScript, Go Struct, Base64 & Data URI từ file</p>
+        </header>
+        <div class="devtools-grid">
+          <div class="editor-box">
+            <h3>Dán JSON hoặc Tải file dữ liệu</h3>
+            <textarea id="json-input" placeholder='{"id": 1, "name": "Converter", "active": true}'></textarea>
+          </div>
+          <div class="editor-box">
+            <div class="editor-header">
+              <h3>Kết quả sinh Code</h3>
+              <select id="dev-lang-select" class="dash-select">
+                <option value="ts">TypeScript Interface</option>
+                <option value="go">Go Struct</option>
+                <option value="yaml">YAML Format</option>
+              </select>
+            </div>
+            <textarea id="code-output" readonly placeholder="Mã nguồn sinh tự động..."></textarea>
+            <button id="copy-code-btn" class="dash-btn secondary">📋 Sao chép Code</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Security & Watermark -->
+      <section id="tab-security" class="tab-page">
+        <header class="page-header">
+          <h1>Watermark & Privacy Studio</h1>
+          <p>Xóa thông tin Exif GPS nhạy cảm và đóng dấu bản quyền logo/chữ lên tài liệu & hình ảnh</p>
+        </header>
+        <div class="security-card">
+          <div class="form-group">
+            <label>Chữ bản quyền (Watermark Text):</label>
+            <input type="text" id="watermark-input" value="BẢN QUYỀN THUỘC VỀ TOI" class="dash-input">
+          </div>
+          <div class="form-group">
+            <label>Tự động xóa Exif GPS metadata khỏi file ảnh</label>
+            <input type="checkbox" id="remove-exif-check" checked>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Settings -->
+      <section id="tab-settings" class="tab-page">
+        <header class="page-header">
+          <h1>Cài đặt Extension</h1>
+          <p>Quản lý các bộ lọc tự động và giao diện</p>
+        </header>
+        <div class="settings-card">
+          <div class="setting-item">
+            <div>
+              <h3>Tự động nắn đuôi file khi Tải xuống (Chrome Downloads)</h3>
+              <p>Tự động phát hiện file .webp hoặc .jfif khi bấm tải trên web và chuyển sang .png hoặc .jpg</p>
+            </div>
+            <input type="checkbox" id="dash-auto-convert-toggle">
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>

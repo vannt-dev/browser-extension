@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal File Converter</title>
+  <script type="module" crossorigin src="/popup/popup.js"></script>
+  <link rel="modulepreload" crossorigin href="/chunks/jspdf.es.min-BoSFaMf7.js">
+  <link rel="stylesheet" crossorigin href="/popup/popup.css">
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div class="brand-text">
+          <h1>Universal Converter</h1>
+          <span class="badge">100% Offline AI</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle" class="icon-btn" title="Chuyển chế độ Sáng/Tối">🌙</button>
+        <button id="open-dashboard-btn" class="icon-btn" title="Mở Full Dashboard">🖥️</button>
+      </div>
+    </header>
+
+    <!-- Nav Category Tabs -->
+    <nav class="category-nav">
+      <button class="nav-btn active" data-category="image">📷 Ảnh</button>
+      <button class="nav-btn" data-category="doc">📄 Doc / PDF</button>
+      <button class="nav-btn" data-category="data">📊 Dữ liệu</button>
+      <button class="nav-btn" data-category="ai">🤖 AI / An toàn</button>
+    </nav>
+
+    <!-- Drag & Drop Zone -->
+    <div id="drop-zone" class="drop-zone">
+      <div class="drop-icon">📁</div>
+      <p class="drop-title">Kéo & thả file vào đây hoặc <span class="browse-text">Dán (Ctrl+V)</span></p>
+      <p class="drop-hint">Hỗ trợ PNG, JPG, WebP, SVG, DOCX, PDF, JSON, CSV, MD...</p>
+      <input type="file" id="file-input" multiple hidden>
+    </div>
+
+    <!-- Quick Conversion Options -->
+    <div class="options-panel">
+      <div class="option-group">
+        <label for="target-format">Định dạng đích:</label>
+        <select id="target-format" class="custom-select">
+          <!-- Populated dynamically based on active tab & files -->
+        </select>
+      </div>
+
+      <div class="option-group compression-group" id="quality-slider-group">
+        <label for="quality-range">Chất lượng: <span id="quality-val">90%</span></label>
+        <input type="range" id="quality-range" min="10" max="100" value="90" class="custom-range">
+      </div>
+
+      <div class="option-group" id="target-size-group" style="display: none;">
+        <label for="target-size-input">Dung lượng đích (KB):</label>
+        <input type="number" id="target-size-input" placeholder="Ví dụ: 500" class="custom-input">
+      </div>
+    </div>
+
+    <!-- Extra Toggle Options -->
+    <div class="toggle-row">
+      <label class="toggle-switch">
+        <input type="checkbox" id="auto-convert-download-toggle">
+        <span class="slider"></span>
+        <span class="toggle-label">Tự động đổi đuôi .webp/.jfif khi tải trên Web</span>
+      </label>
+    </div>
+
+    <!-- File Queue List -->
+    <div id="file-queue-container" class="queue-container" style="display: none;">
+      <div class="queue-header">
+        <span>Danh sách file (<span id="file-count">0</span>)</span>
+        <button id="clear-queue-btn" class="text-btn">Xóa tất cả</button>
+      </div>
+      <div id="file-queue-list" class="queue-list"></div>
+    </div>
+
+    <!-- Actions -->
+    <footer class="app-footer">
+      <button id="convert-btn" class="primary-btn" disabled>
+        <span>Chuyển đổi ngay</span>
+        <div class="spinner hidden" id="convert-spinner"></div>
+      </button>
+      <button id="download-zip-btn" class="secondary-btn" style="display: none;">
+        📦 Tải ZIP Tất cả
+      </button>
+    </footer>
+  </div>
+
+</body>
+</html>

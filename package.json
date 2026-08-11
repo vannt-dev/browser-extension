@@ -1,0 +1,23 @@
+{
+  "name": "universal-file-converter-extension",
+  "version": "1.0.0",
+  "description": "Universal File Converter & AI Toolkit Browser Extension (Manifest V3)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "papaparse": "^5.4.1",
+    "mammoth": "^1.8.0",
+    "jspdf": "^2.5.2",
+    "pdfjs-dist": "^4.0.379",
+    "marked": "^12.0.0",
+    "tesseract.js": "^5.0.4",
+    "yaml": "^2.4.1"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}
