@@ -65,7 +65,7 @@
         <div id="dash-queue-list" class="dash-queue" style="margin-top: 24px;"></div>
       </section>
 
-      <!-- Tab 2: AI Studio (NEW Dedicated Tab!) -->
+      <!-- Tab 2: AI Studio -->
       <section id="tab-ai-studio" class="tab-page">
         <header class="page-header">
           <h1>🤖 AI Studio (100% Client-side AI)</h1>
@@ -113,11 +113,12 @@
             <button id="run-bg-remove-btn" class="dash-btn primary">✨ Xóa phông nền AI</button>
             <div id="bg-remove-status" style="font-size: 12px; color: var(--accent-color); font-weight: 600;"></div>
 
-            <div class="preview-box" style="margin-top: 12px; text-align: center; border: 1px dashed var(--border-color); padding: 12px; border-radius: 8px; min-height: 140px; display: flex; align-items: center; justify-content: center;">
-              <img id="bg-remove-preview" style="max-width: 100%; max-height: 160px; display: none; border-radius: 6px;" alt="Preview Result">
+            <div class="preview-box" style="margin-top: 12px; text-align: center; border: 1px dashed var(--border-color); padding: 12px; border-radius: 8px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+              <img id="bg-remove-preview" class="zoomable-preview" style="max-width: 100%; max-height: 160px; display: none; border-radius: 6px; cursor: zoom-in;" alt="Preview Result" title="Click để phóng to xem rõ nét">
+              <span id="bg-remove-hint" style="display: none; font-size: 11px; color: var(--accent-color); margin-top: 6px;">🔍 Click vào ảnh để phóng to xem chi tiết</span>
               <span id="bg-remove-placeholder" style="color: var(--text-secondary); font-size: 13px;">Xem trước kết quả tách nền PNG tại đây</span>
             </div>
-            <button id="download-bg-remove-btn" class="dash-btn secondary" style="display: none;">💾 Tải ảnh tách nền PNG</button>
+            <button id="download-bg-remove-btn" class="dash-btn secondary" style="display: none; margin-top: 12px;">💾 Tải ảnh tách nền PNG</button>
           </div>
         </div>
       </section>
@@ -183,6 +184,27 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Lightbox Modal for Image Zoom -->
+  <div id="image-lightbox-modal" class="lightbox-modal">
+    <div class="lightbox-overlay"></div>
+    <div class="lightbox-content">
+      <div class="lightbox-header">
+        <span id="lightbox-title">🔍 Xem ảnh phóng to chi tiết</span>
+        <div class="lightbox-controls">
+          <button id="zoom-in-btn" class="lightbox-btn" title="Phóng to">+</button>
+          <button id="zoom-out-btn" class="lightbox-btn" title="Thu nhỏ">-</button>
+          <button id="zoom-reset-btn" class="lightbox-btn" title="Đặt lại (100%)">100%</button>
+          <button id="close-lightbox-btn" class="lightbox-btn close" title="Đóng (Esc)">✕</button>
+        </div>
+      </div>
+      <div class="lightbox-body">
+        <div class="lightbox-img-wrapper">
+          <img id="lightbox-img" src="" alt="Zoomed Image Preview">
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="dashboard.js"></script>

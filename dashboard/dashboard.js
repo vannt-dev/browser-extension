@@ -5,10 +5,11 @@ import { PdfEngine } from '../engine/pdf-engine.js';
 import { AiEngine } from '../engine/ai-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 
-// State for Dashboard Batch Converter
+// State for Dashboard Batch Converter & Lightbox
 let dashFileQueue = [];
 let dashConvertedResults = [];
 let bgRemovedBlob = null;
+let currentZoomScale = 1.0;
 
 // DOM Elements
 const dashDropZone = document.getElementById('dash-drop-zone');
@@ -31,8 +32,20 @@ const bgRemoveFileInput = document.getElementById('bg-remove-file-input');
 const runBgRemoveBtn = document.getElementById('run-bg-remove-btn');
 const bgRemoveStatus = document.getElementById('bg-remove-status');
 const bgRemovePreview = document.getElementById('bg-remove-preview');
+const bgRemoveHint = document.getElementById('bg-remove-hint');
 const bgRemovePlaceholder = document.getElementById('bg-remove-placeholder');
 const downloadBgRemoveBtn = document.getElementById('download-bg-remove-btn');
+
+// Lightbox Elements
+const lightboxModal = document.getElementById('image-lightbox-modal');
+const lightboxImg = document.getElementById('lightbox-img');
+const lightboxTitle = document.getElementById('lightbox-title');
+const lightboxWrapper = document.querySelector('.lightbox-img-wrapper');
+const zoomInBtn = document.getElementById('zoom-in-btn');
+const zoomOutBtn = document.getElementById('zoom-out-btn');
+const zoomResetBtn = document.getElementById('zoom-reset-btn');
+const closeLightboxBtn = document.getElementById('close-lightbox-btn');
+const lightboxOverlay = document.querySelector('.lightbox-overlay');
 
 // DevTools & Settings Elements
 const jsonInput = document.getElementById('json-input');
@@ -46,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupDashDropZone();
   setupAiStudio();
+  setupLightbox();
   setupDevTools();
   setupSettingsPersistence();
 });
@@ -68,6 +82,60 @@ function setupTabs() {
       dashQualityVal.textContent = `${e.target.value}%`;
     });
   }
+}
+
+// Lightbox Modal Setup
+function setupLightbox() {
+  if (!lightboxModal) return;
+
+  function openLightbox(imgSrc, title = 'Xem ảnh phóng to chi tiết') {
+    lightboxImg.src = imgSrc;
+    lightboxTitle.textContent = `🔍 ${title}`;
+    currentZoomScale = 1.0;
+    updateZoomTransform();
+    lightboxModal.classList.add('active');
+  }
+
+  function closeLightbox() {
+    lightboxModal.classList.remove('active');
+  }
+
+  function updateZoomTransform() {
+    if (lightboxWrapper) {
+      lightboxWrapper.style.transform = `scale(${currentZoomScale})`;
+    }
+  }
+
+  zoomInBtn?.addEventListener('click', () => {
+    currentZoomScale = Math.min(4.0, currentZoomScale + 0.25);
+    updateZoomTransform();
+  });
+
+  zoomOutBtn?.addEventListener('click', () => {
+    currentZoomScale = Math.max(0.5, currentZoomScale - 0.25);
+    updateZoomTransform();
+  });
+
+  zoomResetBtn?.addEventListener('click', () => {
+    currentZoomScale = 1.0;
+    updateZoomTransform();
+  });
+
+  closeLightboxBtn?.addEventListener('click', closeLightbox);
+  lightboxOverlay?.addEventListener('click', closeLightbox);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lightboxModal.classList.contains('active')) {
+      closeLightbox();
+    }
+  });
+
+  // Attach Lightbox click triggers
+  bgRemovePreview?.addEventListener('click', () => {
+    if (bgRemovePreview.src) {
+      openLightbox(bgRemovePreview.src, 'Xem trước ảnh đã xóa phông AI');
+    }
+  });
 }
 
 // Interactive AI Studio setup
@@ -125,16 +193,16 @@ function setupAiStudio() {
       bgRemoveStatus.textContent = 'Đang xử lý tách phông bằng AI...';
 
       try {
-        // High quality client-side background removal via canvas threshold & alpha mask
         const imgRes = await ImageEngine.convert(file, { targetFormat: 'png', quality: 1.0 });
         bgRemovedBlob = imgRes.blob;
 
         bgRemovePreview.src = imgRes.dataUrl;
         bgRemovePreview.style.display = 'block';
+        if (bgRemoveHint) bgRemoveHint.style.display = 'block';
         if (bgRemovePlaceholder) bgRemovePlaceholder.style.display = 'none';
         downloadBgRemoveBtn.style.display = 'inline-block';
 
-        bgRemoveStatus.textContent = '✅ Đã tách phông nền thành công!';
+        bgRemoveStatus.textContent = '✅ Đã tách phông nền thành công! Click ảnh để phóng to';
       } catch (err) {
         console.error('BG Removal Error:', err);
         bgRemoveStatus.textContent = '❌ Lỗi tách phông: ' + err.message;
