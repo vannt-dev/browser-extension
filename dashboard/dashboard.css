@@ -142,11 +142,13 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  transition: all 0.25s ease;
 }
 
-.drop-card:hover {
+.drop-card:hover, .drop-card.dragover {
   border-color: var(--accent-color);
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
 }
 
 .config-card, .security-card, .settings-card {
