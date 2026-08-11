@@ -7,9 +7,20 @@ const copyExtensionAssets = () => {
     name: 'copy-extension-assets',
     writeBundle() {
       if (!fs.existsSync('dist')) fs.mkdirSync('dist');
+      
+      // Copy and adjust manifest for dist folder
       if (fs.existsSync('manifest.json')) {
-        fs.copyFileSync('manifest.json', 'dist/manifest.json');
+        const manifestStr = fs.readFileSync('manifest.json', 'utf-8');
+        const manifest = JSON.parse(manifestStr);
+
+        // Standardize relative paths for standalone dist upload
+        manifest.action.default_popup = 'popup/popup.html';
+        manifest.options_page = 'dashboard/dashboard.html';
+        manifest.background.service_worker = 'background/background.js';
+
+        fs.writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2));
       }
+
       if (fs.existsSync('assets')) {
         fs.cpSync('assets', 'dist/assets', { recursive: true });
       }

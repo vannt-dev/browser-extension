@@ -11,7 +11,7 @@
     "activeTab"
   ],
   "action": {
-    "default_popup": "popup/popup.html",
+    "default_popup": "dist/popup/popup.html",
     "default_icon": {
       "16": "assets/icons/icon16.png",
       "32": "assets/icons/icon32.png",
@@ -19,9 +19,9 @@
       "128": "assets/icons/icon128.png"
     }
   },
-  "options_page": "dashboard/dashboard.html",
+  "options_page": "dist/dashboard/dashboard.html",
   "background": {
-    "service_worker": "background/background.js",
+    "service_worker": "dist/background/background.js",
     "type": "module"
   },
   "icons": {
