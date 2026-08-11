@@ -2,7 +2,7 @@ import Papa from '../lib/papaparse.js';
 import YAML from '../lib/yaml.js';
 
 /**
- * Universal Data & Code Engine (JSON, CSV, XML, YAML, TypeScript, Go Struct)
+ * Universal Data & Code Engine (JSON, CSV, XML, YAML, TypeScript, Go Struct, SQL Table, Python Dataclass)
  */
 export class DataEngine {
   /**
@@ -51,6 +51,12 @@ export class DataEngine {
     }
     if (targetFormat === 'go') {
       return this.generateGoStruct(data, 'RootObject');
+    }
+    if (targetFormat === 'sql') {
+      return this.generateSQL(data, 'records_table');
+    }
+    if (targetFormat === 'py' || targetFormat === 'python') {
+      return this.generatePython(data, 'RecordModel');
     }
     throw new Error(`Unsupported target format: ${targetFormat}`);
   }
@@ -109,7 +115,7 @@ export class DataEngine {
       let str = '';
       if (typeof data === 'object' && data !== null) {
         for (const [key, val] of Object.entries(data)) {
-          if (key.startsWith('@')) continue; // Skip attributes in simple converter
+          if (key.startsWith('@')) continue;
           if (Array.isArray(val)) {
             val.forEach(item => {
               str += `${indent}<${key}>\n${buildXml(item, indent + '  ')}${indent}</${key}>\n`;
@@ -225,5 +231,49 @@ export class DataEngine {
     const rootData = Array.isArray(obj) ? obj[0] : obj;
     buildStruct(rootData, structName);
     return structs.trim();
+  }
+
+  /**
+   * Developer Tool (NEW): Generate SQL CREATE TABLE statement
+   */
+  static generateSQL(obj, tableName = 'my_table') {
+    const rootData = Array.isArray(obj) ? obj[0] : obj;
+    if (typeof rootData !== 'object' || rootData === null) return '-- Invalid JSON Object';
+
+    let columns = [];
+    for (const [key, val] of Object.entries(rootData)) {
+      let sqlType = 'VARCHAR(255)';
+      if (typeof val === 'number') {
+        sqlType = Number.isInteger(val) ? 'INT' : 'DECIMAL(10, 2)';
+      } else if (typeof val === 'boolean') {
+        sqlType = 'BOOLEAN';
+      } else if (typeof val === 'string') {
+        if (val.match(/^\d{4}-\d{2}-\d{2}/)) sqlType = 'TIMESTAMP';
+        else if (val.length > 255) sqlType = 'TEXT';
+      }
+      columns.push(`  \`${key}\` ${sqlType}`);
+    }
+
+    return `CREATE TABLE IF NOT EXISTS \`${tableName}\` (\n  \`id\` INT AUTO_INCREMENT PRIMARY KEY,\n${columns.join(',\n')}\n);`;
+  }
+
+  /**
+   * Developer Tool (NEW): Generate Python Dataclass
+   */
+  static generatePython(obj, className = 'MyDataModel') {
+    const rootData = Array.isArray(obj) ? obj[0] : obj;
+    if (typeof rootData !== 'object' || rootData === null) return '# Invalid JSON Object';
+
+    let fields = [];
+    for (const [key, val] of Object.entries(rootData)) {
+      let pyType = 'str';
+      if (typeof val === 'number') pyType = Number.isInteger(val) ? 'int' : 'float';
+      else if (typeof val === 'boolean') pyType = 'bool';
+      else if (Array.isArray(val)) pyType = 'list';
+      else if (typeof val === 'object' && val !== null) pyType = 'dict';
+      fields.push(`    ${key}: ${pyType}`);
+    }
+
+    return `from dataclasses import dataclass\nfrom typing import List, Dict, Any\n\n@dataclass\nclass ${className}:\n${fields.join('\n')}`;
   }
 }

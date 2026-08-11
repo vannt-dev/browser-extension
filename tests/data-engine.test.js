@@ -69,4 +69,32 @@ features:
     expect(goCode).toContain('ServerPort int `json:"serverPort"`');
     expect(goCode).toContain('Enabled bool `json:"enabled"`');
   });
+
+  it('should generate SQL CREATE TABLE from JSON', () => {
+    const sampleObj = {
+      user_id: 1,
+      username: 'vannt',
+      score: 98.5,
+      is_active: true
+    };
+    const sqlCode = DataEngine.generateSQL(sampleObj, 'users');
+    expect(sqlCode).toContain('CREATE TABLE IF NOT EXISTS `users`');
+    expect(sqlCode).toContain('`user_id` INT');
+    expect(sqlCode).toContain('`score` DECIMAL');
+    expect(sqlCode).toContain('`is_active` BOOLEAN');
+  });
+
+  it('should generate Python Dataclass from JSON', () => {
+    const sampleObj = {
+      item_name: 'Laptop',
+      price: 1200.5,
+      in_stock: true
+    };
+    const pyCode = DataEngine.generatePython(sampleObj, 'ItemModel');
+    expect(pyCode).toContain('@dataclass');
+    expect(pyCode).toContain('class ItemModel:');
+    expect(pyCode).toContain('item_name: str');
+    expect(pyCode).toContain('price: float');
+    expect(pyCode).toContain('in_stock: bool');
+  });
 });

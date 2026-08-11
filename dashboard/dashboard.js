@@ -487,6 +487,10 @@ function setupDevTools() {
         codeOutput.value = DataEngine.generateTypeScript(data, 'UserDefinedType');
       } else if (lang === 'go') {
         codeOutput.value = DataEngine.generateGoStruct(data, 'UserDefinedStruct');
+      } else if (lang === 'sql') {
+        codeOutput.value = DataEngine.generateSQL(data, 'user_records');
+      } else if (lang === 'py') {
+        codeOutput.value = DataEngine.generatePython(data, 'UserRecordModel');
       } else if (lang === 'yaml') {
         codeOutput.value = DataEngine.convert(data, 'yaml');
       }
