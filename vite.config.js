@@ -29,6 +29,7 @@ const copyExtensionAssets = () => {
 };
 
 export default defineConfig({
+  base: './', // Mandatory for Chrome Extension Manifest V3 relative path resolution
   build: {
     outDir: 'dist',
     emptyOutDir: true,
