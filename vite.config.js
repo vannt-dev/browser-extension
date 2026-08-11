@@ -29,11 +29,12 @@ const copyExtensionAssets = () => {
 };
 
 export default defineConfig({
-  base: './', // Mandatory for Chrome Extension Manifest V3 relative path resolution
+  base: './',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     target: 'esnext',
+    modulePreload: false, // Disables Vite modulepreload links to prevent Chrome Extension cross-world warnings
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'popup/popup.html'),
