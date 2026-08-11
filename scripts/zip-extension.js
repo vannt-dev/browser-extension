@@ -9,7 +9,11 @@ const version = pkg.version || '1.0.0';
 
 console.log(`⚡ Packaging Chrome Extension Release v${version}...`);
 
-// 1. Build production dist
+// 1. Run unit test suite first
+console.log('🧪 Running automated unit tests...');
+execSync('npm test', { stdio: 'inherit' });
+
+// 2. Build production dist
 console.log('📦 Running npm run build...');
 execSync('npm run build', { stdio: 'inherit' });
 
