@@ -33,7 +33,6 @@ const FORMAT_OPTIONS = {
   ],
   ai: [
     { label: 'AI OCR Text Extraction (.txt)', value: 'ocr-txt' },
-    { label: 'AI OCR Text (.docx)', value: 'ocr-docx' },
     { label: 'Target Size Compress (.jpg)', value: 'target-compress' }
   ]
 };
@@ -76,16 +75,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 function setupCategoryNav() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      currentCategory = e.target.dataset.category;
-      updateFormatSelect(currentCategory);
+      switchCategory(e.target.dataset.category);
     });
   });
 
   qualitySlider.addEventListener('input', (e) => {
     qualityVal.textContent = `${e.target.value}%`;
   });
+}
+
+function switchCategory(category) {
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.dataset.category === category) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+  currentCategory = category;
+  updateFormatSelect(category);
 }
 
 function updateFormatSelect(category) {
@@ -99,11 +107,15 @@ function updateFormatSelect(category) {
   });
 
   // Toggle option inputs visibility
-  targetFormatSelect.addEventListener('change', () => {
-    const val = targetFormatSelect.value;
-    targetSizeGroup.style.display = val === 'target-compress' ? 'flex' : 'none';
-    qualitySliderGroup.style.display = (val === 'jpg' || val === 'webp' || val === 'png') ? 'flex' : 'none';
-  });
+  const val = targetFormatSelect.value;
+  targetSizeGroup.style.display = val === 'target-compress' ? 'flex' : 'none';
+  qualitySliderGroup.style.display = (val === 'jpg' || val === 'webp' || val === 'png') ? 'flex' : 'none';
+
+  targetFormatSelect.onchange = () => {
+    const selected = targetFormatSelect.value;
+    targetSizeGroup.style.display = selected === 'target-compress' ? 'flex' : 'none';
+    qualitySliderGroup.style.display = (selected === 'jpg' || selected === 'webp' || selected === 'png') ? 'flex' : 'none';
+  };
 }
 
 // Drag & Drop & File Picker Setup
@@ -134,6 +146,7 @@ function setupDropZone() {
   clearQueueBtn.addEventListener('click', () => {
     fileQueue = [];
     convertedResults = [];
+    downloadZipBtn.style.display = 'none';
     renderQueue();
   });
 }
@@ -163,9 +176,21 @@ function setupClipboardListener() {
   });
 }
 
-// Queue Management
+// Smart Auto-Category Detection on File Add
 function addFilesToQueue(files) {
   files.forEach(f => fileQueue.push(f));
+
+  if (files.length > 0) {
+    const ext = files[0].name.split('.').pop().toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif'].includes(ext)) {
+      switchCategory('image');
+    } else if (['docx', 'pdf', 'md', 'html', 'txt'].includes(ext)) {
+      switchCategory('doc');
+    } else if (['json', 'csv', 'xml', 'yaml', 'yml'].includes(ext)) {
+      switchCategory('data');
+    }
+  }
+
   renderQueue();
 }
 
@@ -193,6 +218,7 @@ convertBtn.addEventListener('click', async () => {
   convertBtn.disabled = true;
   convertSpinner.classList.remove('hidden');
   convertedResults = [];
+  downloadZipBtn.style.display = 'none';
 
   const targetFormat = targetFormatSelect.value;
   const quality = parseFloat(qualitySlider.value) / 100;
@@ -233,7 +259,7 @@ convertBtn.addEventListener('click', async () => {
   }
 });
 
-// Single File Processor Router
+// Single File Processor Router with Smart Fallback
 async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
   const ext = file.name.split('.').pop().toLowerCase();
 
@@ -258,14 +284,18 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
       return { blob, filename: `ocr_${file.name.replace(/\.[^/.]+$/, '')}.txt` };
     }
     
-    // Normal Image Format Conversion
-    const imgRes = await ImageEngine.convert(file, { targetFormat, quality });
-    return { blob: imgRes.blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat}` };
+    // Normal Image Format Conversion (Default to PNG if targetFormat not an image)
+    const validImageFormats = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico'];
+    const finalFormat = validImageFormats.includes(targetFormat) ? targetFormat : 'png';
+    const imgRes = await ImageEngine.convert(file, { targetFormat: finalFormat, quality });
+    return { blob: imgRes.blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${finalFormat}` };
   }
 
   // DOCX Processing
   if (ext === 'docx') {
-    const docRes = await DocEngine.convertDocx(file, targetFormat);
+    const validDocFormats = ['html', 'txt', 'md', 'markdown', 'pdf'];
+    const finalFormat = validDocFormats.includes(targetFormat) ? targetFormat : 'pdf';
+    const docRes = await DocEngine.convertDocx(file, finalFormat);
     if (docRes.blob) {
       return { blob: docRes.blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${docRes.extension}` };
     }
@@ -280,22 +310,21 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
       const blob = new Blob([text], { type: 'text/plain' });
       return { blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.txt` };
     }
-    if (targetFormat === 'png-pages' || targetFormat === 'png') {
-      const pages = await PdfEngine.renderPdfToImages(file, { format: 'png' });
-      if (pages.length === 1) {
-        return { blob: pages[0].blob, filename: pages[0].filename };
-      }
-      // If multiple pages, zip them
-      const zipRes = await ZipEngine.createZip(pages.map(p => ({ name: p.filename, blob: p.blob })), `${file.name}_pages.zip`);
-      return { blob: zipRes.blob, filename: zipRes.filename };
+    const pages = await PdfEngine.renderPdfToImages(file, { format: 'png' });
+    if (pages.length === 1) {
+      return { blob: pages[0].blob, filename: pages[0].filename };
     }
+    const zipRes = await ZipEngine.createZip(pages.map(p => ({ name: p.filename, blob: p.blob })), `${file.name}_pages.zip`);
+    return { blob: zipRes.blob, filename: zipRes.filename };
   }
 
   // Data Processing (JSON, CSV, XML, YAML)
   if (['json', 'csv', 'xml', 'yaml', 'yml'].includes(ext)) {
     const text = await DocEngine.readFileAsText(file);
     const parsedData = DataEngine.parse(text, ext === 'yml' ? 'yaml' : ext);
-    const outputText = DataEngine.convert(parsedData, targetFormat);
+    const validDataFormats = ['json', 'csv', 'xml', 'yaml', 'ts', 'go'];
+    const finalFormat = validDataFormats.includes(targetFormat) ? targetFormat : 'json';
+    const outputText = DataEngine.convert(parsedData, finalFormat);
     const mimeTypes = {
       json: 'application/json',
       csv: 'text/csv',
@@ -304,8 +333,8 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
       ts: 'text/plain',
       go: 'text/plain'
     };
-    const blob = new Blob([outputText], { type: mimeTypes[targetFormat] || 'text/plain' });
-    return { blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat}` };
+    const blob = new Blob([outputText], { type: mimeTypes[finalFormat] || 'text/plain' });
+    return { blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${finalFormat}` };
   }
 
   // Fallback / Text / Markdown
@@ -328,20 +357,24 @@ function setupSettingsPersistence() {
   themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('light-theme');
     const isLight = document.body.classList.contains('light-theme');
-    chrome.storage.local.set({ theme: isLight ? 'light' : 'dark' });
+    if (chrome.storage?.local) {
+      chrome.storage.local.set({ theme: isLight ? 'light' : 'dark' });
+    }
   });
 
-  chrome.storage.local.get(['theme', 'autoConvertWebp'], (res) => {
-    if (res.theme === 'light') document.body.classList.add('light-theme');
-    if (res.autoConvertWebp) autoConvertToggle.checked = true;
-  });
+  if (chrome.storage?.local) {
+    chrome.storage.local.get(['theme', 'autoConvertWebp'], (res) => {
+      if (res.theme === 'light') document.body.classList.add('light-theme');
+      if (res.autoConvertWebp) autoConvertToggle.checked = true;
+    });
 
-  autoConvertToggle.addEventListener('change', (e) => {
-    chrome.storage.local.set({ autoConvertWebp: e.target.checked });
-  });
+    autoConvertToggle.addEventListener('change', (e) => {
+      chrome.storage.local.set({ autoConvertWebp: e.target.checked });
+    });
+  }
 
   openDashboardBtn.addEventListener('click', () => {
-    if (chrome.runtime.openOptionsPage) {
+    if (chrome.runtime?.openOptionsPage) {
       chrome.runtime.openOptionsPage();
     } else {
       window.open(chrome.runtime.getURL('dashboard/dashboard.html'));
