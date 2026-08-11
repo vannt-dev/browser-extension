@@ -7,6 +7,7 @@
     "dev": "vite build --watch",
     "build": "vite build",
     "zip": "node scripts/zip-extension.js",
+    "release": "node scripts/release.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

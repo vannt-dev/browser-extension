@@ -1,0 +1,52 @@
+name: Release & Upload Store Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    name: Build & Publish Release Package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Package Release ZIP
+        run: npm run zip
+
+      - name: Get Tag Version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release & Attach Package
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ env.VERSION }}
+          body: |
+            ## ⚡ Universal File Converter Extension ${{ env.VERSION }}
+            
+            ### 📦 Download Ready-to-Upload Store Package
+            Download the attached `universal-file-converter-${{ env.VERSION }}.zip` below and upload directly to Chrome Web Store or Microsoft Edge Add-ons Developer Dashboard.
+          files: |
+            dist/zips/*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
