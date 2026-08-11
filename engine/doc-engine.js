@@ -1,6 +1,6 @@
-import mammoth from 'mammoth';
-import { marked } from 'marked';
-import { jsPDF } from 'jspdf';
+import mammoth from '../lib/mammoth.js';
+import { marked } from '../lib/marked.js';
+import { jsPDF } from '../lib/jspdf.js';
 
 /**
  * Universal Document Engine (DOCX, Markdown, HTML, TXT, PDF Export)

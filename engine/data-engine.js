@@ -1,5 +1,5 @@
-import Papa from 'papaparse';
-import YAML from 'yaml';
+import Papa from '../lib/papaparse.js';
+import YAML from '../lib/yaml.js';
 
 /**
  * Universal Data & Code Engine (JSON, CSV, XML, YAML, TypeScript, Go Struct)

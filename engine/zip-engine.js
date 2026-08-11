@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import JSZip from '../lib/jszip.js';
 
 /**
  * Universal Archive Engine (JSZip Batch Compression)
