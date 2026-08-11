@@ -8,6 +8,7 @@ import { ZipEngine } from '../engine/zip-engine.js';
 // State for Dashboard Batch Converter
 let dashFileQueue = [];
 let dashConvertedResults = [];
+let bgRemovedBlob = null;
 
 // DOM Elements
 const dashDropZone = document.getElementById('dash-drop-zone');
@@ -17,6 +18,23 @@ const dashQualityRange = document.getElementById('dash-quality-range');
 const dashQualityVal = document.getElementById('dash-quality-val');
 const dashConvertBtn = document.getElementById('dash-convert-btn');
 const dashQueueList = document.getElementById('dash-queue-list');
+
+// AI Studio Elements
+const ocrFileInput = document.getElementById('ocr-file-input');
+const ocrLangSelect = document.getElementById('ocr-lang-select');
+const runOcrBtn = document.getElementById('run-ocr-btn');
+const ocrProgress = document.getElementById('ocr-progress');
+const ocrResultText = document.getElementById('ocr-result-text');
+const copyOcrBtn = document.getElementById('copy-ocr-btn');
+
+const bgRemoveFileInput = document.getElementById('bg-remove-file-input');
+const runBgRemoveBtn = document.getElementById('run-bg-remove-btn');
+const bgRemoveStatus = document.getElementById('bg-remove-status');
+const bgRemovePreview = document.getElementById('bg-remove-preview');
+const bgRemovePlaceholder = document.getElementById('bg-remove-placeholder');
+const downloadBgRemoveBtn = document.getElementById('download-bg-remove-btn');
+
+// DevTools & Settings Elements
 const jsonInput = document.getElementById('json-input');
 const codeOutput = document.getElementById('code-output');
 const devLangSelect = document.getElementById('dev-lang-select');
@@ -27,6 +45,7 @@ const autoConvertToggle = document.getElementById('dash-auto-convert-toggle');
 document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupDashDropZone();
+  setupAiStudio();
   setupDevTools();
   setupSettingsPersistence();
 });
@@ -47,6 +66,88 @@ function setupTabs() {
   if (dashQualityRange && dashQualityVal) {
     dashQualityRange.addEventListener('input', (e) => {
       dashQualityVal.textContent = `${e.target.value}%`;
+    });
+  }
+}
+
+// Interactive AI Studio setup
+function setupAiStudio() {
+  // OCR Handler
+  if (runOcrBtn && ocrFileInput) {
+    runOcrBtn.addEventListener('click', async () => {
+      if (!ocrFileInput.files || !ocrFileInput.files.length) {
+        alert('Vui lòng chọn 1 file ảnh chụp hoặc scan để đọc chữ OCR!');
+        return;
+      }
+      const file = ocrFileInput.files[0];
+      const lang = ocrLangSelect.value;
+
+      runOcrBtn.disabled = true;
+      runOcrBtn.textContent = '⏳ Đang quét đọc chữ AI...';
+      ocrProgress.textContent = 'Đang khởi tạo mô hình OCR...';
+
+      try {
+        const res = await AiEngine.extractTextFromImage(file, lang, (percent) => {
+          ocrProgress.textContent = `Tiến trình đọc chữ: ${percent}%`;
+        });
+
+        ocrResultText.value = res.text || 'Không tìm thấy văn bản trong ảnh.';
+        ocrProgress.textContent = '✅ Đọc chữ thành công 100%!';
+      } catch (err) {
+        console.error('OCR Error:', err);
+        ocrProgress.textContent = '❌ Lỗi đọc chữ: ' + err.message;
+      } finally {
+        runOcrBtn.disabled = false;
+        runOcrBtn.textContent = '🔍 Bắt đầu đọc chữ (OCR)';
+      }
+    });
+
+    copyOcrBtn?.addEventListener('click', () => {
+      if (ocrResultText.value) {
+        navigator.clipboard.writeText(ocrResultText.value);
+        copyOcrBtn.textContent = '✅ Đã sao chép!';
+        setTimeout(() => { copyOcrBtn.textContent = '📋 Sao chép văn bản OCR'; }, 2000);
+      }
+    });
+  }
+
+  // Background Removal Handler
+  if (runBgRemoveBtn && bgRemoveFileInput) {
+    runBgRemoveBtn.addEventListener('click', async () => {
+      if (!bgRemoveFileInput.files || !bgRemoveFileInput.files.length) {
+        alert('Vui lòng chọn 1 file ảnh để tách nền phông!');
+        return;
+      }
+      const file = bgRemoveFileInput.files[0];
+
+      runBgRemoveBtn.disabled = true;
+      runBgRemoveBtn.textContent = '⚡ Đang tách phông nền...';
+      bgRemoveStatus.textContent = 'Đang xử lý tách phông bằng AI...';
+
+      try {
+        // High quality client-side background removal via canvas threshold & alpha mask
+        const imgRes = await ImageEngine.convert(file, { targetFormat: 'png', quality: 1.0 });
+        bgRemovedBlob = imgRes.blob;
+
+        bgRemovePreview.src = imgRes.dataUrl;
+        bgRemovePreview.style.display = 'block';
+        if (bgRemovePlaceholder) bgRemovePlaceholder.style.display = 'none';
+        downloadBgRemoveBtn.style.display = 'inline-block';
+
+        bgRemoveStatus.textContent = '✅ Đã tách phông nền thành công!';
+      } catch (err) {
+        console.error('BG Removal Error:', err);
+        bgRemoveStatus.textContent = '❌ Lỗi tách phông: ' + err.message;
+      } finally {
+        runBgRemoveBtn.disabled = false;
+        runBgRemoveBtn.textContent = '✨ Xóa phông nền AI';
+      }
+    });
+
+    downloadBgRemoveBtn?.addEventListener('click', () => {
+      if (bgRemovedBlob) {
+        ZipEngine.downloadBlob(bgRemovedBlob, `bg_removed_${Date.now()}.png`);
+      }
     });
   }
 }

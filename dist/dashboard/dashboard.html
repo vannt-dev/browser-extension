@@ -17,6 +17,7 @@
       </div>
       <nav class="sidebar-menu">
         <button class="menu-item active" data-tab="converter">📂 Batch File Converter</button>
+        <button class="menu-item" data-tab="ai-studio">🤖 AI Studio (OCR & Xóa Nền)</button>
         <button class="menu-item" data-tab="devtools">💻 Developer Tools</button>
         <button class="menu-item" data-tab="security">🛡️ Watermark & Security</button>
         <button class="menu-item" data-tab="settings">⚙️ Settings & Auto-Convert</button>
@@ -37,7 +38,7 @@
         <div class="workspace-grid">
           <div class="drop-card" id="dash-drop-zone">
             <div class="drop-icon">📁</div>
-            <h3>Kéo & thả file vào đây</h3>
+            <h3>Kéo & thả file hoặc thư mục vào đây</h3>
             <p>Hoặc bấm để chọn từ máy tính</p>
             <input type="file" id="dash-file-input" multiple hidden>
           </div>
@@ -59,13 +60,70 @@
               <label>Chất lượng nén: <span id="dash-quality-val">90%</span></label>
               <input type="range" id="dash-quality-range" min="10" max="100" value="90">
             </div>
-            <button id="dash-convert-btn" class="dash-btn primary">Chuyển đổi & Đóng gói ZIP</button>
+            <button id="dash-convert-btn" class="dash-btn primary" disabled>Chuyển đổi & Đóng gói ZIP</button>
           </div>
         </div>
-        <div id="dash-queue-list" class="dash-queue"></div>
+        <div id="dash-queue-list" class="dash-queue" style="margin-top: 24px;"></div>
       </section>
 
-      <!-- Tab 2: Dev Tools -->
+      <!-- Tab 2: AI Studio (NEW Dedicated Tab!) -->
+      <section id="tab-ai-studio" class="tab-page">
+        <header class="page-header">
+          <h1>🤖 AI Studio (100% Client-side AI)</h1>
+          <p>Trích xuất văn bản từ hình ảnh (OCR) và Xóa nền phông ảnh hoàn toàn Offline trên trình duyệt</p>
+        </header>
+        
+        <div class="workspace-grid">
+          <!-- OCR Tool Card -->
+          <div class="config-card">
+            <h3>📄 AI OCR - Trích xuất văn bản từ Ảnh / Scan</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);">Tải ảnh chụp văn bản hoặc tài liệu để trích xuất chữ tiếng Việt / Tiếng Anh</p>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <input type="file" id="ocr-file-input" accept="image/*" class="dash-input">
+            </div>
+
+            <div class="form-group">
+              <label>Ngôn ngữ nhận diện:</label>
+              <select id="ocr-lang-select" class="dash-select">
+                <option value="vie+eng">Tiếng Việt & Tiếng Anh</option>
+                <option value="vie">Tiếng Việt</option>
+                <option value="eng">Tiếng Anh</option>
+              </select>
+            </div>
+
+            <button id="run-ocr-btn" class="dash-btn primary">🔍 Bắt đầu đọc chữ (OCR)</button>
+            <div id="ocr-progress" style="font-size: 12px; color: var(--accent-color); font-weight: 600;"></div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label>Kết quả trích xuất:</label>
+              <textarea id="ocr-result-text" placeholder="Văn bản nhận diện sẽ hiển thị ở đây..." style="height: 140px;"></textarea>
+            </div>
+            <button id="copy-ocr-btn" class="dash-btn secondary">📋 Sao chép văn bản OCR</button>
+          </div>
+
+          <!-- AI Background Removal Card -->
+          <div class="config-card">
+            <h3>✂️ AI Background Removal - Xóa phông nền ảnh</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);">Tự động tách nền ảnh chân dung hoặc sản phẩm trực tiếp bằng WebGL</p>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <input type="file" id="bg-remove-file-input" accept="image/*" class="dash-input">
+            </div>
+
+            <button id="run-bg-remove-btn" class="dash-btn primary">✨ Xóa phông nền AI</button>
+            <div id="bg-remove-status" style="font-size: 12px; color: var(--accent-color); font-weight: 600;"></div>
+
+            <div class="preview-box" style="margin-top: 12px; text-align: center; border: 1px dashed var(--border-color); padding: 12px; border-radius: 8px; min-height: 140px; display: flex; align-items: center; justify-content: center;">
+              <img id="bg-remove-preview" style="max-width: 100%; max-height: 160px; display: none; border-radius: 6px;" alt="Preview Result">
+              <span id="bg-remove-placeholder" style="color: var(--text-secondary); font-size: 13px;">Xem trước kết quả tách nền PNG tại đây</span>
+            </div>
+            <button id="download-bg-remove-btn" class="dash-btn secondary" style="display: none;">💾 Tải ảnh tách nền PNG</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Dev Tools -->
       <section id="tab-devtools" class="tab-page">
         <header class="page-header">
           <h1>Developer Code Tools</h1>
@@ -91,7 +149,7 @@
         </div>
       </section>
 
-      <!-- Tab 3: Security & Watermark -->
+      <!-- Tab 4: Security & Watermark -->
       <section id="tab-security" class="tab-page">
         <header class="page-header">
           <h1>Watermark & Privacy Studio</h1>
@@ -109,7 +167,7 @@
         </div>
       </section>
 
-      <!-- Tab 4: Settings -->
+      <!-- Tab 5: Settings -->
       <section id="tab-settings" class="tab-page">
         <header class="page-header">
           <h1>Cài đặt Extension</h1>
