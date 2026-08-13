@@ -1,9 +1,13 @@
 import { ImageEngine } from '../engine/image-engine.js';
 import { DataEngine } from '../engine/data-engine.js';
-import { DocEngine } from '../engine/doc-engine.js';
-import { PdfEngine } from '../engine/pdf-engine.js';
-import { AiEngine } from '../engine/ai-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
+import { readFileAsText } from '../engine/file-reader.js';
+
+// Heavy engines are fetched on first use so opening the dashboard does not have
+// to parse the OCR, DOCX and PDF runtimes up front.
+const loadAiEngine = () => import('../engine/ai-engine.js').then((m) => m.AiEngine);
+const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocEngine);
+const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
 
 // State for Dashboard Batch Converter & Lightbox
 let dashFileQueue = [];
@@ -34,6 +38,8 @@ const bgRemoveStatus = document.getElementById('bg-remove-status');
 const bgRemovePreview = document.getElementById('bg-remove-preview');
 const bgRemoveHint = document.getElementById('bg-remove-hint');
 const bgRemovePlaceholder = document.getElementById('bg-remove-placeholder');
+const bgRemoveTolerance = document.getElementById('bg-remove-tolerance');
+const bgRemoveToleranceVal = document.getElementById('bg-remove-tolerance-val');
 const downloadBgRemoveBtn = document.getElementById('download-bg-remove-btn');
 
 // Lightbox Elements
@@ -133,7 +139,7 @@ function setupLightbox() {
   // Attach Lightbox click triggers
   bgRemovePreview?.addEventListener('click', () => {
     if (bgRemovePreview.src) {
-      openLightbox(bgRemovePreview.src, 'Xem trước ảnh đã xóa phông AI');
+      openLightbox(bgRemovePreview.src, 'Xem trước ảnh đã tách nền');
     }
   });
 }
@@ -155,6 +161,7 @@ function setupAiStudio() {
       ocrProgress.textContent = 'Đang khởi tạo mô hình OCR...';
 
       try {
+        const AiEngine = await loadAiEngine();
         const res = await AiEngine.extractTextFromImage(file, lang, (percent) => {
           ocrProgress.textContent = `Tiến trình đọc chữ: ${percent}%`;
         });
@@ -179,6 +186,12 @@ function setupAiStudio() {
     });
   }
 
+  if (bgRemoveTolerance && bgRemoveToleranceVal) {
+    bgRemoveTolerance.addEventListener('input', (e) => {
+      bgRemoveToleranceVal.textContent = e.target.value;
+    });
+  }
+
   // Background Removal Handler
   if (runBgRemoveBtn && bgRemoveFileInput) {
     runBgRemoveBtn.addEventListener('click', async () => {
@@ -189,11 +202,12 @@ function setupAiStudio() {
       const file = bgRemoveFileInput.files[0];
 
       runBgRemoveBtn.disabled = true;
-      runBgRemoveBtn.textContent = '⚡ Đang tách phông nền...';
-      bgRemoveStatus.textContent = 'Đang xử lý tách phông bằng AI...';
+      runBgRemoveBtn.textContent = '⚡ Đang tách nền...';
+      bgRemoveStatus.textContent = 'Đang phân tích màu nền và tách biên...';
 
       try {
-        const imgRes = await ImageEngine.convert(file, { targetFormat: 'png', quality: 1.0 });
+        const tolerance = Number(bgRemoveTolerance?.value) || 32;
+        const imgRes = await ImageEngine.removeBackground(file, { tolerance });
         bgRemovedBlob = imgRes.blob;
 
         bgRemovePreview.src = imgRes.dataUrl;
@@ -202,13 +216,20 @@ function setupAiStudio() {
         if (bgRemovePlaceholder) bgRemovePlaceholder.style.display = 'none';
         downloadBgRemoveBtn.style.display = 'inline-block';
 
-        bgRemoveStatus.textContent = '✅ Đã tách phông nền thành công! Click ảnh để phóng to';
+        const clearedPercent = Math.round(imgRes.clearedRatio * 100);
+        if (clearedPercent < 2) {
+          bgRemoveStatus.textContent =
+            `⚠️ Chỉ tách được ${clearedPercent}% ảnh — nền có thể không đồng nhất. Hãy tăng độ nhạy rồi thử lại.`;
+        } else {
+          bgRemoveStatus.textContent =
+            `✅ Đã tách ${clearedPercent}% nền (màu nền nhận diện: rgb(${imgRes.backgroundColor.r}, ${imgRes.backgroundColor.g}, ${imgRes.backgroundColor.b})). Click ảnh để phóng to`;
+        }
       } catch (err) {
         console.error('BG Removal Error:', err);
-        bgRemoveStatus.textContent = '❌ Lỗi tách phông: ' + err.message;
+        bgRemoveStatus.textContent = '❌ Lỗi tách nền: ' + err.message;
       } finally {
         runBgRemoveBtn.disabled = false;
-        runBgRemoveBtn.textContent = '✨ Xóa phông nền AI';
+        runBgRemoveBtn.textContent = '✂️ Xóa nền đơn sắc';
       }
     });
 
@@ -409,6 +430,7 @@ async function processDashSingleFile(file, targetFormat, quality) {
   // Image Processing
   if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif'].includes(ext)) {
     if (targetFormat === 'pdf') {
+      const DocEngine = await loadDocEngine();
       const pdfBlob = await DocEngine.imageToPdf(file, `${file.name}.pdf`);
       return { blob: pdfBlob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.pdf` };
     }
@@ -422,6 +444,7 @@ async function processDashSingleFile(file, targetFormat, quality) {
   if (ext === 'docx') {
     const validDocFormats = ['html', 'txt', 'md', 'markdown', 'pdf'];
     const finalFormat = validDocFormats.includes(targetFormat) ? targetFormat : 'pdf';
+    const DocEngine = await loadDocEngine();
     const docRes = await DocEngine.convertDocx(file, finalFormat);
     if (docRes.blob) {
       return { blob: docRes.blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${docRes.extension}` };
@@ -432,6 +455,7 @@ async function processDashSingleFile(file, targetFormat, quality) {
 
   // PDF Processing
   if (ext === 'pdf') {
+    const PdfEngine = await loadPdfEngine();
     if (targetFormat === 'txt') {
       const text = await PdfEngine.extractPdfText(file);
       const blob = new Blob([text], { type: 'text/plain' });
@@ -447,7 +471,7 @@ async function processDashSingleFile(file, targetFormat, quality) {
 
   // Data Processing (JSON, CSV, XML, YAML)
   if (['json', 'csv', 'xml', 'yaml', 'yml'].includes(ext)) {
-    const text = await DocEngine.readFileAsText(file);
+    const text = await readFileAsText(file);
     const parsedData = DataEngine.parse(text, ext === 'yml' ? 'yaml' : ext);
     const validDataFormats = ['json', 'csv', 'xml', 'yaml', 'ts', 'go'];
     const finalFormat = validDataFormats.includes(targetFormat) ? targetFormat : 'json';
@@ -465,7 +489,8 @@ async function processDashSingleFile(file, targetFormat, quality) {
   }
 
   // Fallback / Plain Text
-  const rawText = await DocEngine.readFileAsText(file);
+  const rawText = await readFileAsText(file);
+  const DocEngine = await loadDocEngine();
   const pdfBlob = DocEngine.textToPdf(rawText, file.name);
   return { blob: pdfBlob, filename: `${file.name}.pdf` };
 }

@@ -1,6 +1,7 @@
 import mammoth from '../lib/mammoth.js';
 import { marked } from '../lib/marked.js';
 import { jsPDF } from '../lib/jspdf.js';
+import { readFileAsArrayBuffer, readFileAsText } from './file-reader.js';
 
 /**
  * Universal Document Engine (DOCX, Markdown, HTML, TXT, PDF Export)
@@ -9,26 +10,12 @@ export class DocEngine {
   /**
    * Reads an ArrayBuffer from a Blob/File
    */
-  static readFileAsArrayBuffer(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = (err) => reject(new Error('Failed to read file buffer.'));
-      reader.readAsArrayBuffer(file);
-    });
-  }
+  static readFileAsArrayBuffer = readFileAsArrayBuffer;
 
   /**
    * Reads plain text from a File
    */
-  static readFileAsText(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = (err) => reject(new Error('Failed to read text file.'));
-      reader.readAsText(file);
-    });
-  }
+  static readFileAsText = readFileAsText;
 
   /**
    * Convert DOCX file to HTML, Text, or Markdown

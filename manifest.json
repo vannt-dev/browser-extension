@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Universal File Converter & AI Toolkit",
   "version": "1.0.0",
-  "description": "Chuyển đổi file 100% Client-side: Ảnh, DOCX, PDF, JSON/CSV/XML, Markdown, AI Xóa phông & Tự động nén/đổi file khi tải về.",
+  "description": "Chuyển đổi file 100% offline: Ảnh, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, xóa nền đơn sắc & tự động đổi file khi tải về.",
   "permissions": [
     "downloads",
     "contextMenus",
@@ -23,6 +23,9 @@
   "background": {
     "service_worker": "dist/background/background.js",
     "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   },
   "icons": {
     "16": "assets/icons/icon16.png",

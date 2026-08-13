@@ -1,9 +1,13 @@
 import { ImageEngine } from '../engine/image-engine.js';
 import { DataEngine } from '../engine/data-engine.js';
-import { DocEngine } from '../engine/doc-engine.js';
-import { PdfEngine } from '../engine/pdf-engine.js';
-import { AiEngine } from '../engine/ai-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
+import { readFileAsText } from '../engine/file-reader.js';
+
+// Heavy engines are fetched on first use so opening the popup does not have to
+// parse the OCR, DOCX and PDF runtimes up front.
+const loadAiEngine = () => import('../engine/ai-engine.js').then((m) => m.AiEngine);
+const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocEngine);
+const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
 
 // Format Mapping Options
 const FORMAT_OPTIONS = {
@@ -266,6 +270,7 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
   // Image Processing
   if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif'].includes(ext)) {
     if (targetFormat === 'pdf') {
+      const DocEngine = await loadDocEngine();
       const pdfBlob = await DocEngine.imageToPdf(file, `${file.name}.pdf`);
       return { blob: pdfBlob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.pdf` };
     }
@@ -279,6 +284,7 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
       return { blob: res.blob, filename: `compressed_${file.name}` };
     }
     if (targetFormat === 'ocr-txt' || targetFormat === 'ocr-docx') {
+      const AiEngine = await loadAiEngine();
       const ocrRes = await AiEngine.extractTextFromImage(file);
       const blob = new Blob([ocrRes.text], { type: 'text/plain' });
       return { blob, filename: `ocr_${file.name.replace(/\.[^/.]+$/, '')}.txt` };
@@ -295,6 +301,7 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
   if (ext === 'docx') {
     const validDocFormats = ['html', 'txt', 'md', 'markdown', 'pdf'];
     const finalFormat = validDocFormats.includes(targetFormat) ? targetFormat : 'pdf';
+    const DocEngine = await loadDocEngine();
     const docRes = await DocEngine.convertDocx(file, finalFormat);
     if (docRes.blob) {
       return { blob: docRes.blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${docRes.extension}` };
@@ -305,6 +312,7 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
 
   // PDF Processing
   if (ext === 'pdf') {
+    const PdfEngine = await loadPdfEngine();
     if (targetFormat === 'txt') {
       const text = await PdfEngine.extractPdfText(file);
       const blob = new Blob([text], { type: 'text/plain' });
@@ -320,7 +328,7 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
 
   // Data Processing (JSON, CSV, XML, YAML)
   if (['json', 'csv', 'xml', 'yaml', 'yml'].includes(ext)) {
-    const text = await DocEngine.readFileAsText(file);
+    const text = await readFileAsText(file);
     const parsedData = DataEngine.parse(text, ext === 'yml' ? 'yaml' : ext);
     const validDataFormats = ['json', 'csv', 'xml', 'yaml', 'ts', 'go'];
     const finalFormat = validDataFormats.includes(targetFormat) ? targetFormat : 'json';
@@ -338,7 +346,8 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
   }
 
   // Fallback / Text / Markdown
-  const rawText = await DocEngine.readFileAsText(file);
+  const rawText = await readFileAsText(file);
+  const DocEngine = await loadDocEngine();
   const pdfBlob = DocEngine.textToPdf(rawText, file.name);
   return { blob: pdfBlob, filename: `${file.name}.pdf` };
 }

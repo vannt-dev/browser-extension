@@ -11,6 +11,7 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
 
 1. **📷 Chuyển Đổi Hình Ảnh**:
    - Hỗ trợ `PNG`, `JPG`, `WebP`, `SVG`, `BMP`, `ICO`.
+   - `BMP` xuất bằng encoder riêng (BITMAPV4HEADER 32-bit, giữ nguyên kênh alpha) và `ICO` xuất đa độ phân giải (16→256px), vì canvas của trình duyệt không mã hóa được 2 định dạng này.
    - Tùy chỉnh slider chất lượng nén, thay đổi kích thước (Resize), nén theo dung lượng mục tiêu (**Target Size KB/MB**).
    - Tự động xóa thông tin vị trí Exif GPS nhạy cảm khỏi ảnh.
 
@@ -22,8 +23,9 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
 
-4. **🤖 AI & Bảo Mật Offline**:
-   - **Offline OCR**: Đọc trích xuất chữ từ ảnh/PDF scan (Tiếng Việt & Anh) bằng `Tesseract.js`.
+4. **🤖 Xử Lý Ảnh Nâng Cao & Bảo Mật Offline**:
+   - **Offline OCR**: Đọc trích xuất chữ từ ảnh/PDF scan (Tiếng Việt & Anh) bằng `Tesseract.js`. Toàn bộ WASM core và traineddata được đóng gói sẵn trong extension — không tải gì từ CDN.
+   - **Xóa nền đơn sắc**: Dò màu nền từ viền ảnh, loang vùng đồng màu và làm mượt biên alpha, xuất PNG trong suốt. Đây là thuật toán so màu xác định (không phải mô hình AI): hiệu quả với ảnh chụp trên nền một màu, không tách sạch được ảnh nền phức tạp.
    - **Watermarking**: Đóng dấu bản quyền chữ/logo lên tài liệu & hình ảnh.
 
 5. **⚡ Tiện Ích Trải Nghiệm (UX Super-pack)**:
@@ -59,7 +61,13 @@ npm run build
 
 # 4. Chế độ Watch tự động build khi thay đổi code
 npm run dev
+
+# 5. Chạy bộ test đơn vị
+npm test
 ```
+
+> Thư mục `dist/` là sản phẩm build và **không** được commit vào git — hãy chạy `npm run build` sau khi clone.
+> Bước build sẽ copy runtime Tesseract (WASM core + traineddata `eng`/`vie`, ~11.8 MB) vào `dist/vendor/tesseract/`.
 
 ---
 
