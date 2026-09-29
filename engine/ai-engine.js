@@ -25,7 +25,9 @@ async function resolveVendorBase() {
   const candidates =
     typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL
       ? [chrome.runtime.getURL(`${VENDOR_SUBPATH}/`), chrome.runtime.getURL(`dist/${VENDOR_SUBPATH}/`)]
-      : [new URL(`../${VENDOR_SUBPATH}/`, import.meta.url).toString()];
+      : // A runtime path, not an asset to bundle: without @vite-ignore, Vite 6+ reads the
+        // template literal as a glob and ships repository files (package-lock.json, README).
+        [new URL(/* @vite-ignore */ `../${VENDOR_SUBPATH}/`, import.meta.url).toString()];
 
   for (const base of candidates) {
     try {
