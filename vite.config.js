@@ -29,6 +29,31 @@ const copyExtensionAssets = () => {
       if (fs.existsSync('assets')) {
         fs.cpSync('assets', 'dist/assets', { recursive: true });
       }
+
+      // The HEIC decoder (heic-to, built on libheif) is LGPL-3.0: its licence and a notice saying
+      // where it is and where its source lives have to travel with the packaged extension.
+      const heicLicence = 'node_modules/heic-to/LICENSE';
+      if (fs.existsSync(heicLicence)) {
+        const heicVersion = JSON.parse(fs.readFileSync('node_modules/heic-to/package.json', 'utf-8')).version;
+        fs.mkdirSync('dist/licenses', { recursive: true });
+        fs.copyFileSync(heicLicence, 'dist/licenses/heic-to-LGPL-3.0.txt');
+        fs.writeFileSync(
+          'dist/THIRD_PARTY_NOTICES.txt',
+          [
+            'Third-party software shipped with this extension under a copyleft licence',
+            '',
+            `heic-to ${heicVersion} (https://github.com/hoppergee/heic-to), which bundles libheif`,
+            '(https://github.com/strukturag/libheif), decodes HEIC/HEIF images. Both are licensed under the',
+            'GNU Lesser General Public License, version 3 or later: licenses/heic-to-LGPL-3.0.txt. That',
+            'licence supplements the GNU General Public License, version 3:',
+            'https://www.gnu.org/licenses/gpl-3.0.txt',
+            '',
+            'The library is the file chunks/vendor-heic-*.js, unmodified and separate from the rest of the',
+            'extension, so it can be replaced by a build of your own from the source above.',
+            ''
+          ].join('\n')
+        );
+      }
     }
   };
 };
