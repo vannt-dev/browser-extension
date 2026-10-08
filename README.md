@@ -11,6 +11,7 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
 
 1. **📷 Chuyển Đổi Hình Ảnh**:
    - Hỗ trợ `PNG`, `JPG`, `WebP`, `SVG`, `BMP`, `ICO`.
+   - Đọc được thêm `GIF`, `AVIF` và `HEIC/HEIF` (ảnh iPhone) làm ảnh đầu vào. AVIF do trình duyệt tự giải mã; HEIC được giải mã ngay trong extension bằng libheif (gói `heic-to`, khoảng 3 MB, chỉ nạp khi gặp file HEIC) và nhận diện theo nội dung file, nên ảnh HEIC bị đổi đuôi vẫn đọc được. HEIC cũng dùng được cho OCR và Ảnh ➔ PDF. Chưa xuất ra AVIF/HEIC: canvas của Chrome không mã hóa được hai định dạng này.
    - `BMP` xuất bằng encoder riêng (BITMAPV4HEADER 32-bit, giữ nguyên kênh alpha) và `ICO` xuất đa độ phân giải (16→256px), vì canvas của trình duyệt không mã hóa được 2 định dạng này.
    - Tùy chỉnh slider chất lượng nén, thay đổi kích thước (Resize), nén theo dung lượng mục tiêu (**Target Size KB/MB**).
    - Tự động xóa thông tin vị trí Exif GPS nhạy cảm khỏi ảnh.
@@ -19,6 +20,8 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
    - `DOCX ➔ HTML / PDF / TXT / Markdown`.
    - `PDF ➔ PNG Images (Từng trang)` hoặc trích xuất văn bản `TXT`.
    - `Markdown / TXT / HTML ➔ PDF`.
+   - **Gộp PDF**: chọn nhiều file PDF rồi chọn định dạng đích "Gộp các file PDF thành một" — các file được nối theo thứ tự trong danh sách chờ, file không phải PDF bị bỏ qua.
+   - **Tách PDF**: mỗi trang một file, hoặc (trong Dashboard) theo khoảng trang như `1-3, 5, 8-` — mỗi khoảng một file, nhiều file thì đóng gói ZIP. Gộp và tách sao chép nguyên trang (bằng `pdf-lib`), không render lại: chữ vẫn là chữ, không giảm chất lượng. PDF có mật khẩu không mở được.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.

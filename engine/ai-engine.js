@@ -1,4 +1,5 @@
 import { createWorker } from 'tesseract.js';
+import { decodeHeic, isHeic } from './heic-decoder.js';
 
 /**
  * Universal AI Engine (100% Client-Side OCR)
@@ -72,6 +73,10 @@ export class AiEngine {
   static async extractTextFromImage(imageFileOrBlob, lang = 'eng+vie', onProgress = null) {
     this.assertLangsBundled(lang);
     const base = await resolveVendorBase();
+    // Tesseract reads the formats the browser reads; a HEIC photo is decoded for it.
+    if (imageFileOrBlob instanceof Blob && (await isHeic(imageFileOrBlob))) {
+      imageFileOrBlob = await decodeHeic(imageFileOrBlob);
+    }
 
     const worker = await createWorker(lang, 1, {
       workerPath: `${base}worker.min.js`,

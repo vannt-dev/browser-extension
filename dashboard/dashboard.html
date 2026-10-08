@@ -50,10 +50,16 @@
                 <option value="jpg">JPEG Image (.jpg)</option>
                 <option value="webp">WebP Image (.webp)</option>
                 <option value="pdf">PDF Document (.pdf)</option>
+                <option value="pdf-merge">Gộp các file PDF thành một (.pdf)</option>
+                <option value="pdf-split">Tách PDF theo trang (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
                 <option value="csv">CSV Table (.csv)</option>
               </select>
+            </div>
+            <div class="form-group" id="dash-split-group" style="display: none;">
+              <label for="dash-split-ranges">Trang cần tách (để trống = mỗi trang một file):</label>
+              <input type="text" id="dash-split-ranges" class="dash-input" placeholder="Ví dụ: 1-3, 5, 8-">
             </div>
             <div class="form-group">
               <label>Chất lượng nén: <span id="dash-quality-val">90%</span></label>

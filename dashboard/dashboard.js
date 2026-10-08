@@ -2,12 +2,15 @@ import { ImageEngine } from '../engine/image-engine.js';
 import { DataEngine } from '../engine/data-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
+import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
 const loadAiEngine = () => import('../engine/ai-engine.js').then((m) => m.AiEngine);
 const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocEngine);
 const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
+const loadPdfTools = () => import('../engine/pdf-tools.js');
+const SPLIT_RANGES = () => document.getElementById('dash-split-ranges')?.value || '';
 
 // State for Dashboard Batch Converter & Lightbox
 let dashFileQueue = [];
@@ -20,6 +23,11 @@ const dashDropZone = document.getElementById('dash-drop-zone');
 const dashFileInput = document.getElementById('dash-file-input');
 const dashTargetFormat = document.getElementById('dash-target-format');
 const dashQualityRange = document.getElementById('dash-quality-range');
+const dashSplitGroup = document.getElementById('dash-split-group');
+// The page selection only means something when splitting.
+dashTargetFormat?.addEventListener('change', () => {
+  if (dashSplitGroup) dashSplitGroup.style.display = dashTargetFormat.value === 'pdf-split' ? 'block' : 'none';
+});
 const dashQualityVal = document.getElementById('dash-quality-val');
 const dashConvertBtn = document.getElementById('dash-convert-btn');
 const dashQueueList = document.getElementById('dash-queue-list');
@@ -384,6 +392,14 @@ async function executeDashBatchConversion() {
   const targetFormat = dashTargetFormat.value;
   const quality = parseFloat(dashQualityRange.value) / 100;
 
+  // Merging is the one job that takes the whole queue at once instead of file by file.
+  if (targetFormat === 'pdf-merge') {
+    await mergeDashQueue();
+    dashConvertBtn.disabled = false;
+    dashConvertBtn.textContent = 'Chuyển đổi & Đóng gói ZIP';
+    return;
+  }
+
   for (let i = 0; i < dashFileQueue.length; i++) {
     const file = dashFileQueue[i];
     const statusEl = document.getElementById(`dash-status-${i}`);
@@ -406,6 +422,8 @@ async function executeDashBatchConversion() {
       console.error(`Error converting ${file.name}:`, err);
       if (statusEl) {
         statusEl.textContent = 'Lỗi';
+        // The reason, for whoever hovers over the red label.
+        statusEl.title = err?.message || '';
         statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
         statusEl.style.color = '#ef4444';
       }
@@ -423,12 +441,52 @@ async function executeDashBatchConversion() {
   }
 }
 
+function setDashStatus(index, text, state) {
+  const statusEl = document.getElementById(`dash-status-${index}`);
+  if (!statusEl) return;
+  statusEl.textContent = text;
+  statusEl.title = text;
+  if (state === 'done') {
+    statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
+    statusEl.style.color = '#10b981';
+  } else if (state === 'error') {
+    statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
+    statusEl.style.color = '#ef4444';
+  } else if (state === 'skipped') {
+    statusEl.style.background = 'rgba(148, 163, 184, 0.2)';
+    statusEl.style.color = 'var(--text-secondary)';
+  }
+}
+
+// Joins every PDF in the queue into one file, in queue order.
+async function mergeDashQueue() {
+  const pdfIndexes = dashFileQueue.map((file, index) => (isPdfFile(file) ? index : -1)).filter((index) => index >= 0);
+  dashFileQueue.forEach((file, index) => {
+    if (!isPdfFile(file)) setDashStatus(index, 'Bỏ qua (không phải PDF)', 'skipped');
+  });
+  if (pdfIndexes.length < 2) {
+    pdfIndexes.forEach((index) => setDashStatus(index, 'Cần ít nhất 2 file PDF', 'error'));
+    return;
+  }
+  pdfIndexes.forEach((index) => setDashStatus(index, 'Đang gộp...'));
+  try {
+    const { mergePdfs } = await loadPdfTools();
+    const merged = await mergePdfs(pdfIndexes.map((index) => dashFileQueue[index]));
+    dashConvertedResults = [merged];
+    pdfIndexes.forEach((index) => setDashStatus(index, 'Đã gộp', 'done'));
+    ZipEngine.downloadBlob(merged.blob, merged.filename);
+  } catch (err) {
+    console.error('Error merging PDFs:', err);
+    pdfIndexes.forEach((index) => setDashStatus(index, `Lỗi: ${err.message}`, 'error'));
+  }
+}
+
 // Single File Processor Router for Dashboard
 async function processDashSingleFile(file, targetFormat, quality) {
   const ext = file.name.split('.').pop().toLowerCase();
 
   // Image Processing
-  if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif'].includes(ext)) {
+  if (IMAGE_EXTENSIONS.includes(ext)) {
     if (targetFormat === 'pdf') {
       const DocEngine = await loadDocEngine();
       const pdfBlob = await DocEngine.imageToPdf(file, `${file.name}.pdf`);
@@ -455,6 +513,13 @@ async function processDashSingleFile(file, targetFormat, quality) {
 
   // PDF Processing
   if (ext === 'pdf') {
+    if (targetFormat === 'pdf-split') {
+      const { splitPdf } = await loadPdfTools();
+      const parts = await splitPdf(file, SPLIT_RANGES());
+      if (parts.length === 1) return parts[0];
+      const zipRes = await ZipEngine.createZip(parts.map(p => ({ name: p.filename, blob: p.blob })), `${file.name.replace(/\.[^/.]+$/, '')}_split.zip`);
+      return { blob: zipRes.blob, filename: zipRes.filename };
+    }
     const PdfEngine = await loadPdfEngine();
     if (targetFormat === 'txt') {
       const text = await PdfEngine.extractPdfText(file);
