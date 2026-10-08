@@ -58,6 +58,9 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules/tesseract.js')) return 'vendor-tesseract';
           if (id.includes('node_modules/pdfjs-dist')) return 'vendor-pdfjs';
+          // libheif is LGPL: it stays a file of its own, replaceable without rebuilding the rest.
+          if (id.includes('node_modules/heic-to')) return 'vendor-heic';
+          if (id.includes('node_modules/pdf-lib') || id.includes('node_modules/@pdf-lib')) return 'vendor-pdf-lib';
           if (id.includes('/lib/mammoth.js') || id.includes('/lib/marked.js')) return 'vendor-doc';
           if (id.includes('/lib/jspdf') || id.includes('/lib/html2canvas') || id.includes('/lib/index.es')) return 'vendor-pdf-export';
           if (id.includes('/lib/jszip.js')) return 'vendor-zip';

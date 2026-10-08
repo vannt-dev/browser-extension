@@ -1,6 +1,7 @@
 /**
  * Universal Image Processing Engine (100% Client-Side Canvas API)
  */
+import { decodeHeic, isHeic } from './heic-decoder.js';
 
 /** Formats the browser can encode natively via canvas.toBlob(). */
 const NATIVE_MIME = {
@@ -20,10 +21,12 @@ export class ImageEngine {
   /**
    * Reads a File or Blob into an HTMLImageElement
    */
-  static loadImage(fileOrBlob) {
+  static async loadImage(fileOrBlob) {
+    // The browser has no HEIC decoder; every other format it reads itself.
+    const source = (await isHeic(fileOrBlob)) ? await decodeHeic(fileOrBlob) : fileOrBlob;
     return new Promise((resolve, reject) => {
       const img = new Image();
-      const url = URL.createObjectURL(fileOrBlob);
+      const url = URL.createObjectURL(source);
       img.onload = () => {
         URL.revokeObjectURL(url);
         resolve(img);

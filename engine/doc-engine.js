@@ -2,6 +2,7 @@ import mammoth from '../lib/mammoth.js';
 import { marked } from '../lib/marked.js';
 import { jsPDF } from '../lib/jspdf.js';
 import { readFileAsArrayBuffer, readFileAsText } from './file-reader.js';
+import { decodeHeic, isHeic } from './heic-decoder.js';
 
 /**
  * Universal Document Engine (DOCX, Markdown, HTML, TXT, PDF Export)
@@ -117,10 +118,19 @@ export class DocEngine {
   /**
    * Convert Images / Canvas to PDF Document
    */
-  static imageToPdf(imageBlobOrDataUrl, filename = 'Image-Document.pdf') {
-    return new Promise((resolve) => {
+  static async imageToPdf(imageBlobOrDataUrl, filename = 'Image-Document.pdf') {
+    // The browser cannot decode HEIC, so it is turned into PNG first.
+    if (typeof imageBlobOrDataUrl !== 'string' && (await isHeic(imageBlobOrDataUrl))) {
+      imageBlobOrDataUrl = await decodeHeic(imageBlobOrDataUrl);
+    }
+    return new Promise((resolve, reject) => {
       const img = new Image();
       const src = typeof imageBlobOrDataUrl === 'string' ? imageBlobOrDataUrl : URL.createObjectURL(imageBlobOrDataUrl);
+      // Without this an image the browser cannot read left the conversion waiting forever.
+      img.onerror = () => {
+        if (typeof imageBlobOrDataUrl !== 'string') URL.revokeObjectURL(src);
+        reject(new Error('Failed to load image file.'));
+      };
 
       img.onload = () => {
         const doc = new jsPDF({

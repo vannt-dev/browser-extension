@@ -15,11 +15,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "heic-to": "^1.6.5",
     "jspdf": "^2.5.2",
     "jszip": "^3.10.1",
     "mammoth": "^1.8.0",
     "marked": "^12.0.0",
     "papaparse": "^5.4.1",
+    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.0.379",
     "tesseract.js": "^5.0.4",
     "yaml": "^2.4.1"

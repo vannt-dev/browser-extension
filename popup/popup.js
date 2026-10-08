@@ -2,12 +2,16 @@ import { ImageEngine } from '../engine/image-engine.js';
 import { DataEngine } from '../engine/data-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
+import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
 const loadAiEngine = () => import('../engine/ai-engine.js').then((m) => m.AiEngine);
 const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocEngine);
 const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
+const loadPdfTools = () => import('../engine/pdf-tools.js');
+// The popup has no field for page ranges: a split here is always one file per page.
+const SPLIT_RANGES = () => '';
 
 // Format Mapping Options
 const FORMAT_OPTIONS = {
@@ -25,7 +29,9 @@ const FORMAT_OPTIONS = {
     { label: 'HTML Webpage (.html)', value: 'html' },
     { label: 'Plain Text (.txt)', value: 'txt' },
     { label: 'Markdown (.md)', value: 'md' },
-    { label: 'Images PNG (Page-by-page)', value: 'png-pages' }
+    { label: 'Images PNG (Page-by-page)', value: 'png-pages' },
+    { label: 'Merge PDFs into one (.pdf)', value: 'pdf-merge' },
+    { label: 'Split PDF, one file per page (.pdf)', value: 'pdf-split' }
   ],
   data: [
     { label: 'JSON Format (.json)', value: 'json' },
@@ -186,7 +192,7 @@ function addFilesToQueue(files) {
 
   if (files.length > 0) {
     const ext = files[0].name.split('.').pop().toLowerCase();
-    if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif'].includes(ext)) {
+    if (IMAGE_EXTENSIONS.includes(ext)) {
       switchCategory('image');
     } else if (['docx', 'pdf', 'md', 'html', 'txt'].includes(ext)) {
       switchCategory('doc');
@@ -228,6 +234,36 @@ convertBtn.addEventListener('click', async () => {
   const quality = parseFloat(qualitySlider.value) / 100;
   const targetSizeKB = parseFloat(targetSizeInput.value) || 500;
 
+  // Merging takes every PDF of the queue at once, in queue order.
+  if (targetFormat === 'pdf-merge') {
+    const pdfIndexes = fileQueue.map((file, index) => (isPdfFile(file) ? index : -1)).filter((index) => index >= 0);
+    const mark = (index, text, className, color) => {
+      const statusEl = document.getElementById(`status-${index}`);
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.title = text;
+      if (className) statusEl.className = className;
+      if (color) statusEl.style.color = color;
+    };
+    fileQueue.forEach((file, index) => {
+      if (!isPdfFile(file)) mark(index, 'Bỏ qua', 'item-status status-ready');
+    });
+    try {
+      if (pdfIndexes.length < 2) throw new Error('Cần ít nhất 2 file PDF');
+      const { mergePdfs } = await loadPdfTools();
+      const merged = await mergePdfs(pdfIndexes.map((index) => fileQueue[index]));
+      convertedResults = [merged];
+      pdfIndexes.forEach((index) => mark(index, 'Đã gộp', 'item-status status-done'));
+      ZipEngine.downloadBlob(merged.blob, merged.filename);
+    } catch (err) {
+      console.error('PDF merge error:', err);
+      pdfIndexes.forEach((index) => mark(index, `Lỗi: ${err.message}`, null, '#ef4444'));
+    }
+    convertSpinner.classList.add('hidden');
+    convertBtn.disabled = false;
+    return;
+  }
+
   for (let i = 0; i < fileQueue.length; i++) {
     const file = fileQueue[i];
     const statusEl = document.getElementById(`status-${i}`);
@@ -248,6 +284,7 @@ convertBtn.addEventListener('click', async () => {
       console.error('File conversion error:', err);
       if (statusEl) {
         statusEl.textContent = 'Lỗi';
+        statusEl.title = err?.message || '';
         statusEl.style.color = '#ef4444';
       }
     }
@@ -268,7 +305,7 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
   const ext = file.name.split('.').pop().toLowerCase();
 
   // Image Processing
-  if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif'].includes(ext)) {
+  if (IMAGE_EXTENSIONS.includes(ext)) {
     if (targetFormat === 'pdf') {
       const DocEngine = await loadDocEngine();
       const pdfBlob = await DocEngine.imageToPdf(file, `${file.name}.pdf`);
@@ -312,6 +349,13 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
 
   // PDF Processing
   if (ext === 'pdf') {
+    if (targetFormat === 'pdf-split') {
+      const { splitPdf } = await loadPdfTools();
+      const parts = await splitPdf(file, SPLIT_RANGES());
+      if (parts.length === 1) return parts[0];
+      const zipRes = await ZipEngine.createZip(parts.map(p => ({ name: p.filename, blob: p.blob })), `${file.name.replace(/\.[^/.]+$/, '')}_split.zip`);
+      return { blob: zipRes.blob, filename: zipRes.filename };
+    }
     const PdfEngine = await loadPdfEngine();
     if (targetFormat === 'txt') {
       const text = await PdfEngine.extractPdfText(file);
