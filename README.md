@@ -78,3 +78,11 @@ npm test
 
 ## 🔒 Cam Kết Bảo Mật (Privacy Guarantee)
 Tất cả các thao tác xử lý dữ liệu và nhận dạng chữ (OCR) đều được thực hiện **100% cục bộ (Local)** trong trình duyệt của bạn. **Không có bất kỳ dữ liệu hay tập tin nào bị tải lên Server bên ngoài**.
+
+---
+
+## 📄 Giấy phép
+
+Mã nguồn của extension phát hành theo giấy phép [MIT](LICENSE).
+
+Gói extension có kèm thư viện giải mã HEIC (`heic-to`, dựa trên libheif) theo giấy phép LGPL-3.0; nội dung giấy phép và ghi chú đi kèm nằm trong `licenses/` và `THIRD_PARTY_NOTICES.txt` của gói.
