@@ -26,8 +26,10 @@ const copyExtensionAssets = () => {
         fs.writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2));
       }
 
-      if (fs.existsSync('assets')) {
-        fs.cpSync('assets', 'dist/assets', { recursive: true });
+      // Only what the extension loads. assets/store holds pictures made for a store page, which
+      // nothing in the extension shows; they added over a megabyte to the package.
+      if (fs.existsSync('assets/icons')) {
+        fs.cpSync('assets/icons', 'dist/assets/icons', { recursive: true });
       }
 
       // The HEIC decoder (heic-to, built on libheif) is LGPL-3.0: its licence and a notice saying

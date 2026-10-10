@@ -1,4 +1,4 @@
-# ⚡ Universal File Converter & AI Toolkit (Chrome Extension Manifest V3)
+# ⚡ Universal File Converter (Chrome Extension Manifest V3)
 
 Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** dành cho Chrome, Edge & các trình duyệt Chromium.
 
@@ -75,4 +75,4 @@ npm test
 ---
 
 ## 🔒 Cam Kết Bảo Mật (Privacy Guarantee)
-Tất cả các thao tác xử lý dữ liệu và mô hình AI đều được thực hiện **100% cục bộ (Local)** trong trình duyệt của bạn. **Không có bất kỳ dữ liệu hay tập tin nào bị tải lên Server bên ngoài**.
+Tất cả các thao tác xử lý dữ liệu và nhận dạng chữ (OCR) đều được thực hiện **100% cục bộ (Local)** trong trình duyệt của bạn. **Không có bất kỳ dữ liệu hay tập tin nào bị tải lên Server bên ngoài**.
