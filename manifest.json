@@ -1,13 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Universal File Converter & AI Toolkit",
+  "name": "Universal File Converter",
   "version": "1.1.0",
   "description": "Chuyển đổi file 100% offline: Ảnh, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, xóa nền đơn sắc & tự động đổi file khi tải về.",
   "permissions": [
     "downloads",
     "contextMenus",
     "storage",
-    "clipboardRead",
     "activeTab"
   ],
   "action": {
