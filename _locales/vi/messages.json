@@ -1,6 +1,6 @@
 {
   "extDescription": {
-    "message": "Chuyển đổi file 100% offline: Ảnh, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, xóa nền đơn sắc & tự động đổi file khi tải về."
+    "message": "Chuyển đổi ảnh, tài liệu, PDF và file dữ liệu ngay trong trình duyệt, có nhận dạng chữ offline. Không tải gì lên máy chủ."
   },
   "menuConvertWebp": {
     "message": "⚡ Chuyển sang WebP"
