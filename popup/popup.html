@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en" class="i18n-pending">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,44 +18,53 @@
         </div>
       </div>
       <div class="header-actions">
-        <button id="theme-toggle" class="icon-btn" title="Chuyển chế độ Sáng/Tối">🌙</button>
-        <button id="open-dashboard-btn" class="icon-btn" title="Mở Full Dashboard">🖥️</button>
+        <button id="theme-toggle" class="icon-btn" title="Switch between light and dark" data-i18n-title="themeToggleTitle">🌙</button>
+        <button id="open-dashboard-btn" class="icon-btn" title="Open the full Dashboard" data-i18n-title="openDashboardTitle">🖥️</button>
       </div>
     </header>
 
+    <!-- What the last right-click or auto-convert could not do -->
+    <div id="failure-notice" class="notice" style="display: none;">
+      <p id="failure-text"></p>
+      <div class="notice-actions">
+        <button id="failure-allow-btn" class="notice-btn" style="display: none;" data-i18n="failureAllowAll">Allow on all sites</button>
+        <button id="failure-dismiss-btn" class="notice-btn" data-i18n="failureDismiss">Got it</button>
+      </div>
+    </div>
+
     <!-- Nav Category Tabs -->
     <nav class="category-nav">
-      <button class="nav-btn active" data-category="image">📷 Ảnh</button>
+      <button class="nav-btn active" data-category="image" data-i18n="navImage">📷 Images</button>
       <button class="nav-btn" data-category="doc">📄 Doc / PDF</button>
-      <button class="nav-btn" data-category="data">📊 Dữ liệu</button>
-      <button class="nav-btn" data-category="ai">🔎 OCR / Nén</button>
+      <button class="nav-btn" data-category="data" data-i18n="navData">📊 Data</button>
+      <button class="nav-btn" data-category="ai" data-i18n="navAi">🔎 OCR / Compress</button>
     </nav>
 
     <!-- Drag & Drop Zone -->
     <div id="drop-zone" class="drop-zone">
       <div class="drop-icon">📁</div>
-      <p class="drop-title">Kéo & thả file vào đây hoặc <span class="browse-text">Dán (Ctrl+V)</span></p>
-      <p class="drop-hint">Hỗ trợ PNG, JPG, WebP, SVG, DOCX, PDF, JSON, CSV, MD...</p>
+      <p class="drop-title"><span data-i18n="dropTitleLead">Drag &amp; drop files here or</span> <span class="browse-text" data-i18n="dropTitlePaste">Paste (Ctrl+V)</span></p>
+      <p class="drop-hint" data-i18n="dropHint">Supports PNG, JPG, WebP, SVG, DOCX, PDF, JSON, CSV, MD...</p>
       <input type="file" id="file-input" multiple hidden>
     </div>
 
     <!-- Quick Conversion Options -->
     <div class="options-panel">
       <div class="option-group">
-        <label for="target-format">Định dạng đích:</label>
+        <label for="target-format" data-i18n="targetFormatLabel">Target format:</label>
         <select id="target-format" class="custom-select">
           <!-- Populated dynamically based on active tab & files -->
         </select>
       </div>
 
       <div class="option-group compression-group" id="quality-slider-group">
-        <label for="quality-range">Chất lượng: <span id="quality-val">90%</span></label>
+        <label for="quality-range"><span data-i18n="qualityLabel">Quality:</span> <span id="quality-val">90%</span></label>
         <input type="range" id="quality-range" min="10" max="100" value="90" class="custom-range">
       </div>
 
       <div class="option-group" id="target-size-group" style="display: none;">
-        <label for="target-size-input">Dung lượng đích (KB):</label>
-        <input type="number" id="target-size-input" placeholder="Ví dụ: 500" class="custom-input">
+        <label for="target-size-input" data-i18n="targetSizeLabel">Target size (KB):</label>
+        <input type="number" id="target-size-input" placeholder="e.g. 500" data-i18n-placeholder="targetSizePlaceholder" class="custom-input">
       </div>
     </div>
 
@@ -64,15 +73,26 @@
       <label class="toggle-switch">
         <input type="checkbox" id="auto-convert-download-toggle">
         <span class="slider"></span>
-        <span class="toggle-label">Tự động đổi đuôi .webp/.jfif khi tải trên Web</span>
+        <span class="toggle-label" data-i18n="autoConvertToggle">Also save a PNG or JPG copy when you download a .webp/.jfif image</span>
       </label>
+      <p id="auto-convert-note" class="toggle-note" style="display: none;" data-i18n="autoConvertNote">This needs access to all sites, to read the images you download. Switch it on again and choose "Allow" when the browser asks.</p>
+    </div>
+
+    <!-- Interface language -->
+    <div class="option-group language-row">
+      <label for="language-select" data-i18n="languageLabel">Language:</label>
+      <select id="language-select" class="custom-select">
+        <option value="auto" data-i18n="languageAuto">Same as the browser</option>
+        <option value="en">English</option>
+        <option value="vi">Tiếng Việt</option>
+      </select>
     </div>
 
     <!-- File Queue List -->
     <div id="file-queue-container" class="queue-container" style="display: none;">
       <div class="queue-header">
-        <span>Danh sách file (<span id="file-count">0</span>)</span>
-        <button id="clear-queue-btn" class="text-btn">Xóa tất cả</button>
+        <span><span data-i18n="queueTitle">Files</span> (<span id="file-count">0</span>)</span>
+        <button id="clear-queue-btn" class="text-btn" data-i18n="clearAll">Clear all</button>
       </div>
       <div id="file-queue-list" class="queue-list"></div>
     </div>
@@ -80,12 +100,10 @@
     <!-- Actions -->
     <footer class="app-footer">
       <button id="convert-btn" class="primary-btn" disabled>
-        <span>Chuyển đổi ngay</span>
+        <span data-i18n="convertNow">Convert now</span>
         <div class="spinner hidden" id="convert-spinner"></div>
       </button>
-      <button id="download-zip-btn" class="secondary-btn" style="display: none;">
-        📦 Tải ZIP Tất cả
-      </button>
+      <button id="download-zip-btn" class="secondary-btn" style="display: none;" data-i18n="downloadZipAll">📦 Download all as ZIP</button>
     </footer>
   </div>
 

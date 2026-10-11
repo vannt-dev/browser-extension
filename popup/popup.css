@@ -232,6 +232,17 @@ body {
   color: var(--text-secondary);
 }
 
+.language-row {
+  font-size: 11px;
+  padding: 0 2px;
+}
+
+.language-row .custom-select {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
 /* Queue List */
 .queue-container {
   background: var(--card-bg);
@@ -340,6 +351,44 @@ body {
 }
 
 .hidden { display: none; }
+
+/* Until the page's text is in the user's language: the HTML itself is written in English.
+   Should the script never get that far, the page shows itself after a second all the same.
+   Opacity, not visibility: visibility is inherited, and every control with "transition: all"
+   would run a transition of its own when the page appears, unclickable until it has. */
+html.i18n-pending body { opacity: 0; animation: i18n-reveal 0s linear 1s forwards; }
+@keyframes i18n-reveal { to { opacity: 1; } }
+
+.toggle-note {
+  margin-top: 6px;
+  color: #f59e0b;
+  line-height: 1.4;
+}
+
+.notice {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.notice-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.notice-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
 
 @keyframes spin {
   to { transform: rotate(360deg); }

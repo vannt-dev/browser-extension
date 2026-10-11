@@ -90,11 +90,17 @@ export class ImageEngine {
     // Apply Watermark if requested
     if (watermarkText) {
       const fontSize = Math.max(16, Math.floor(targetW / 25));
+      const maxWidth = Math.max(1, targetW - 40);
       ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.fillStyle = watermarkColor;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(watermarkText, targetW - 20, targetH - 20);
+      // A dark edge under the light text keeps it readable on a light picture as well.
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(2, fontSize / 8);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.strokeText(watermarkText, targetW - 20, targetH - 20, maxWidth);
+      ctx.fillStyle = watermarkColor;
+      ctx.fillText(watermarkText, targetW - 20, targetH - 20, maxWidth);
     }
 
     const { blob, mimeType } = await this.encodeCanvas(canvas, targetFormat, quality);

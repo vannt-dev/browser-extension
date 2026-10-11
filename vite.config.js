@@ -32,6 +32,9 @@ const copyExtensionAssets = () => {
         fs.cpSync('assets/icons', 'dist/assets/icons', { recursive: true });
       }
 
+      // The manifest names a default_locale: without _locales beside it the browser refuses the package.
+      fs.cpSync('_locales', 'dist/_locales', { recursive: true });
+
       // The HEIC decoder (heic-to, built on libheif) is LGPL-3.0: its licence and a notice saying
       // where it is and where its source lives have to travel with the packaged extension.
       const heicLicence = 'node_modules/heic-to/LICENSE';

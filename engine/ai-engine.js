@@ -1,5 +1,6 @@
 import { createWorker } from 'tesseract.js';
 import { decodeHeic, isHeic } from './heic-decoder.js';
+import { t } from '../shared/i18n.js';
 
 /**
  * Universal AI Engine (100% Client-Side OCR)
@@ -42,9 +43,7 @@ async function resolveVendorBase() {
     }
   }
 
-  throw new Error(
-    'Không tìm thấy gói Tesseract offline trong extension. Hãy chạy "npm run build" để đóng gói lại.'
-  );
+  throw new Error(t('ocrBundleMissing'));
 }
 
 export class AiEngine {
@@ -59,10 +58,7 @@ export class AiEngine {
     const requested = String(lang).split('+').filter(Boolean);
     const unsupported = requested.filter((l) => !this.SUPPORTED_LANGS.includes(l));
     if (unsupported.length) {
-      throw new Error(
-        `Ngôn ngữ OCR chưa được đóng gói: ${unsupported.join(', ')}. ` +
-          `Hiện hỗ trợ: ${this.SUPPORTED_LANGS.join(', ')}.`
-      );
+      throw new Error(t('ocrLangNotBundled', unsupported.join(', '), this.SUPPORTED_LANGS.join(', ')));
     }
     return requested;
   }

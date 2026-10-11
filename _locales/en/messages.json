@@ -1,0 +1,414 @@
+{
+  "extDescription": {
+    "message": "Convert files 100% offline: images, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, plain-background removal & auto-convert on download."
+  },
+  "menuConvertWebp": {
+    "message": "⚡ Convert to WebP"
+  },
+  "menuConvertPng": {
+    "message": "⚡ Convert to PNG"
+  },
+  "menuConvertJpg": {
+    "message": "⚡ Convert to JPG"
+  },
+  "menuOpenDashboard": {
+    "message": "🚀 Open the full File Converter Dashboard"
+  },
+  "themeToggleTitle": {
+    "message": "Switch between light and dark"
+  },
+  "openDashboardTitle": {
+    "message": "Open the full Dashboard"
+  },
+  "navImage": {
+    "message": "📷 Images"
+  },
+  "navData": {
+    "message": "📊 Data"
+  },
+  "navAi": {
+    "message": "🔎 OCR / Compress"
+  },
+  "dropTitleLead": {
+    "message": "Drag & drop files here or"
+  },
+  "dropTitlePaste": {
+    "message": "Paste (Ctrl+V)"
+  },
+  "dropHint": {
+    "message": "Supports PNG, JPG, WebP, SVG, DOCX, PDF, JSON, CSV, MD..."
+  },
+  "targetFormatLabel": {
+    "message": "Target format:"
+  },
+  "qualityLabel": {
+    "message": "Quality:"
+  },
+  "targetSizeLabel": {
+    "message": "Target size (KB):"
+  },
+  "targetSizePlaceholder": {
+    "message": "e.g. 500"
+  },
+  "autoConvertToggle": {
+    "message": "Also save a PNG or JPG copy when you download a .webp/.jfif image"
+  },
+  "autoConvertNote": {
+    "message": "This needs access to all sites, to read the images you download. Switch it on again and choose \"Allow\" when the browser asks."
+  },
+  "queueTitle": {
+    "message": "Files"
+  },
+  "clearAll": {
+    "message": "Clear all"
+  },
+  "convertNow": {
+    "message": "Convert now"
+  },
+  "downloadZipAll": {
+    "message": "📦 Download all as ZIP"
+  },
+  "failureAllowAll": {
+    "message": "Allow on all sites"
+  },
+  "failureDismiss": {
+    "message": "Got it"
+  },
+  "failureAccess": {
+    "message": "Couldn't read the image from $SITE$: the extension isn't allowed to access that site. Choose \"Allow\" when the browser asks, or allow all sites.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "failureFailed": {
+    "message": "Couldn't convert the image from $SITE$. It may have been removed, or it isn't an image format that can be read.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "failureUnknownSite": {
+    "message": "the web page"
+  },
+  "statusReady": {
+    "message": "Ready"
+  },
+  "statusSkipped": {
+    "message": "Skipped"
+  },
+  "statusSkippedNotPdf": {
+    "message": "Skipped (not a PDF)"
+  },
+  "statusConverting": {
+    "message": "Converting..."
+  },
+  "statusDone": {
+    "message": "Done"
+  },
+  "statusError": {
+    "message": "Error"
+  },
+  "statusMerging": {
+    "message": "Merging..."
+  },
+  "statusMerged": {
+    "message": "Merged"
+  },
+  "errorWithReason": {
+    "message": "Error: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "needTwoPdfs": {
+    "message": "At least 2 PDF files are needed"
+  },
+  "menuAiStudio": {
+    "message": "🔎 OCR & Background Removal"
+  },
+  "converterIntro": {
+    "message": "Drag and drop files or whole folders to convert them in bulk, 100% client-side"
+  },
+  "dashDropTitle": {
+    "message": "Drag & drop files or folders here"
+  },
+  "dashDropHint": {
+    "message": "Or click to choose from your computer"
+  },
+  "exportConfigTitle": {
+    "message": "Output settings"
+  },
+  "dashTargetFormatLabel": {
+    "message": "Target format:"
+  },
+  "formatPdfMerge": {
+    "message": "Merge the PDF files into one (.pdf)"
+  },
+  "formatPdfSplit": {
+    "message": "Split a PDF by page (.pdf)"
+  },
+  "splitRangesLabel": {
+    "message": "Pages to take out (empty = one file per page):"
+  },
+  "splitRangesPlaceholder": {
+    "message": "e.g. 1-3, 5, 8-"
+  },
+  "dashQualityLabel": {
+    "message": "Compression quality:"
+  },
+  "dashConvert": {
+    "message": "Convert & pack as ZIP"
+  },
+  "batchConverting": {
+    "message": "⏳ Converting the batch..."
+  },
+  "queueEmpty": {
+    "message": "No files in the queue yet."
+  },
+  "dashQueueTitle": {
+    "message": "Files waiting to be converted ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "aiStudioTitle": {
+    "message": "🔎 OCR & Background Removal (100% on your device)"
+  },
+  "aiStudioIntro": {
+    "message": "Extract text from images (OCR) and remove image backgrounds, completely offline in the browser"
+  },
+  "ocrCardTitle": {
+    "message": "📄 AI OCR - Extract text from images / scans"
+  },
+  "ocrCardHint": {
+    "message": "Choose a photo of text or a scanned document to extract Vietnamese / English text"
+  },
+  "ocrLangLabel": {
+    "message": "Recognition language:"
+  },
+  "ocrLangBoth": {
+    "message": "Vietnamese & English"
+  },
+  "ocrLangVie": {
+    "message": "Vietnamese"
+  },
+  "ocrLangEng": {
+    "message": "English"
+  },
+  "runOcr": {
+    "message": "🔍 Start reading text (OCR)"
+  },
+  "ocrResultLabel": {
+    "message": "Extracted text:"
+  },
+  "ocrResultPlaceholder": {
+    "message": "The recognised text will appear here..."
+  },
+  "copyOcr": {
+    "message": "📋 Copy the OCR text"
+  },
+  "copied": {
+    "message": "✅ Copied!"
+  },
+  "ocrPickFile": {
+    "message": "Please choose a photo or a scan to read with OCR!"
+  },
+  "ocrRunning": {
+    "message": "⏳ Reading the text..."
+  },
+  "ocrStarting": {
+    "message": "Starting the OCR model..."
+  },
+  "ocrProgress": {
+    "message": "Reading progress: $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrNoText": {
+    "message": "No text was found in the image."
+  },
+  "ocrDone": {
+    "message": "✅ Text read successfully, 100%!"
+  },
+  "ocrError": {
+    "message": "❌ OCR error: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrBundleMissing": {
+    "message": "The offline Tesseract package was not found in the extension. Run \"npm run build\" to package it again."
+  },
+  "ocrLangNotBundled": {
+    "message": "OCR language not packaged: $LANGS$. Supported: $SUPPORTED$.",
+    "placeholders": {
+      "langs": {
+        "content": "$1"
+      },
+      "supported": {
+        "content": "$2"
+      }
+    }
+  },
+  "bgCardTitle": {
+    "message": "✂️ Plain-background removal - to a transparent PNG"
+  },
+  "bgCardHint": {
+    "message": "Reads the background colour from the image's edges, spreads over the area of that colour and smooths the outline. Works best for product photos / cards on a single-colour background; a complex background will not come out clean."
+  },
+  "bgToleranceLabel": {
+    "message": "Background colour sensitivity:"
+  },
+  "runBgRemove": {
+    "message": "✂️ Remove the plain background"
+  },
+  "bgPreviewTitle": {
+    "message": "Click to zoom in"
+  },
+  "bgZoomHint": {
+    "message": "🔍 Click the image to zoom in on the details"
+  },
+  "bgPlaceholder": {
+    "message": "The transparent PNG will be previewed here"
+  },
+  "downloadBgRemove": {
+    "message": "💾 Download the transparent PNG"
+  },
+  "bgPickFile": {
+    "message": "Please choose an image to remove its background!"
+  },
+  "bgRunning": {
+    "message": "⚡ Removing the background..."
+  },
+  "bgAnalysing": {
+    "message": "Reading the background colour and tracing the outline..."
+  },
+  "bgLowResult": {
+    "message": "⚠️ Only $PERCENT$% of the image was cleared — the background may not be one colour. Raise the sensitivity and try again.",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "bgResult": {
+    "message": "✅ Cleared $PERCENT$% as background (background colour found: $COLOR$). Click the image to zoom in",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      },
+      "color": {
+        "content": "$2"
+      }
+    }
+  },
+  "bgError": {
+    "message": "❌ Background removal error: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "lightboxTitle": {
+    "message": "Zoomed-in view"
+  },
+  "lightboxPreviewTitle": {
+    "message": "Preview of the image without its background"
+  },
+  "zoomIn": {
+    "message": "Zoom in"
+  },
+  "zoomOut": {
+    "message": "Zoom out"
+  },
+  "zoomReset": {
+    "message": "Reset (100%)"
+  },
+  "closeLightbox": {
+    "message": "Close (Esc)"
+  },
+  "devtoolsIntro": {
+    "message": "Generate TypeScript, Go structs, Base64 & Data URIs from your data"
+  },
+  "jsonInputTitle": {
+    "message": "Paste JSON or load a data file"
+  },
+  "codeOutputTitle": {
+    "message": "Generated code"
+  },
+  "codeOutputPlaceholder": {
+    "message": "The generated source code..."
+  },
+  "copyCode": {
+    "message": "📋 Copy the code"
+  },
+  "jsonInvalid": {
+    "message": "// The JSON is not valid: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "securityIntro": {
+    "message": "Stamp a copyright text on the images you convert. Location data (Exif GPS) never survives a conversion."
+  },
+  "watermarkEnable": {
+    "message": "Stamp this text on the images converted in the Batch File Converter"
+  },
+  "watermarkLabel": {
+    "message": "Copyright text (watermark):"
+  },
+  "watermarkDefault": {
+    "message": "COPYRIGHT - ALL RIGHTS RESERVED"
+  },
+  "exifNote": {
+    "message": "Exif metadata (GPS location, camera details) is always removed from converted images."
+  },
+  "settingsTitle": {
+    "message": "Extension settings"
+  },
+  "settingsIntro": {
+    "message": "The automatic conversions and the interface"
+  },
+  "autoConvertSettingTitle": {
+    "message": "Also save a PNG or JPG copy on download (Chrome Downloads)"
+  },
+  "autoConvertSettingDesc": {
+    "message": "When you download a .webp or .jfif image on the web, the extension saves a copy in the format chosen below, beside the original. This needs access to all sites, to read the image; the browser asks when you switch it on."
+  },
+  "autoFormatSettingTitle": {
+    "message": "Format of the saved copy"
+  },
+  "autoFormatSettingDesc": {
+    "message": "PNG keeps transparency; JPG gives a smaller file."
+  },
+  "autoConvertSettingNote": {
+    "message": "Not switched on: choose \"Allow\" when the browser asks for access to all sites."
+  },
+  "languageSettingTitle": {
+    "message": "Language"
+  },
+  "languageSettingDesc": {
+    "message": "The language of the extension's windows and of its right-click menu."
+  },
+  "languageAuto": {
+    "message": "Same as the browser"
+  },
+  "languageLabel": {
+    "message": "Language:"
+  }
+}

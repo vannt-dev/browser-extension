@@ -40,7 +40,7 @@ describe('AiEngine.assertLangsBundled', () => {
   it('rejects a language whose traineddata is not bundled', async () => {
     const AiEngine = await freshEngine();
     // Without this guard tesseract.js would silently download it from the CDN.
-    expect(() => AiEngine.assertLangsBundled('jpn')).toThrow(/chưa được đóng gói/);
+    expect(() => AiEngine.assertLangsBundled('jpn')).toThrow(/not packaged/);
     expect(() => AiEngine.assertLangsBundled('eng+jpn')).toThrow(/jpn/);
   });
 
@@ -56,7 +56,7 @@ describe('AiEngine.extractTextFromImage', () => {
     const fetchSpy = vi.fn();
     globalThis.fetch = fetchSpy;
 
-    await expect(AiEngine.extractTextFromImage(new Blob(['x']), 'jpn')).rejects.toThrow(/chưa được đóng gói/);
+    await expect(AiEngine.extractTextFromImage(new Blob(['x']), 'jpn')).rejects.toThrow(/not packaged/);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -98,7 +98,7 @@ describe('AiEngine.extractTextFromImage', () => {
     globalThis.fetch = vi.fn(async () => ({ ok: false }));
 
     await expect(AiEngine.extractTextFromImage(new Blob(['x']), 'eng')).rejects.toThrow(
-      /Không tìm thấy gói Tesseract offline/
+      /offline Tesseract package was not found/
     );
   });
 });

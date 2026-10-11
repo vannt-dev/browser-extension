@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en" class="i18n-pending">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,10 +16,10 @@
       </div>
       <nav class="sidebar-menu">
         <button class="menu-item active" data-tab="converter">📂 Batch File Converter</button>
-        <button class="menu-item" data-tab="ai-studio">🔎 OCR & Xóa nền</button>
+        <button class="menu-item" data-tab="ai-studio" data-i18n="menuAiStudio">🔎 OCR &amp; Background Removal</button>
         <button class="menu-item" data-tab="devtools">💻 Developer Tools</button>
-        <button class="menu-item" data-tab="security">🛡️ Watermark & Security</button>
-        <button class="menu-item" data-tab="settings">⚙️ Settings & Auto-Convert</button>
+        <button class="menu-item" data-tab="security">🛡️ Watermark &amp; Security</button>
+        <button class="menu-item" data-tab="settings">⚙️ Settings &amp; Auto-Convert</button>
       </nav>
       <div class="sidebar-footer">
         <p>Manifest V3 • 100% Offline</p>
@@ -32,40 +32,40 @@
       <section id="tab-converter" class="tab-page active">
         <header class="page-header">
           <h1>Batch File Converter Studio</h1>
-          <p>Kéo thả hàng loạt file hoặc thư mục để chuyển đổi định dạng 100% client-side</p>
+          <p data-i18n="converterIntro">Drag and drop files or whole folders to convert them in bulk, 100% client-side</p>
         </header>
         <div class="workspace-grid">
           <div class="drop-card" id="dash-drop-zone">
             <div class="drop-icon">📁</div>
-            <h3>Kéo & thả file hoặc thư mục vào đây</h3>
-            <p>Hoặc bấm để chọn từ máy tính</p>
+            <h3 data-i18n="dashDropTitle">Drag &amp; drop files or folders here</h3>
+            <p data-i18n="dashDropHint">Or click to choose from your computer</p>
             <input type="file" id="dash-file-input" multiple hidden>
           </div>
           <div class="config-card">
-            <h3>Cấu hình xuất dữ liệu</h3>
+            <h3 data-i18n="exportConfigTitle">Output settings</h3>
             <div class="form-group">
-              <label>Loại định dạng đích:</label>
+              <label data-i18n="dashTargetFormatLabel">Target format:</label>
               <select id="dash-target-format" class="dash-select">
                 <option value="png">PNG Image (.png)</option>
                 <option value="jpg">JPEG Image (.jpg)</option>
                 <option value="webp">WebP Image (.webp)</option>
                 <option value="pdf">PDF Document (.pdf)</option>
-                <option value="pdf-merge">Gộp các file PDF thành một (.pdf)</option>
-                <option value="pdf-split">Tách PDF theo trang (.pdf)</option>
+                <option value="pdf-merge" data-i18n="formatPdfMerge">Merge the PDF files into one (.pdf)</option>
+                <option value="pdf-split" data-i18n="formatPdfSplit">Split a PDF by page (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
                 <option value="csv">CSV Table (.csv)</option>
               </select>
             </div>
             <div class="form-group" id="dash-split-group" style="display: none;">
-              <label for="dash-split-ranges">Trang cần tách (để trống = mỗi trang một file):</label>
-              <input type="text" id="dash-split-ranges" class="dash-input" placeholder="Ví dụ: 1-3, 5, 8-">
+              <label for="dash-split-ranges" data-i18n="splitRangesLabel">Pages to take out (empty = one file per page):</label>
+              <input type="text" id="dash-split-ranges" class="dash-input" placeholder="e.g. 1-3, 5, 8-" data-i18n-placeholder="splitRangesPlaceholder">
             </div>
             <div class="form-group">
-              <label>Chất lượng nén: <span id="dash-quality-val">90%</span></label>
+              <label><span data-i18n="dashQualityLabel">Compression quality:</span> <span id="dash-quality-val">90%</span></label>
               <input type="range" id="dash-quality-range" min="10" max="100" value="90">
             </div>
-            <button id="dash-convert-btn" class="dash-btn primary" disabled>Chuyển đổi & Đóng gói ZIP</button>
+            <button id="dash-convert-btn" class="dash-btn primary" disabled data-i18n="dashConvert">Convert &amp; pack as ZIP</button>
           </div>
         </div>
         <div id="dash-queue-list" class="dash-queue" style="margin-top: 24px;"></div>
@@ -74,62 +74,62 @@
       <!-- Tab 2: AI Studio -->
       <section id="tab-ai-studio" class="tab-page">
         <header class="page-header">
-          <h1>🔎 OCR & Xóa nền (100% trên máy)</h1>
-          <p>Trích xuất văn bản từ hình ảnh (OCR) và Xóa nền phông ảnh hoàn toàn Offline trên trình duyệt</p>
+          <h1 data-i18n="aiStudioTitle">🔎 OCR &amp; Background Removal (100% on your device)</h1>
+          <p data-i18n="aiStudioIntro">Extract text from images (OCR) and remove image backgrounds, completely offline in the browser</p>
         </header>
-        
+
         <div class="workspace-grid">
           <!-- OCR Tool Card -->
           <div class="config-card">
-            <h3>📄 AI OCR - Trích xuất văn bản từ Ảnh / Scan</h3>
-            <p style="font-size: 13px; color: var(--text-secondary);">Tải ảnh chụp văn bản hoặc tài liệu để trích xuất chữ tiếng Việt / Tiếng Anh</p>
-            
+            <h3 data-i18n="ocrCardTitle">📄 AI OCR - Extract text from images / scans</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);" data-i18n="ocrCardHint">Choose a photo of text or a scanned document to extract Vietnamese / English text</p>
+
             <div class="form-group" style="margin-top: 12px;">
               <input type="file" id="ocr-file-input" accept="image/*" class="dash-input">
             </div>
 
             <div class="form-group">
-              <label>Ngôn ngữ nhận diện:</label>
+              <label data-i18n="ocrLangLabel">Recognition language:</label>
               <select id="ocr-lang-select" class="dash-select">
-                <option value="vie+eng">Tiếng Việt & Tiếng Anh</option>
-                <option value="vie">Tiếng Việt</option>
-                <option value="eng">Tiếng Anh</option>
+                <option value="vie+eng" data-i18n="ocrLangBoth">Vietnamese &amp; English</option>
+                <option value="vie" data-i18n="ocrLangVie">Vietnamese</option>
+                <option value="eng" data-i18n="ocrLangEng">English</option>
               </select>
             </div>
 
-            <button id="run-ocr-btn" class="dash-btn primary">🔍 Bắt đầu đọc chữ (OCR)</button>
+            <button id="run-ocr-btn" class="dash-btn primary" data-i18n="runOcr">🔍 Start reading text (OCR)</button>
             <div id="ocr-progress" style="font-size: 12px; color: var(--accent-color); font-weight: 600;"></div>
 
             <div class="form-group" style="margin-top: 12px;">
-              <label>Kết quả trích xuất:</label>
-              <textarea id="ocr-result-text" placeholder="Văn bản nhận diện sẽ hiển thị ở đây..." style="height: 140px;"></textarea>
+              <label data-i18n="ocrResultLabel">Extracted text:</label>
+              <textarea id="ocr-result-text" placeholder="The recognised text will appear here..." data-i18n-placeholder="ocrResultPlaceholder" style="height: 140px;"></textarea>
             </div>
-            <button id="copy-ocr-btn" class="dash-btn secondary">📋 Sao chép văn bản OCR</button>
+            <button id="copy-ocr-btn" class="dash-btn secondary" data-i18n="copyOcr">📋 Copy the OCR text</button>
           </div>
 
           <!-- Solid-Colour Background Removal Card -->
           <div class="config-card">
-            <h3>✂️ Xóa nền đơn sắc - Tách nền ảnh sang PNG trong suốt</h3>
-            <p style="font-size: 13px; color: var(--text-secondary);">Dò màu nền từ viền ảnh rồi loang vùng đồng màu và làm mượt biên. Hiệu quả nhất với ảnh sản phẩm / thẻ chụp trên nền một màu; ảnh nền phức tạp sẽ không tách sạch.</p>
+            <h3 data-i18n="bgCardTitle">✂️ Plain-background removal - to a transparent PNG</h3>
+            <p style="font-size: 13px; color: var(--text-secondary);" data-i18n="bgCardHint">Reads the background colour from the image's edges, spreads over the area of that colour and smooths the outline. Works best for product photos / cards on a single-colour background; a complex background will not come out clean.</p>
 
             <div class="form-group" style="margin-top: 12px;">
               <input type="file" id="bg-remove-file-input" accept="image/*" class="dash-input">
             </div>
 
             <div class="form-group">
-              <label>Độ nhạy màu nền: <span id="bg-remove-tolerance-val">32</span></label>
+              <label><span data-i18n="bgToleranceLabel">Background colour sensitivity:</span> <span id="bg-remove-tolerance-val">32</span></label>
               <input type="range" id="bg-remove-tolerance" min="8" max="120" value="32" step="4" class="dash-range">
             </div>
 
-            <button id="run-bg-remove-btn" class="dash-btn primary">✂️ Xóa nền đơn sắc</button>
+            <button id="run-bg-remove-btn" class="dash-btn primary" data-i18n="runBgRemove">✂️ Remove the plain background</button>
             <div id="bg-remove-status" style="font-size: 12px; color: var(--accent-color); font-weight: 600;"></div>
 
             <div class="preview-box" style="margin-top: 12px; text-align: center; border: 1px dashed var(--border-color); padding: 12px; border-radius: 8px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-              <img id="bg-remove-preview" class="zoomable-preview" style="max-width: 100%; max-height: 160px; display: none; border-radius: 6px; cursor: zoom-in;" alt="Preview Result" title="Click để phóng to xem rõ nét">
-              <span id="bg-remove-hint" style="display: none; font-size: 11px; color: var(--accent-color); margin-top: 6px;">🔍 Click vào ảnh để phóng to xem chi tiết</span>
-              <span id="bg-remove-placeholder" style="color: var(--text-secondary); font-size: 13px;">Xem trước kết quả tách nền PNG tại đây</span>
+              <img id="bg-remove-preview" class="zoomable-preview" style="max-width: 100%; max-height: 160px; display: none; border-radius: 6px; cursor: zoom-in;" alt="Preview Result" title="Click to zoom in" data-i18n-title="bgPreviewTitle">
+              <span id="bg-remove-hint" style="display: none; font-size: 11px; color: var(--accent-color); margin-top: 6px;" data-i18n="bgZoomHint">🔍 Click the image to zoom in on the details</span>
+              <span id="bg-remove-placeholder" style="color: var(--text-secondary); font-size: 13px;" data-i18n="bgPlaceholder">The transparent PNG will be previewed here</span>
             </div>
-            <button id="download-bg-remove-btn" class="dash-btn secondary" style="display: none; margin-top: 12px;">💾 Tải ảnh tách nền PNG</button>
+            <button id="download-bg-remove-btn" class="dash-btn secondary" style="display: none; margin-top: 12px;" data-i18n="downloadBgRemove">💾 Download the transparent PNG</button>
           </div>
         </div>
       </section>
@@ -138,16 +138,16 @@
       <section id="tab-devtools" class="tab-page">
         <header class="page-header">
           <h1>Developer Code Tools</h1>
-          <p>Tự động sinh mã nguồn TypeScript, Go Struct, Base64 & Data URI từ file</p>
+          <p data-i18n="devtoolsIntro">Generate TypeScript, Go structs, Base64 &amp; Data URIs from your data</p>
         </header>
         <div class="devtools-grid">
           <div class="editor-box">
-            <h3>Dán JSON hoặc Tải file dữ liệu</h3>
+            <h3 data-i18n="jsonInputTitle">Paste JSON or load a data file</h3>
             <textarea id="json-input" placeholder='{"id": 1, "name": "Converter", "active": true}'></textarea>
           </div>
           <div class="editor-box">
             <div class="editor-header">
-              <h3>Kết quả sinh Code</h3>
+              <h3 data-i18n="codeOutputTitle">Generated code</h3>
               <select id="dev-lang-select" class="dash-select">
                 <option value="ts">TypeScript Interface</option>
                 <option value="go">Go Struct</option>
@@ -156,8 +156,8 @@
                 <option value="yaml">YAML Format</option>
               </select>
             </div>
-            <textarea id="code-output" readonly placeholder="Mã nguồn sinh tự động..."></textarea>
-            <button id="copy-code-btn" class="dash-btn secondary">📋 Sao chép Code</button>
+            <textarea id="code-output" readonly placeholder="The generated source code..." data-i18n-placeholder="codeOutputPlaceholder"></textarea>
+            <button id="copy-code-btn" class="dash-btn secondary" data-i18n="copyCode">📋 Copy the code</button>
           </div>
         </div>
       </section>
@@ -165,34 +165,59 @@
       <!-- Tab 4: Security & Watermark -->
       <section id="tab-security" class="tab-page">
         <header class="page-header">
-          <h1>Watermark & Privacy Studio</h1>
-          <p>Xóa thông tin Exif GPS nhạy cảm và đóng dấu bản quyền logo/chữ lên tài liệu & hình ảnh</p>
+          <h1>Watermark &amp; Privacy Studio</h1>
+          <p data-i18n="securityIntro">Stamp a copyright text on the images you convert. Location data (Exif GPS) never survives a conversion.</p>
         </header>
         <div class="security-card">
           <div class="form-group">
-            <label>Chữ bản quyền (Watermark Text):</label>
-            <input type="text" id="watermark-input" value="BẢN QUYỀN THUỘC VỀ TOI" class="dash-input">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <input type="checkbox" id="watermark-enabled">
+              <span data-i18n="watermarkEnable">Stamp this text on the images converted in the Batch File Converter</span>
+            </label>
           </div>
           <div class="form-group">
-            <label>Tự động xóa Exif GPS metadata khỏi file ảnh</label>
-            <input type="checkbox" id="remove-exif-check" checked>
+            <label for="watermark-input" data-i18n="watermarkLabel">Copyright text (watermark):</label>
+            <input type="text" id="watermark-input" value="COPYRIGHT - ALL RIGHTS RESERVED" data-i18n-value="watermarkDefault" class="dash-input">
           </div>
+          <p style="font-size: 13px; color: var(--text-secondary);" data-i18n="exifNote">Exif metadata (GPS location, camera details) is always removed from converted images.</p>
         </div>
       </section>
 
       <!-- Tab 5: Settings -->
       <section id="tab-settings" class="tab-page">
         <header class="page-header">
-          <h1>Cài đặt Extension</h1>
-          <p>Quản lý các bộ lọc tự động và giao diện</p>
+          <h1 data-i18n="settingsTitle">Extension settings</h1>
+          <p data-i18n="settingsIntro">The automatic conversions and the interface</p>
         </header>
         <div class="settings-card">
           <div class="setting-item">
             <div>
-              <h3>Tự động nắn đuôi file khi Tải xuống (Chrome Downloads)</h3>
-              <p>Tự động phát hiện file .webp hoặc .jfif khi bấm tải trên web và chuyển sang .png hoặc .jpg</p>
+              <h3 data-i18n="autoConvertSettingTitle">Also save a PNG or JPG copy on download (Chrome Downloads)</h3>
+              <p data-i18n="autoConvertSettingDesc">When you download a .webp or .jfif image on the web, the extension saves a copy in the format chosen below, beside the original. This needs access to all sites, to read the image; the browser asks when you switch it on.</p>
+              <p id="dash-auto-convert-note" style="display: none; color: #f59e0b; margin-top: 6px;" data-i18n="autoConvertSettingNote">Not switched on: choose "Allow" when the browser asks for access to all sites.</p>
             </div>
             <input type="checkbox" id="dash-auto-convert-toggle">
+          </div>
+          <div class="setting-item">
+            <div>
+              <h3 data-i18n="autoFormatSettingTitle">Format of the saved copy</h3>
+              <p data-i18n="autoFormatSettingDesc">PNG keeps transparency; JPG gives a smaller file.</p>
+            </div>
+            <select id="dash-auto-format" class="dash-select">
+              <option value="png">PNG (.png)</option>
+              <option value="jpg">JPG (.jpg)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <div>
+              <h3 data-i18n="languageSettingTitle">Language</h3>
+              <p data-i18n="languageSettingDesc">The language of the extension's windows and of its right-click menu.</p>
+            </div>
+            <select id="dash-language-select" class="dash-select">
+              <option value="auto" data-i18n="languageAuto">Same as the browser</option>
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+            </select>
           </div>
         </div>
       </section>
@@ -204,12 +229,12 @@
     <div class="lightbox-overlay"></div>
     <div class="lightbox-content">
       <div class="lightbox-header">
-        <span id="lightbox-title">🔍 Xem ảnh phóng to chi tiết</span>
+        <span id="lightbox-title"></span>
         <div class="lightbox-controls">
-          <button id="zoom-in-btn" class="lightbox-btn" title="Phóng to">+</button>
-          <button id="zoom-out-btn" class="lightbox-btn" title="Thu nhỏ">-</button>
-          <button id="zoom-reset-btn" class="lightbox-btn" title="Đặt lại (100%)">100%</button>
-          <button id="close-lightbox-btn" class="lightbox-btn close" title="Đóng (Esc)">✕</button>
+          <button id="zoom-in-btn" class="lightbox-btn" title="Zoom in" data-i18n-title="zoomIn">+</button>
+          <button id="zoom-out-btn" class="lightbox-btn" title="Zoom out" data-i18n-title="zoomOut">-</button>
+          <button id="zoom-reset-btn" class="lightbox-btn" title="Reset (100%)" data-i18n-title="zoomReset">100%</button>
+          <button id="close-lightbox-btn" class="lightbox-btn close" title="Close (Esc)" data-i18n-title="closeLightbox">✕</button>
         </div>
       </div>
       <div class="lightbox-body">

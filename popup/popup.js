@@ -3,6 +3,8 @@ import { DataEngine } from '../engine/data-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
+import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
+import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
@@ -71,9 +73,18 @@ const clearQueueBtn = document.getElementById('clear-queue-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const openDashboardBtn = document.getElementById('open-dashboard-btn');
 const autoConvertToggle = document.getElementById('auto-convert-download-toggle');
+const autoConvertNote = document.getElementById('auto-convert-note');
+const failureNotice = document.getElementById('failure-notice');
+const failureText = document.getElementById('failure-text');
+const failureAllowBtn = document.getElementById('failure-allow-btn');
+const failureDismissBtn = document.getElementById('failure-dismiss-btn');
+const languageSelect = document.getElementById('language-select');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+  // The stored choice of language is read first: everything below writes text into the page.
+  await loadLanguage().catch(() => {});
+  applyI18n();
   setupCategoryNav();
   setupDropZone();
   setupClipboardListener();
@@ -215,7 +226,7 @@ function renderQueue() {
     item.className = 'queue-item';
     item.innerHTML = `
       <span class="item-name">${file.name}</span>
-      <span class="item-status status-ready" id="status-${index}">Sẵn sàng</span>
+      <span class="item-status status-ready" id="status-${index}">${t('statusReady')}</span>
     `;
     queueList.appendChild(item);
   });
@@ -246,18 +257,18 @@ convertBtn.addEventListener('click', async () => {
       if (color) statusEl.style.color = color;
     };
     fileQueue.forEach((file, index) => {
-      if (!isPdfFile(file)) mark(index, 'Bỏ qua', 'item-status status-ready');
+      if (!isPdfFile(file)) mark(index, t('statusSkipped'), 'item-status status-ready');
     });
     try {
-      if (pdfIndexes.length < 2) throw new Error('Cần ít nhất 2 file PDF');
+      if (pdfIndexes.length < 2) throw new Error(t('needTwoPdfs'));
       const { mergePdfs } = await loadPdfTools();
       const merged = await mergePdfs(pdfIndexes.map((index) => fileQueue[index]));
       convertedResults = [merged];
-      pdfIndexes.forEach((index) => mark(index, 'Đã gộp', 'item-status status-done'));
+      pdfIndexes.forEach((index) => mark(index, t('statusMerged'), 'item-status status-done'));
       ZipEngine.downloadBlob(merged.blob, merged.filename);
     } catch (err) {
       console.error('PDF merge error:', err);
-      pdfIndexes.forEach((index) => mark(index, `Lỗi: ${err.message}`, null, '#ef4444'));
+      pdfIndexes.forEach((index) => mark(index, t('errorWithReason', err.message), null, '#ef4444'));
     }
     convertSpinner.classList.add('hidden');
     convertBtn.disabled = false;
@@ -268,7 +279,7 @@ convertBtn.addEventListener('click', async () => {
     const file = fileQueue[i];
     const statusEl = document.getElementById(`status-${i}`);
     if (statusEl) {
-      statusEl.textContent = 'Đang chuyển...';
+      statusEl.textContent = t('statusConverting');
       statusEl.className = 'item-status status-ready';
     }
 
@@ -277,13 +288,13 @@ convertBtn.addEventListener('click', async () => {
       convertedResults.push(res);
 
       if (statusEl) {
-        statusEl.textContent = 'Hoàn thành';
+        statusEl.textContent = t('statusDone');
         statusEl.className = 'item-status status-done';
       }
     } catch (err) {
       console.error('File conversion error:', err);
       if (statusEl) {
-        statusEl.textContent = 'Lỗi';
+        statusEl.textContent = t('statusError');
         statusEl.title = err?.message || '';
         statusEl.style.color = '#ef4444';
       }
@@ -416,13 +427,34 @@ function setupSettingsPersistence() {
   });
 
   if (chrome.storage?.local) {
-    chrome.storage.local.get(['theme', 'autoConvertWebp'], (res) => {
+    chrome.storage.local.get(['theme'], (res) => {
       if (res.theme === 'light') document.body.classList.add('light-theme');
-      if (res.autoConvertWebp) autoConvertToggle.checked = true;
     });
 
-    autoConvertToggle.addEventListener('change', (e) => {
-      chrome.storage.local.set({ autoConvertWebp: e.target.checked });
+    readAutoConvert().then((on) => {
+      autoConvertToggle.checked = on;
+    });
+
+    autoConvertToggle.addEventListener('change', async (e) => {
+      autoConvertNote.style.display = 'none';
+      if (!e.target.checked) {
+        await turnOffAutoConvert();
+        return;
+      }
+      // The browser's prompt closes this popup; when it does, the service worker finishes the job.
+      if (!(await turnOnAutoConvert())) {
+        e.target.checked = false;
+        autoConvertNote.style.display = 'block';
+      }
+    });
+
+    showLastFailure();
+
+    // The language can be chosen here as well as in the dashboard. What this page wrote itself
+    // (the queue, the notice) is written again in the new language.
+    bindLanguageSelect(languageSelect, () => {
+      renderQueue();
+      writeFailureText();
     });
   }
 
@@ -432,5 +464,38 @@ function setupSettingsPersistence() {
     } else {
       window.open(chrome.runtime.getURL('dashboard/dashboard.html'));
     }
+  });
+}
+
+// A right-click or an auto-convert that failed happened in the background, with nowhere to say
+// so: the service worker marked the toolbar icon and left the reason, which is shown here.
+let shownFailure = null;
+
+function writeFailureText() {
+  if (!shownFailure) return;
+  const site = shownFailure.host || t('failureUnknownSite');
+  const needsAccess = shownFailure.kind === 'access';
+  failureText.textContent = t(needsAccess ? 'failureAccess' : 'failureFailed', site);
+}
+
+async function showLastFailure() {
+  const { lastFailure } = await chrome.storage.local.get('lastFailure');
+  if (!lastFailure) return;
+
+  shownFailure = lastFailure;
+  writeFailureText();
+  failureAllowBtn.style.display = lastFailure.kind === 'access' ? 'inline-block' : 'none';
+  failureNotice.style.display = 'block';
+
+  const dismiss = async () => {
+    shownFailure = null;
+    failureNotice.style.display = 'none';
+    await chrome.storage.local.remove('lastFailure');
+    await chrome.action.setBadgeText({ text: '' });
+  };
+  failureDismissBtn.addEventListener('click', dismiss);
+  failureAllowBtn.addEventListener('click', async () => {
+    await dismiss();
+    await askForAllSites();
   });
 }

@@ -1,0 +1,414 @@
+{
+  "extDescription": {
+    "message": "Chuyển đổi file 100% offline: Ảnh, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, xóa nền đơn sắc & tự động đổi file khi tải về."
+  },
+  "menuConvertWebp": {
+    "message": "⚡ Chuyển sang WebP"
+  },
+  "menuConvertPng": {
+    "message": "⚡ Chuyển sang PNG"
+  },
+  "menuConvertJpg": {
+    "message": "⚡ Chuyển sang JPG"
+  },
+  "menuOpenDashboard": {
+    "message": "🚀 Mở Full File Converter Dashboard"
+  },
+  "themeToggleTitle": {
+    "message": "Chuyển chế độ Sáng/Tối"
+  },
+  "openDashboardTitle": {
+    "message": "Mở Full Dashboard"
+  },
+  "navImage": {
+    "message": "📷 Ảnh"
+  },
+  "navData": {
+    "message": "📊 Dữ liệu"
+  },
+  "navAi": {
+    "message": "🔎 OCR / Nén"
+  },
+  "dropTitleLead": {
+    "message": "Kéo & thả file vào đây hoặc"
+  },
+  "dropTitlePaste": {
+    "message": "Dán (Ctrl+V)"
+  },
+  "dropHint": {
+    "message": "Hỗ trợ PNG, JPG, WebP, SVG, DOCX, PDF, JSON, CSV, MD..."
+  },
+  "targetFormatLabel": {
+    "message": "Định dạng đích:"
+  },
+  "qualityLabel": {
+    "message": "Chất lượng:"
+  },
+  "targetSizeLabel": {
+    "message": "Dung lượng đích (KB):"
+  },
+  "targetSizePlaceholder": {
+    "message": "Ví dụ: 500"
+  },
+  "autoConvertToggle": {
+    "message": "Tự lưu thêm bản PNG hoặc JPG khi tải ảnh .webp/.jfif trên Web"
+  },
+  "autoConvertNote": {
+    "message": "Cần quyền đọc mọi trang để lấy được ảnh bạn tải về. Bật lại và chọn \"Cho phép\" khi trình duyệt hỏi."
+  },
+  "queueTitle": {
+    "message": "Danh sách file"
+  },
+  "clearAll": {
+    "message": "Xóa tất cả"
+  },
+  "convertNow": {
+    "message": "Chuyển đổi ngay"
+  },
+  "downloadZipAll": {
+    "message": "📦 Tải ZIP Tất cả"
+  },
+  "failureAllowAll": {
+    "message": "Cho phép mọi trang"
+  },
+  "failureDismiss": {
+    "message": "Đã hiểu"
+  },
+  "failureAccess": {
+    "message": "Không đọc được ảnh từ $SITE$ vì extension chưa được phép truy cập trang đó. Hãy chọn \"Cho phép\" khi trình duyệt hỏi, hoặc cho phép mọi trang.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "failureFailed": {
+    "message": "Không chuyển được ảnh từ $SITE$. Ảnh có thể đã bị gỡ hoặc không phải định dạng đọc được.",
+    "placeholders": {
+      "site": {
+        "content": "$1"
+      }
+    }
+  },
+  "failureUnknownSite": {
+    "message": "trang web"
+  },
+  "statusReady": {
+    "message": "Sẵn sàng"
+  },
+  "statusSkipped": {
+    "message": "Bỏ qua"
+  },
+  "statusSkippedNotPdf": {
+    "message": "Bỏ qua (không phải PDF)"
+  },
+  "statusConverting": {
+    "message": "Đang chuyển..."
+  },
+  "statusDone": {
+    "message": "Hoàn thành"
+  },
+  "statusError": {
+    "message": "Lỗi"
+  },
+  "statusMerging": {
+    "message": "Đang gộp..."
+  },
+  "statusMerged": {
+    "message": "Đã gộp"
+  },
+  "errorWithReason": {
+    "message": "Lỗi: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "needTwoPdfs": {
+    "message": "Cần ít nhất 2 file PDF"
+  },
+  "menuAiStudio": {
+    "message": "🔎 OCR & Xóa nền"
+  },
+  "converterIntro": {
+    "message": "Kéo thả hàng loạt file hoặc thư mục để chuyển đổi định dạng 100% client-side"
+  },
+  "dashDropTitle": {
+    "message": "Kéo & thả file hoặc thư mục vào đây"
+  },
+  "dashDropHint": {
+    "message": "Hoặc bấm để chọn từ máy tính"
+  },
+  "exportConfigTitle": {
+    "message": "Cấu hình xuất dữ liệu"
+  },
+  "dashTargetFormatLabel": {
+    "message": "Loại định dạng đích:"
+  },
+  "formatPdfMerge": {
+    "message": "Gộp các file PDF thành một (.pdf)"
+  },
+  "formatPdfSplit": {
+    "message": "Tách PDF theo trang (.pdf)"
+  },
+  "splitRangesLabel": {
+    "message": "Trang cần tách (để trống = mỗi trang một file):"
+  },
+  "splitRangesPlaceholder": {
+    "message": "Ví dụ: 1-3, 5, 8-"
+  },
+  "dashQualityLabel": {
+    "message": "Chất lượng nén:"
+  },
+  "dashConvert": {
+    "message": "Chuyển đổi & Đóng gói ZIP"
+  },
+  "batchConverting": {
+    "message": "⏳ Đang chuyển đổi hàng loạt..."
+  },
+  "queueEmpty": {
+    "message": "Chưa có file nào trong danh sách chờ."
+  },
+  "dashQueueTitle": {
+    "message": "Danh sách file chờ chuyển đổi ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "aiStudioTitle": {
+    "message": "🔎 OCR & Xóa nền (100% trên máy)"
+  },
+  "aiStudioIntro": {
+    "message": "Trích xuất văn bản từ hình ảnh (OCR) và Xóa nền phông ảnh hoàn toàn Offline trên trình duyệt"
+  },
+  "ocrCardTitle": {
+    "message": "📄 AI OCR - Trích xuất văn bản từ Ảnh / Scan"
+  },
+  "ocrCardHint": {
+    "message": "Tải ảnh chụp văn bản hoặc tài liệu để trích xuất chữ tiếng Việt / Tiếng Anh"
+  },
+  "ocrLangLabel": {
+    "message": "Ngôn ngữ nhận diện:"
+  },
+  "ocrLangBoth": {
+    "message": "Tiếng Việt & Tiếng Anh"
+  },
+  "ocrLangVie": {
+    "message": "Tiếng Việt"
+  },
+  "ocrLangEng": {
+    "message": "Tiếng Anh"
+  },
+  "runOcr": {
+    "message": "🔍 Bắt đầu đọc chữ (OCR)"
+  },
+  "ocrResultLabel": {
+    "message": "Kết quả trích xuất:"
+  },
+  "ocrResultPlaceholder": {
+    "message": "Văn bản nhận diện sẽ hiển thị ở đây..."
+  },
+  "copyOcr": {
+    "message": "📋 Sao chép văn bản OCR"
+  },
+  "copied": {
+    "message": "✅ Đã sao chép!"
+  },
+  "ocrPickFile": {
+    "message": "Vui lòng chọn 1 file ảnh chụp hoặc scan để đọc chữ OCR!"
+  },
+  "ocrRunning": {
+    "message": "⏳ Đang quét đọc chữ AI..."
+  },
+  "ocrStarting": {
+    "message": "Đang khởi tạo mô hình OCR..."
+  },
+  "ocrProgress": {
+    "message": "Tiến trình đọc chữ: $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrNoText": {
+    "message": "Không tìm thấy văn bản trong ảnh."
+  },
+  "ocrDone": {
+    "message": "✅ Đọc chữ thành công 100%!"
+  },
+  "ocrError": {
+    "message": "❌ Lỗi đọc chữ: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "ocrBundleMissing": {
+    "message": "Không tìm thấy gói Tesseract offline trong extension. Hãy chạy \"npm run build\" để đóng gói lại."
+  },
+  "ocrLangNotBundled": {
+    "message": "Ngôn ngữ OCR chưa được đóng gói: $LANGS$. Hiện hỗ trợ: $SUPPORTED$.",
+    "placeholders": {
+      "langs": {
+        "content": "$1"
+      },
+      "supported": {
+        "content": "$2"
+      }
+    }
+  },
+  "bgCardTitle": {
+    "message": "✂️ Xóa nền đơn sắc - Tách nền ảnh sang PNG trong suốt"
+  },
+  "bgCardHint": {
+    "message": "Dò màu nền từ viền ảnh rồi loang vùng đồng màu và làm mượt biên. Hiệu quả nhất với ảnh sản phẩm / thẻ chụp trên nền một màu; ảnh nền phức tạp sẽ không tách sạch."
+  },
+  "bgToleranceLabel": {
+    "message": "Độ nhạy màu nền:"
+  },
+  "runBgRemove": {
+    "message": "✂️ Xóa nền đơn sắc"
+  },
+  "bgPreviewTitle": {
+    "message": "Click để phóng to xem rõ nét"
+  },
+  "bgZoomHint": {
+    "message": "🔍 Click vào ảnh để phóng to xem chi tiết"
+  },
+  "bgPlaceholder": {
+    "message": "Xem trước kết quả tách nền PNG tại đây"
+  },
+  "downloadBgRemove": {
+    "message": "💾 Tải ảnh tách nền PNG"
+  },
+  "bgPickFile": {
+    "message": "Vui lòng chọn 1 file ảnh để tách nền phông!"
+  },
+  "bgRunning": {
+    "message": "⚡ Đang tách nền..."
+  },
+  "bgAnalysing": {
+    "message": "Đang phân tích màu nền và tách biên..."
+  },
+  "bgLowResult": {
+    "message": "⚠️ Chỉ tách được $PERCENT$% ảnh — nền có thể không đồng nhất. Hãy tăng độ nhạy rồi thử lại.",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "bgResult": {
+    "message": "✅ Đã tách $PERCENT$% nền (màu nền nhận diện: $COLOR$). Click ảnh để phóng to",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      },
+      "color": {
+        "content": "$2"
+      }
+    }
+  },
+  "bgError": {
+    "message": "❌ Lỗi tách nền: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "lightboxTitle": {
+    "message": "Xem ảnh phóng to chi tiết"
+  },
+  "lightboxPreviewTitle": {
+    "message": "Xem trước ảnh đã tách nền"
+  },
+  "zoomIn": {
+    "message": "Phóng to"
+  },
+  "zoomOut": {
+    "message": "Thu nhỏ"
+  },
+  "zoomReset": {
+    "message": "Đặt lại (100%)"
+  },
+  "closeLightbox": {
+    "message": "Đóng (Esc)"
+  },
+  "devtoolsIntro": {
+    "message": "Tự động sinh mã nguồn TypeScript, Go Struct, Base64 & Data URI từ file"
+  },
+  "jsonInputTitle": {
+    "message": "Dán JSON hoặc Tải file dữ liệu"
+  },
+  "codeOutputTitle": {
+    "message": "Kết quả sinh Code"
+  },
+  "codeOutputPlaceholder": {
+    "message": "Mã nguồn sinh tự động..."
+  },
+  "copyCode": {
+    "message": "📋 Sao chép Code"
+  },
+  "jsonInvalid": {
+    "message": "// Cú pháp JSON chưa đúng: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "securityIntro": {
+    "message": "Đóng dấu chữ bản quyền lên ảnh bạn chuyển đổi. Thông tin vị trí (Exif GPS) luôn bị loại khi chuyển đổi."
+  },
+  "watermarkEnable": {
+    "message": "Đóng dấu chữ này lên ảnh chuyển đổi trong Batch File Converter"
+  },
+  "watermarkLabel": {
+    "message": "Chữ bản quyền (Watermark Text):"
+  },
+  "watermarkDefault": {
+    "message": "BẢN QUYỀN THUỘC VỀ TOI"
+  },
+  "exifNote": {
+    "message": "Exif metadata (vị trí GPS, thông tin máy ảnh) luôn bị loại khỏi ảnh đã chuyển đổi."
+  },
+  "settingsTitle": {
+    "message": "Cài đặt Extension"
+  },
+  "settingsIntro": {
+    "message": "Quản lý các bộ lọc tự động và giao diện"
+  },
+  "autoConvertSettingTitle": {
+    "message": "Tự lưu thêm bản PNG hoặc JPG khi Tải xuống (Chrome Downloads)"
+  },
+  "autoConvertSettingDesc": {
+    "message": "Khi bạn tải một ảnh .webp hoặc .jfif trên web, extension lưu thêm một bản theo định dạng chọn bên dưới, bên cạnh file gốc. Tính năng này cần quyền đọc mọi trang để lấy được ảnh; trình duyệt sẽ hỏi khi bạn bật."
+  },
+  "autoFormatSettingTitle": {
+    "message": "Định dạng của bản lưu thêm"
+  },
+  "autoFormatSettingDesc": {
+    "message": "PNG giữ nền trong suốt; JPG cho file nhẹ hơn."
+  },
+  "autoConvertSettingNote": {
+    "message": "Chưa bật được: cần chọn \"Cho phép\" khi trình duyệt hỏi quyền đọc mọi trang."
+  },
+  "languageSettingTitle": {
+    "message": "Ngôn ngữ"
+  },
+  "languageSettingDesc": {
+    "message": "Ngôn ngữ của các cửa sổ extension và của menu chuột phải."
+  },
+  "languageAuto": {
+    "message": "Theo trình duyệt"
+  },
+  "languageLabel": {
+    "message": "Ngôn ngữ:"
+  }
+}
