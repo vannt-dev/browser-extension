@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import en from '../_locales/en/messages.json';
 import vi from '../_locales/vi/messages.json';
-import { applyI18n, browserLanguage, currentLanguage, setLanguage, t } from '../shared/i18n.js';
+import { applyI18n, bindLanguageSelect, browserLanguage, currentLanguage, setLanguage, t } from '../shared/i18n.js';
 
 // Paths are from the repository root, where the tests are run from. (jsdom replaces the global URL,
 // so a file URL built here is not one that node:fs accepts.)
@@ -147,5 +147,102 @@ describe('applyI18n', () => {
     setLanguage('en');
     applyI18n();
     expect(field.value).toBe('My studio');
+  });
+});
+
+describe('a language list in a page', () => {
+  /** A chrome with storage that tells its listeners, as the real one tells every open page. */
+  function stubChromeStorage(stored = {}) {
+    const listeners = [];
+    const writes = [];
+    globalThis.chrome = {
+      i18n: { getUILanguage: () => 'en-US' },
+      storage: {
+        onChanged: { addListener: (listener) => listeners.push(listener) },
+        local: {
+          get: async () => ({ ...stored }),
+          set: async (values) => {
+            writes.push(values);
+            const changes = Object.fromEntries(Object.entries(values).map(([key, newValue]) => [key, { newValue }]));
+            Object.assign(stored, values);
+            listeners.forEach((listener) => listener(changes, 'local'));
+          }
+        }
+      }
+    };
+    return { writes, listeners };
+  }
+
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <select id="list"><option value="auto">auto</option><option value="en">English</option><option value="vi">Tiếng Việt</option></select>
+      <button id="text" data-i18n="clearAll">Clear all</button>`;
+  });
+
+  it('starts on the stored choice, or on "as the browser" when there is none', async () => {
+    stubChromeStorage({ uiLanguage: 'vi' });
+    const list = document.getElementById('list');
+    bindLanguageSelect(list);
+    await settle();
+    expect(list.value).toBe('vi');
+
+    stubChromeStorage({});
+    bindLanguageSelect(list);
+    await settle();
+    expect(list.value).toBe('auto');
+  });
+
+  it('stores the choice, and the page follows what is stored', async () => {
+    const { writes } = stubChromeStorage({});
+    const list = document.getElementById('list');
+    let redrawn = 0;
+    bindLanguageSelect(list, () => redrawn++);
+    await settle();
+
+    list.value = 'vi';
+    list.dispatchEvent(new Event('change'));
+    await settle();
+
+    expect(writes).toEqual([{ uiLanguage: 'vi' }]);
+    expect(document.getElementById('text').textContent).toBe('Xóa tất cả');
+    expect(document.documentElement.lang).toBe('vi');
+    expect(redrawn).toBe(1);
+  });
+
+  it('follows a choice made in another page of the extension', async () => {
+    const { listeners } = stubChromeStorage({});
+    const list = document.getElementById('list');
+    bindLanguageSelect(list);
+    await settle();
+
+    listeners.forEach((listener) => listener({ uiLanguage: { newValue: 'vi' } }, 'local'));
+
+    expect(list.value).toBe('vi');
+    expect(document.getElementById('text').textContent).toBe('Xóa tất cả');
+  });
+
+  it('goes back to the browser language when the choice is "as the browser"', async () => {
+    const { listeners } = stubChromeStorage({ uiLanguage: 'vi' });
+    const list = document.getElementById('list');
+    bindLanguageSelect(list);
+    await settle();
+
+    listeners.forEach((listener) => listener({ uiLanguage: { newValue: 'auto' } }, 'local'));
+
+    expect(list.value).toBe('auto');
+    expect(document.getElementById('text').textContent).toBe('Clear all');
+  });
+
+  it('takes no notice of other settings changing', async () => {
+    const { listeners } = stubChromeStorage({});
+    let redrawn = 0;
+    bindLanguageSelect(document.getElementById('list'), () => redrawn++);
+    await settle();
+
+    listeners.forEach((listener) => listener({ theme: { newValue: 'light' } }, 'local'));
+
+    expect(redrawn).toBe(0);
   });
 });

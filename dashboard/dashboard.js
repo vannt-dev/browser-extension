@@ -4,7 +4,7 @@ import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
-import { applyI18n, loadLanguage, setLanguage, t } from '../shared/i18n.js';
+import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -615,20 +615,11 @@ function setupDevTools() {
 
 // Settings Persistence
 function setupSettingsPersistence() {
-  // The interface's language: the browser's unless the user picks one here. The right-click menu
-  // follows through the service worker, which watches the stored choice.
+  // The interface's language: the browser's unless the user picks one, here or in the popup. The
+  // right-click menu follows through the service worker, which watches the stored choice.
   const languageSelect = document.getElementById('dash-language-select');
   if (chrome.storage?.local && languageSelect) {
-    chrome.storage.local.get('uiLanguage').then(({ uiLanguage }) => {
-      languageSelect.value = uiLanguage === 'en' || uiLanguage === 'vi' ? uiLanguage : 'auto';
-    });
-
-    languageSelect.addEventListener('change', async () => {
-      await chrome.storage.local.set({ uiLanguage: languageSelect.value });
-      setLanguage(languageSelect.value);
-      applyI18n();
-      renderDashQueue();
-    });
+    bindLanguageSelect(languageSelect, renderDashQueue);
   }
 
   if (chrome.storage?.local && autoConvertToggle) {

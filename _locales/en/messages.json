@@ -407,5 +407,8 @@
   },
   "languageAuto": {
     "message": "Same as the browser"
+  },
+  "languageLabel": {
+    "message": "Language:"
   }
 }

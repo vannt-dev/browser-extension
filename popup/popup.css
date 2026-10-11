@@ -232,6 +232,17 @@ body {
   color: var(--text-secondary);
 }
 
+.language-row {
+  font-size: 11px;
+  padding: 0 2px;
+}
+
+.language-row .custom-select {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
 /* Queue List */
 .queue-container {
   background: var(--card-bg);

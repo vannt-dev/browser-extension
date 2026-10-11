@@ -407,5 +407,8 @@
   },
   "languageAuto": {
     "message": "Theo trình duyệt"
+  },
+  "languageLabel": {
+    "message": "Ngôn ngữ:"
   }
 }

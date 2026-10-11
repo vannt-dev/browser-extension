@@ -26,10 +26,41 @@ export function setLanguage(choice) {
   return active;
 }
 
+/** What the language lists offer: a language code, or "auto" for the browser's language. */
+const asChoice = (stored) => (LANGUAGES.includes(stored) ? stored : 'auto');
+
+/** The user's stored choice. */
+export async function languageChoice() {
+  const { uiLanguage } = await chrome.storage.local.get('uiLanguage');
+  return asChoice(uiLanguage);
+}
+
 /** Sets the language from the stored choice. Resolves to the language in use. */
 export async function loadLanguage() {
-  const { uiLanguage } = await chrome.storage.local.get('uiLanguage');
-  return setLanguage(uiLanguage);
+  return setLanguage(await languageChoice());
+}
+
+/**
+ * Makes a <select> of "auto" and the language codes the place where the language is chosen.
+ * A choice is only stored; every open page of the extension (and the service worker, for the
+ * right-click menu) follows the stored choice, so the popup and the dashboard stay in step.
+ * `rerender` redraws what the page has written itself, outside the data-i18n attributes.
+ */
+export function bindLanguageSelect(select, rerender = () => {}) {
+  languageChoice().then((choice) => {
+    select.value = choice;
+  });
+  select.addEventListener('change', () => {
+    chrome.storage.local.set({ uiLanguage: select.value });
+  });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes.uiLanguage) return;
+    const choice = asChoice(changes.uiLanguage.newValue);
+    select.value = choice;
+    setLanguage(choice);
+    applyI18n();
+    rerender();
+  });
 }
 
 export const currentLanguage = () => active;

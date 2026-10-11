@@ -4,7 +4,7 @@ import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
-import { applyI18n, loadLanguage, t } from '../shared/i18n.js';
+import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
@@ -78,6 +78,7 @@ const failureNotice = document.getElementById('failure-notice');
 const failureText = document.getElementById('failure-text');
 const failureAllowBtn = document.getElementById('failure-allow-btn');
 const failureDismissBtn = document.getElementById('failure-dismiss-btn');
+const languageSelect = document.getElementById('language-select');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -448,6 +449,13 @@ function setupSettingsPersistence() {
     });
 
     showLastFailure();
+
+    // The language can be chosen here as well as in the dashboard. What this page wrote itself
+    // (the queue, the notice) is written again in the new language.
+    bindLanguageSelect(languageSelect, () => {
+      renderQueue();
+      writeFailureText();
+    });
   }
 
   openDashboardBtn.addEventListener('click', () => {
@@ -461,17 +469,26 @@ function setupSettingsPersistence() {
 
 // A right-click or an auto-convert that failed happened in the background, with nowhere to say
 // so: the service worker marked the toolbar icon and left the reason, which is shown here.
+let shownFailure = null;
+
+function writeFailureText() {
+  if (!shownFailure) return;
+  const site = shownFailure.host || t('failureUnknownSite');
+  const needsAccess = shownFailure.kind === 'access';
+  failureText.textContent = t(needsAccess ? 'failureAccess' : 'failureFailed', site);
+}
+
 async function showLastFailure() {
   const { lastFailure } = await chrome.storage.local.get('lastFailure');
   if (!lastFailure) return;
 
-  const site = lastFailure.host || t('failureUnknownSite');
-  const needsAccess = lastFailure.kind === 'access';
-  failureText.textContent = t(needsAccess ? 'failureAccess' : 'failureFailed', site);
-  failureAllowBtn.style.display = needsAccess ? 'inline-block' : 'none';
+  shownFailure = lastFailure;
+  writeFailureText();
+  failureAllowBtn.style.display = lastFailure.kind === 'access' ? 'inline-block' : 'none';
   failureNotice.style.display = 'block';
 
   const dismiss = async () => {
+    shownFailure = null;
     failureNotice.style.display = 'none';
     await chrome.storage.local.remove('lastFailure');
     await chrome.action.setBadgeText({ text: '' });
