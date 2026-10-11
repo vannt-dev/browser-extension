@@ -1,6 +1,7 @@
 /**
  * Background Service Worker for Chrome Extension Manifest V3
  */
+import { loadLanguage, t } from '../shared/i18n.js';
 
 const MENU_FORMATS = {
   'convert-to-webp': 'webp',
@@ -11,31 +12,31 @@ const ALL_SITES = { origins: ['<all_urls>'] };
 // How long after the popup asked for access a grant still counts as the answer to it.
 const PENDING_WINDOW_MS = 2 * 60 * 1000;
 
-// Initialize Context Menus on Extension Install
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'convert-to-webp',
-    title: '⚡ Chuyển sang WebP',
-    contexts: ['image']
-  });
+const MENU_ENTRIES = [
+  { id: 'convert-to-webp', title: 'menuConvertWebp', contexts: ['image'] },
+  { id: 'convert-to-png', title: 'menuConvertPng', contexts: ['image'] },
+  { id: 'convert-to-jpg', title: 'menuConvertJpg', contexts: ['image'] },
+  { id: 'open-dashboard', title: 'menuOpenDashboard', contexts: ['all'] }
+];
 
-  chrome.contextMenus.create({
-    id: 'convert-to-png',
-    title: '⚡ Chuyển sang PNG',
-    contexts: ['image']
-  });
+async function createMenus() {
+  await loadLanguage();
+  await chrome.contextMenus.removeAll();
+  for (const { id, title, contexts } of MENU_ENTRIES) {
+    chrome.contextMenus.create({ id, title: t(title), contexts });
+  }
+}
 
-  chrome.contextMenus.create({
-    id: 'convert-to-jpg',
-    title: '⚡ Chuyển sang JPG',
-    contexts: ['image']
-  });
+// The menu is rebuilt one request at a time: two overlapping rebuilds would create every entry twice.
+let menus = Promise.resolve();
+const refreshMenus = () => (menus = menus.then(createMenus, createMenus));
 
-  chrome.contextMenus.create({
-    id: 'open-dashboard',
-    title: '🚀 Mở Full File Converter Dashboard',
-    contexts: ['all']
-  });
+// Context menus are written on install, and written again whenever their language may have
+// changed: the browser's own (seen at startup) or the one chosen in the dashboard.
+chrome.runtime.onInstalled.addListener(refreshMenus);
+chrome.runtime.onStartup.addListener(refreshMenus);
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.uiLanguage) refreshMenus();
 });
 
 /** The site an image is served from, as a permission pattern; null for data:, blob: and file: addresses. */

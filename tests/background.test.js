@@ -35,10 +35,13 @@ function stubChrome() {
     runtime: {
       id: 'this-extension',
       onInstalled: { addListener: (fn) => (listeners.installed = fn) },
+      onStartup: { addListener: (fn) => (listeners.started = fn) },
       openOptionsPage: vi.fn()
     },
+    i18n: { getUILanguage: () => 'en-US' },
     contextMenus: {
       create: vi.fn(),
+      removeAll: vi.fn(async () => {}),
       onClicked: { addListener: (fn) => (listeners.menuClicked = fn) }
     },
     downloads: {
@@ -61,6 +64,7 @@ function stubChrome() {
       setBadgeBackgroundColor: vi.fn(async () => {})
     },
     storage: {
+      onChanged: { addListener: (fn) => (listeners.storageChanged = fn) },
       local: {
         get: vi.fn(async () => ({ ...stored })),
         set: vi.fn(async (values) => {
@@ -119,10 +123,41 @@ afterEach(() => {
 });
 
 describe('background service worker registration', () => {
-  it('registers the context menu entries on install', () => {
-    harness.listeners.installed();
+  it('registers the context menu entries on install', async () => {
+    await harness.listeners.installed();
     const ids = chrome.contextMenus.create.mock.calls.map(([options]) => options.id);
     expect(ids).toEqual(['convert-to-webp', 'convert-to-png', 'convert-to-jpg', 'open-dashboard']);
+  });
+
+  const menuTitles = () => chrome.contextMenus.create.mock.calls.map(([options]) => options.title);
+
+  it('writes the menu in the browser\'s language', async () => {
+    await harness.listeners.installed();
+    expect(menuTitles()).toContain('⚡ Convert to PNG');
+
+    chrome.contextMenus.create.mockClear();
+    chrome.i18n.getUILanguage = () => 'vi';
+    await harness.listeners.started();
+    expect(menuTitles()).toContain('⚡ Chuyển sang PNG');
+  });
+
+  it('rewrites the menu when the user picks a language, without leaving the old entries', async () => {
+    await harness.listeners.installed();
+    chrome.contextMenus.create.mockClear();
+    chrome.contextMenus.removeAll.mockClear();
+
+    harness.stored.uiLanguage = 'vi';
+    harness.listeners.storageChanged({ uiLanguage: { newValue: 'vi' } }, 'local');
+    await flush();
+
+    expect(chrome.contextMenus.removeAll).toHaveBeenCalledTimes(1);
+    expect(menuTitles()).toEqual(['⚡ Chuyển sang WebP', '⚡ Chuyển sang PNG', '⚡ Chuyển sang JPG', '🚀 Mở Full File Converter Dashboard']);
+  });
+
+  it('leaves the menu alone when another setting changes', async () => {
+    harness.listeners.storageChanged({ theme: { newValue: 'light' } }, 'local');
+    await flush();
+    expect(chrome.contextMenus.create).not.toHaveBeenCalled();
   });
 
   it('opens the dashboard without trying to fetch an image', async () => {

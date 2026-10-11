@@ -4,6 +4,7 @@ import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
+import { applyI18n, loadLanguage, t } from '../shared/i18n.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
@@ -80,6 +81,9 @@ const failureDismissBtn = document.getElementById('failure-dismiss-btn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+  // The stored choice of language is read first: everything below writes text into the page.
+  await loadLanguage().catch(() => {});
+  applyI18n();
   setupCategoryNav();
   setupDropZone();
   setupClipboardListener();
@@ -221,7 +225,7 @@ function renderQueue() {
     item.className = 'queue-item';
     item.innerHTML = `
       <span class="item-name">${file.name}</span>
-      <span class="item-status status-ready" id="status-${index}">Sẵn sàng</span>
+      <span class="item-status status-ready" id="status-${index}">${t('statusReady')}</span>
     `;
     queueList.appendChild(item);
   });
@@ -252,18 +256,18 @@ convertBtn.addEventListener('click', async () => {
       if (color) statusEl.style.color = color;
     };
     fileQueue.forEach((file, index) => {
-      if (!isPdfFile(file)) mark(index, 'Bỏ qua', 'item-status status-ready');
+      if (!isPdfFile(file)) mark(index, t('statusSkipped'), 'item-status status-ready');
     });
     try {
-      if (pdfIndexes.length < 2) throw new Error('Cần ít nhất 2 file PDF');
+      if (pdfIndexes.length < 2) throw new Error(t('needTwoPdfs'));
       const { mergePdfs } = await loadPdfTools();
       const merged = await mergePdfs(pdfIndexes.map((index) => fileQueue[index]));
       convertedResults = [merged];
-      pdfIndexes.forEach((index) => mark(index, 'Đã gộp', 'item-status status-done'));
+      pdfIndexes.forEach((index) => mark(index, t('statusMerged'), 'item-status status-done'));
       ZipEngine.downloadBlob(merged.blob, merged.filename);
     } catch (err) {
       console.error('PDF merge error:', err);
-      pdfIndexes.forEach((index) => mark(index, `Lỗi: ${err.message}`, null, '#ef4444'));
+      pdfIndexes.forEach((index) => mark(index, t('errorWithReason', err.message), null, '#ef4444'));
     }
     convertSpinner.classList.add('hidden');
     convertBtn.disabled = false;
@@ -274,7 +278,7 @@ convertBtn.addEventListener('click', async () => {
     const file = fileQueue[i];
     const statusEl = document.getElementById(`status-${i}`);
     if (statusEl) {
-      statusEl.textContent = 'Đang chuyển...';
+      statusEl.textContent = t('statusConverting');
       statusEl.className = 'item-status status-ready';
     }
 
@@ -283,13 +287,13 @@ convertBtn.addEventListener('click', async () => {
       convertedResults.push(res);
 
       if (statusEl) {
-        statusEl.textContent = 'Hoàn thành';
+        statusEl.textContent = t('statusDone');
         statusEl.className = 'item-status status-done';
       }
     } catch (err) {
       console.error('File conversion error:', err);
       if (statusEl) {
-        statusEl.textContent = 'Lỗi';
+        statusEl.textContent = t('statusError');
         statusEl.title = err?.message || '';
         statusEl.style.color = '#ef4444';
       }
@@ -461,11 +465,9 @@ async function showLastFailure() {
   const { lastFailure } = await chrome.storage.local.get('lastFailure');
   if (!lastFailure) return;
 
-  const site = lastFailure.host || 'trang web';
+  const site = lastFailure.host || t('failureUnknownSite');
   const needsAccess = lastFailure.kind === 'access';
-  failureText.textContent = needsAccess
-    ? `Không đọc được ảnh từ ${site} vì extension chưa được phép truy cập trang đó. Hãy chọn "Cho phép" khi trình duyệt hỏi, hoặc cho phép mọi trang.`
-    : `Không chuyển được ảnh từ ${site}. Ảnh có thể đã bị gỡ hoặc không phải định dạng đọc được.`;
+  failureText.textContent = t(needsAccess ? 'failureAccess' : 'failureFailed', site);
   failureAllowBtn.style.display = needsAccess ? 'inline-block' : 'none';
   failureNotice.style.display = 'block';
 

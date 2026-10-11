@@ -4,6 +4,7 @@ import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
+import { applyI18n, loadLanguage, setLanguage, t } from '../shared/i18n.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -70,7 +71,10 @@ const copyCodeBtn = document.getElementById('copy-code-btn');
 const autoConvertToggle = document.getElementById('dash-auto-convert-toggle');
 
 // Initialize Dashboard
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // The stored choice of language is read first: everything below writes text into the page.
+  await loadLanguage().catch(() => {});
+  applyI18n();
   setupTabs();
   setupDashDropZone();
   setupAiStudio();
@@ -103,7 +107,7 @@ function setupTabs() {
 function setupLightbox() {
   if (!lightboxModal) return;
 
-  function openLightbox(imgSrc, title = 'Xem ảnh phóng to chi tiết') {
+  function openLightbox(imgSrc, title = t('lightboxTitle')) {
     lightboxImg.src = imgSrc;
     lightboxTitle.textContent = `🔍 ${title}`;
     currentZoomScale = 1.0;
@@ -148,7 +152,7 @@ function setupLightbox() {
   // Attach Lightbox click triggers
   bgRemovePreview?.addEventListener('click', () => {
     if (bgRemovePreview.src) {
-      openLightbox(bgRemovePreview.src, 'Xem trước ảnh đã tách nền');
+      openLightbox(bgRemovePreview.src, t('lightboxPreviewTitle'));
     }
   });
 }
@@ -159,38 +163,38 @@ function setupAiStudio() {
   if (runOcrBtn && ocrFileInput) {
     runOcrBtn.addEventListener('click', async () => {
       if (!ocrFileInput.files || !ocrFileInput.files.length) {
-        alert('Vui lòng chọn 1 file ảnh chụp hoặc scan để đọc chữ OCR!');
+        alert(t('ocrPickFile'));
         return;
       }
       const file = ocrFileInput.files[0];
       const lang = ocrLangSelect.value;
 
       runOcrBtn.disabled = true;
-      runOcrBtn.textContent = '⏳ Đang quét đọc chữ AI...';
-      ocrProgress.textContent = 'Đang khởi tạo mô hình OCR...';
+      runOcrBtn.textContent = t('ocrRunning');
+      ocrProgress.textContent = t('ocrStarting');
 
       try {
         const AiEngine = await loadAiEngine();
         const res = await AiEngine.extractTextFromImage(file, lang, (percent) => {
-          ocrProgress.textContent = `Tiến trình đọc chữ: ${percent}%`;
+          ocrProgress.textContent = t('ocrProgress', percent);
         });
 
-        ocrResultText.value = res.text || 'Không tìm thấy văn bản trong ảnh.';
-        ocrProgress.textContent = '✅ Đọc chữ thành công 100%!';
+        ocrResultText.value = res.text || t('ocrNoText');
+        ocrProgress.textContent = t('ocrDone');
       } catch (err) {
         console.error('OCR Error:', err);
-        ocrProgress.textContent = '❌ Lỗi đọc chữ: ' + err.message;
+        ocrProgress.textContent = t('ocrError', err.message);
       } finally {
         runOcrBtn.disabled = false;
-        runOcrBtn.textContent = '🔍 Bắt đầu đọc chữ (OCR)';
+        runOcrBtn.textContent = t('runOcr');
       }
     });
 
     copyOcrBtn?.addEventListener('click', () => {
       if (ocrResultText.value) {
         navigator.clipboard.writeText(ocrResultText.value);
-        copyOcrBtn.textContent = '✅ Đã sao chép!';
-        setTimeout(() => { copyOcrBtn.textContent = '📋 Sao chép văn bản OCR'; }, 2000);
+        copyOcrBtn.textContent = t('copied');
+        setTimeout(() => { copyOcrBtn.textContent = t('copyOcr'); }, 2000);
       }
     });
   }
@@ -205,14 +209,14 @@ function setupAiStudio() {
   if (runBgRemoveBtn && bgRemoveFileInput) {
     runBgRemoveBtn.addEventListener('click', async () => {
       if (!bgRemoveFileInput.files || !bgRemoveFileInput.files.length) {
-        alert('Vui lòng chọn 1 file ảnh để tách nền phông!');
+        alert(t('bgPickFile'));
         return;
       }
       const file = bgRemoveFileInput.files[0];
 
       runBgRemoveBtn.disabled = true;
-      runBgRemoveBtn.textContent = '⚡ Đang tách nền...';
-      bgRemoveStatus.textContent = 'Đang phân tích màu nền và tách biên...';
+      runBgRemoveBtn.textContent = t('bgRunning');
+      bgRemoveStatus.textContent = t('bgAnalysing');
 
       try {
         const tolerance = Number(bgRemoveTolerance?.value) || 32;
@@ -227,18 +231,17 @@ function setupAiStudio() {
 
         const clearedPercent = Math.round(imgRes.clearedRatio * 100);
         if (clearedPercent < 2) {
-          bgRemoveStatus.textContent =
-            `⚠️ Chỉ tách được ${clearedPercent}% ảnh — nền có thể không đồng nhất. Hãy tăng độ nhạy rồi thử lại.`;
+          bgRemoveStatus.textContent = t('bgLowResult', clearedPercent);
         } else {
-          bgRemoveStatus.textContent =
-            `✅ Đã tách ${clearedPercent}% nền (màu nền nhận diện: rgb(${imgRes.backgroundColor.r}, ${imgRes.backgroundColor.g}, ${imgRes.backgroundColor.b})). Click ảnh để phóng to`;
+          const { r, g, b } = imgRes.backgroundColor;
+          bgRemoveStatus.textContent = t('bgResult', clearedPercent, `rgb(${r}, ${g}, ${b})`);
         }
       } catch (err) {
         console.error('BG Removal Error:', err);
-        bgRemoveStatus.textContent = '❌ Lỗi tách nền: ' + err.message;
+        bgRemoveStatus.textContent = t('bgError', err.message);
       } finally {
         runBgRemoveBtn.disabled = false;
-        runBgRemoveBtn.textContent = '✂️ Xóa nền đơn sắc';
+        runBgRemoveBtn.textContent = t('runBgRemove');
       }
     });
 
@@ -333,7 +336,7 @@ function renderDashQueue() {
   dashQueueList.innerHTML = '';
 
   if (dashFileQueue.length === 0) {
-    dashQueueList.innerHTML = '<p class="empty-queue-hint" style="color: var(--text-secondary); text-align: center; padding: 20px;">Chưa có file nào trong danh sách chờ.</p>';
+    dashQueueList.innerHTML = '<p class="empty-queue-hint" style="color: var(--text-secondary); text-align: center; padding: 20px;">' + t('queueEmpty') + '</p>';
     dashConvertBtn.disabled = true;
     return;
   }
@@ -347,8 +350,8 @@ function renderDashQueue() {
   header.style.alignItems = 'center';
   header.style.marginBottom = '12px';
   header.innerHTML = `
-    <strong>Danh sách file chờ chuyển đổi (${dashFileQueue.length})</strong>
-    <button id="dash-clear-queue-btn" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:600;">Xóa tất cả</button>
+    <strong>${t('dashQueueTitle', dashFileQueue.length)}</strong>
+    <button id="dash-clear-queue-btn" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:600;">${t('clearAll')}</button>
   `;
   dashQueueList.appendChild(header);
 
@@ -376,7 +379,7 @@ function renderDashQueue() {
         <strong style="color: var(--text-primary);">${file.name}</strong>
         <span style="font-size: 12px; color: var(--text-secondary); margin-left: 8px;">(${fileSizeMB} MB)</span>
       </div>
-      <span class="item-status status-ready" id="dash-status-${index}" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: var(--accent-color);">Sẵn sàng</span>
+      <span class="item-status status-ready" id="dash-status-${index}" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; background: rgba(99, 102, 241, 0.2); color: var(--accent-color);">${t('statusReady')}</span>
     `;
     dashQueueList.appendChild(item);
   });
@@ -387,7 +390,7 @@ async function executeDashBatchConversion() {
   if (!dashFileQueue.length) return;
 
   dashConvertBtn.disabled = true;
-  dashConvertBtn.textContent = '⏳ Đang chuyển đổi hàng loạt...';
+  dashConvertBtn.textContent = t('batchConverting');
   dashConvertedResults = [];
 
   const targetFormat = dashTargetFormat.value;
@@ -397,7 +400,7 @@ async function executeDashBatchConversion() {
   if (targetFormat === 'pdf-merge') {
     await mergeDashQueue();
     dashConvertBtn.disabled = false;
-    dashConvertBtn.textContent = 'Chuyển đổi & Đóng gói ZIP';
+    dashConvertBtn.textContent = t('dashConvert');
     return;
   }
 
@@ -406,7 +409,7 @@ async function executeDashBatchConversion() {
     const statusEl = document.getElementById(`dash-status-${i}`);
 
     if (statusEl) {
-      statusEl.textContent = 'Đang chuyển...';
+      statusEl.textContent = t('statusConverting');
       statusEl.style.background = 'rgba(99, 102, 241, 0.3)';
     }
 
@@ -415,14 +418,14 @@ async function executeDashBatchConversion() {
       dashConvertedResults.push(res);
 
       if (statusEl) {
-        statusEl.textContent = 'Hoàn thành';
+        statusEl.textContent = t('statusDone');
         statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
         statusEl.style.color = '#10b981';
       }
     } catch (err) {
       console.error(`Error converting ${file.name}:`, err);
       if (statusEl) {
-        statusEl.textContent = 'Lỗi';
+        statusEl.textContent = t('statusError');
         // The reason, for whoever hovers over the red label.
         statusEl.title = err?.message || '';
         statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
@@ -432,7 +435,7 @@ async function executeDashBatchConversion() {
   }
 
   dashConvertBtn.disabled = false;
-  dashConvertBtn.textContent = 'Chuyển đổi & Đóng gói ZIP';
+  dashConvertBtn.textContent = t('dashConvert');
 
   if (dashConvertedResults.length === 1) {
     ZipEngine.downloadBlob(dashConvertedResults[0].blob, dashConvertedResults[0].filename);
@@ -463,22 +466,22 @@ function setDashStatus(index, text, state) {
 async function mergeDashQueue() {
   const pdfIndexes = dashFileQueue.map((file, index) => (isPdfFile(file) ? index : -1)).filter((index) => index >= 0);
   dashFileQueue.forEach((file, index) => {
-    if (!isPdfFile(file)) setDashStatus(index, 'Bỏ qua (không phải PDF)', 'skipped');
+    if (!isPdfFile(file)) setDashStatus(index, t('statusSkippedNotPdf'), 'skipped');
   });
   if (pdfIndexes.length < 2) {
-    pdfIndexes.forEach((index) => setDashStatus(index, 'Cần ít nhất 2 file PDF', 'error'));
+    pdfIndexes.forEach((index) => setDashStatus(index, t('needTwoPdfs'), 'error'));
     return;
   }
-  pdfIndexes.forEach((index) => setDashStatus(index, 'Đang gộp...'));
+  pdfIndexes.forEach((index) => setDashStatus(index, t('statusMerging')));
   try {
     const { mergePdfs } = await loadPdfTools();
     const merged = await mergePdfs(pdfIndexes.map((index) => dashFileQueue[index]));
     dashConvertedResults = [merged];
-    pdfIndexes.forEach((index) => setDashStatus(index, 'Đã gộp', 'done'));
+    pdfIndexes.forEach((index) => setDashStatus(index, t('statusMerged'), 'done'));
     ZipEngine.downloadBlob(merged.blob, merged.filename);
   } catch (err) {
     console.error('Error merging PDFs:', err);
-    pdfIndexes.forEach((index) => setDashStatus(index, `Lỗi: ${err.message}`, 'error'));
+    pdfIndexes.forEach((index) => setDashStatus(index, t('errorWithReason', err.message), 'error'));
   }
 }
 
@@ -586,7 +589,7 @@ function setupDevTools() {
         codeOutput.value = DataEngine.convert(data, 'yaml');
       }
     } catch (err) {
-      codeOutput.value = `// Cú pháp JSON chưa đúng: ${err.message}`;
+      codeOutput.value = t('jsonInvalid', err.message);
     }
   }
 
@@ -596,9 +599,9 @@ function setupDevTools() {
   copyCodeBtn?.addEventListener('click', () => {
     if (codeOutput.value) {
       navigator.clipboard.writeText(codeOutput.value);
-      copyCodeBtn.textContent = '✅ Đã sao chép!';
+      copyCodeBtn.textContent = t('copied');
       setTimeout(() => {
-        copyCodeBtn.textContent = '📋 Sao chép Code';
+        copyCodeBtn.textContent = t('copyCode');
       }, 2000);
     }
   });
@@ -606,6 +609,22 @@ function setupDevTools() {
 
 // Settings Persistence
 function setupSettingsPersistence() {
+  // The interface's language: the browser's unless the user picks one here. The right-click menu
+  // follows through the service worker, which watches the stored choice.
+  const languageSelect = document.getElementById('dash-language-select');
+  if (chrome.storage?.local && languageSelect) {
+    chrome.storage.local.get('uiLanguage').then(({ uiLanguage }) => {
+      languageSelect.value = uiLanguage === 'en' || uiLanguage === 'vi' ? uiLanguage : 'auto';
+    });
+
+    languageSelect.addEventListener('change', async () => {
+      await chrome.storage.local.set({ uiLanguage: languageSelect.value });
+      setLanguage(languageSelect.value);
+      applyI18n();
+      renderDashQueue();
+    });
+  }
+
   if (chrome.storage?.local && autoConvertToggle) {
     const note = document.getElementById('dash-auto-convert-note');
     readAutoConvert().then((on) => {

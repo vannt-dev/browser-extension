@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "Universal File Converter",
   "version": "1.1.1",
-  "description": "Chuyển đổi file 100% offline: Ảnh, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, xóa nền đơn sắc & tự động đổi file khi tải về.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "permissions": [
     "downloads",
     "contextMenus",
