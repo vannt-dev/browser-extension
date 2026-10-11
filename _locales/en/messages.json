@@ -1,6 +1,6 @@
 {
   "extDescription": {
-    "message": "Convert files 100% offline: images, DOCX, PDF, JSON/CSV/XML, Markdown, OCR, plain-background removal & auto-convert on download."
+    "message": "Convert images, documents, PDFs and data files right in your browser, with offline text recognition. Nothing is uploaded."
   },
   "menuConvertWebp": {
     "message": "⚡ Convert to WebP"
