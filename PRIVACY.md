@@ -10,8 +10,9 @@ Universal File Converter processes every file on your own device, inside the bro
 ## What stays on your device
 
 The extension keeps a few things in the browser's local storage: the colour theme, the language you chose,
-whether the optional auto-convert of downloaded images is on, and, when a right-click or auto-convert could not
-be done, the name of the site the image was on, until you dismiss the notice. They never leave your device.
+whether the optional auto-convert of downloaded images is on and which format it saves, the watermark text if
+you set one, and, when a right-click or auto-convert could not be done, the name of the site the image was on,
+until you dismiss the notice. They never leave your device.
 
 ## When the extension makes a request
 

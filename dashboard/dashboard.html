@@ -166,17 +166,20 @@
       <section id="tab-security" class="tab-page">
         <header class="page-header">
           <h1>Watermark &amp; Privacy Studio</h1>
-          <p data-i18n="securityIntro">Remove sensitive Exif GPS data and stamp copyright text or a logo on documents &amp; images</p>
+          <p data-i18n="securityIntro">Stamp a copyright text on the images you convert. Location data (Exif GPS) never survives a conversion.</p>
         </header>
         <div class="security-card">
           <div class="form-group">
-            <label data-i18n="watermarkLabel">Copyright text (watermark):</label>
-            <input type="text" id="watermark-input" value="COPYRIGHT - ALL RIGHTS RESERVED" data-i18n-value="watermarkDefault" class="dash-input">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <input type="checkbox" id="watermark-enabled">
+              <span data-i18n="watermarkEnable">Stamp this text on the images converted in the Batch File Converter</span>
+            </label>
           </div>
           <div class="form-group">
-            <label data-i18n="removeExifLabel">Remove Exif GPS metadata from image files automatically</label>
-            <input type="checkbox" id="remove-exif-check" checked>
+            <label for="watermark-input" data-i18n="watermarkLabel">Copyright text (watermark):</label>
+            <input type="text" id="watermark-input" value="COPYRIGHT - ALL RIGHTS RESERVED" data-i18n-value="watermarkDefault" class="dash-input">
           </div>
+          <p style="font-size: 13px; color: var(--text-secondary);" data-i18n="exifNote">Exif metadata (GPS location, camera details) is always removed from converted images.</p>
         </div>
       </section>
 
@@ -189,11 +192,21 @@
         <div class="settings-card">
           <div class="setting-item">
             <div>
-              <h3 data-i18n="autoConvertSettingTitle">Also save a PNG copy on download (Chrome Downloads)</h3>
-              <p data-i18n="autoConvertSettingDesc">When you download a .webp or .jfif image on the web, the extension saves a .png copy beside the original. This needs access to all sites, to read the image; the browser asks when you switch it on.</p>
+              <h3 data-i18n="autoConvertSettingTitle">Also save a PNG or JPG copy on download (Chrome Downloads)</h3>
+              <p data-i18n="autoConvertSettingDesc">When you download a .webp or .jfif image on the web, the extension saves a copy in the format chosen below, beside the original. This needs access to all sites, to read the image; the browser asks when you switch it on.</p>
               <p id="dash-auto-convert-note" style="display: none; color: #f59e0b; margin-top: 6px;" data-i18n="autoConvertSettingNote">Not switched on: choose "Allow" when the browser asks for access to all sites.</p>
             </div>
             <input type="checkbox" id="dash-auto-convert-toggle">
+          </div>
+          <div class="setting-item">
+            <div>
+              <h3 data-i18n="autoFormatSettingTitle">Format of the saved copy</h3>
+              <p data-i18n="autoFormatSettingDesc">PNG keeps transparency; JPG gives a smaller file.</p>
+            </div>
+            <select id="dash-auto-format" class="dash-select">
+              <option value="png">PNG (.png)</option>
+              <option value="jpg">JPG (.jpg)</option>
+            </select>
           </div>
           <div class="setting-item">
             <div>

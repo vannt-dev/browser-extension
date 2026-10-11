@@ -69,6 +69,12 @@ const codeOutput = document.getElementById('code-output');
 const devLangSelect = document.getElementById('dev-lang-select');
 const copyCodeBtn = document.getElementById('copy-code-btn');
 const autoConvertToggle = document.getElementById('dash-auto-convert-toggle');
+const autoFormatSelect = document.getElementById('dash-auto-format');
+const watermarkEnabled = document.getElementById('watermark-enabled');
+const watermarkInput = document.getElementById('watermark-input');
+
+// The text the Watermark tab asks to have stamped on converted images, if it asks for one.
+const watermarkText = () => (watermarkEnabled?.checked ? watermarkInput?.value.trim() || null : null);
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -498,7 +504,7 @@ async function processDashSingleFile(file, targetFormat, quality) {
     }
     const validImgFormats = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico'];
     const finalFormat = validImgFormats.includes(targetFormat) ? targetFormat : 'png';
-    const imgRes = await ImageEngine.convert(file, { targetFormat: finalFormat, quality });
+    const imgRes = await ImageEngine.convert(file, { targetFormat: finalFormat, quality, watermarkText: watermarkText() });
     return { blob: imgRes.blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${finalFormat}` };
   }
 
@@ -630,6 +636,30 @@ function setupSettingsPersistence() {
     readAutoConvert().then((on) => {
       autoConvertToggle.checked = on;
     });
+
+    // The format of the copy auto-convert saves; the service worker reads it at each download.
+    if (autoFormatSelect) {
+      chrome.storage.local.get('targetAutoFormat').then(({ targetAutoFormat }) => {
+        autoFormatSelect.value = targetAutoFormat === 'jpg' ? 'jpg' : 'png';
+      });
+      autoFormatSelect.addEventListener('change', () => {
+        chrome.storage.local.set({ targetAutoFormat: autoFormatSelect.value });
+      });
+    }
+
+    // The watermark of the Watermark tab is remembered, and read by the batch converter.
+    if (watermarkEnabled && watermarkInput) {
+      chrome.storage.local.get(['watermarkEnabled', 'watermarkText']).then((stored) => {
+        watermarkEnabled.checked = stored.watermarkEnabled === true;
+        if (stored.watermarkText) watermarkInput.value = stored.watermarkText;
+      });
+      watermarkEnabled.addEventListener('change', () => {
+        chrome.storage.local.set({ watermarkEnabled: watermarkEnabled.checked });
+      });
+      watermarkInput.addEventListener('change', () => {
+        chrome.storage.local.set({ watermarkText: watermarkInput.value.trim() });
+      });
+    }
 
     autoConvertToggle.addEventListener('change', async (e) => {
       if (note) note.style.display = 'none';

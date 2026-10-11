@@ -188,9 +188,10 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
   const isWebpOrJfif = /\.(webp|jfif)(\?.*)?$/i.test(url) || downloadItem.mime === 'image/webp';
 
   if (isWebpOrJfif) {
-    const extension = targetAutoFormat === 'jpeg' ? 'jpg' : targetAutoFormat;
+    // The dashboard offers PNG and JPG; anything else that may be stored is taken as PNG.
+    const extension = targetAutoFormat === 'jpg' || targetAutoFormat === 'jpeg' ? 'jpg' : 'png';
     try {
-      const blob = await convertImage(url, extension === 'jpg' ? 'jpeg' : extension, 0.95);
+      const blob = await convertImage(url, extension === 'jpg' ? 'jpeg' : 'png', 0.95);
       await saveImage(blob, `${await downloadName(downloadItem, url)}.${extension}`);
       await clearFailure();
     } catch (err) {

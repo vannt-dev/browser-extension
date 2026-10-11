@@ -51,7 +51,7 @@
     "message": "e.g. 500"
   },
   "autoConvertToggle": {
-    "message": "Also save a PNG copy when you download a .webp/.jfif image"
+    "message": "Also save a PNG or JPG copy when you download a .webp/.jfif image"
   },
   "autoConvertNote": {
     "message": "This needs access to all sites, to read the images you download. Switch it on again and choose \"Allow\" when the browser asks."
@@ -364,7 +364,10 @@
     }
   },
   "securityIntro": {
-    "message": "Remove sensitive Exif GPS data and stamp copyright text or a logo on documents & images"
+    "message": "Stamp a copyright text on the images you convert. Location data (Exif GPS) never survives a conversion."
+  },
+  "watermarkEnable": {
+    "message": "Stamp this text on the images converted in the Batch File Converter"
   },
   "watermarkLabel": {
     "message": "Copyright text (watermark):"
@@ -372,8 +375,8 @@
   "watermarkDefault": {
     "message": "COPYRIGHT - ALL RIGHTS RESERVED"
   },
-  "removeExifLabel": {
-    "message": "Remove Exif GPS metadata from image files automatically"
+  "exifNote": {
+    "message": "Exif metadata (GPS location, camera details) is always removed from converted images."
   },
   "settingsTitle": {
     "message": "Extension settings"
@@ -382,10 +385,16 @@
     "message": "The automatic conversions and the interface"
   },
   "autoConvertSettingTitle": {
-    "message": "Also save a PNG copy on download (Chrome Downloads)"
+    "message": "Also save a PNG or JPG copy on download (Chrome Downloads)"
   },
   "autoConvertSettingDesc": {
-    "message": "When you download a .webp or .jfif image on the web, the extension saves a .png copy beside the original. This needs access to all sites, to read the image; the browser asks when you switch it on."
+    "message": "When you download a .webp or .jfif image on the web, the extension saves a copy in the format chosen below, beside the original. This needs access to all sites, to read the image; the browser asks when you switch it on."
+  },
+  "autoFormatSettingTitle": {
+    "message": "Format of the saved copy"
+  },
+  "autoFormatSettingDesc": {
+    "message": "PNG keeps transparency; JPG gives a smaller file."
   },
   "autoConvertSettingNote": {
     "message": "Not switched on: choose \"Allow\" when the browser asks for access to all sites."

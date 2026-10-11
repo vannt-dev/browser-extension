@@ -207,6 +207,14 @@ describe('auto-convert download interceptor', () => {
     await expect(harness.waitForDownload()).resolves.toMatchObject({ filename: 'photo.jpg' });
   });
 
+  it('saves a PNG when the stored format is not one the settings offer', async () => {
+    autoConvertOn('gif');
+
+    await harness.listeners.downloadCreated({ url: 'https://example.com/photo.webp', filename: 'photo.webp' });
+
+    await expect(harness.waitForDownload()).resolves.toMatchObject({ filename: 'photo.png' });
+  });
+
   it('matches on mime type when the url has no extension', async () => {
     autoConvertOn();
 

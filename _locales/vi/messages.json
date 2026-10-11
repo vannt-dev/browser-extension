@@ -51,7 +51,7 @@
     "message": "Ví dụ: 500"
   },
   "autoConvertToggle": {
-    "message": "Tự lưu thêm bản PNG khi tải ảnh .webp/.jfif trên Web"
+    "message": "Tự lưu thêm bản PNG hoặc JPG khi tải ảnh .webp/.jfif trên Web"
   },
   "autoConvertNote": {
     "message": "Cần quyền đọc mọi trang để lấy được ảnh bạn tải về. Bật lại và chọn \"Cho phép\" khi trình duyệt hỏi."
@@ -364,7 +364,10 @@
     }
   },
   "securityIntro": {
-    "message": "Xóa thông tin Exif GPS nhạy cảm và đóng dấu bản quyền logo/chữ lên tài liệu & hình ảnh"
+    "message": "Đóng dấu chữ bản quyền lên ảnh bạn chuyển đổi. Thông tin vị trí (Exif GPS) luôn bị loại khi chuyển đổi."
+  },
+  "watermarkEnable": {
+    "message": "Đóng dấu chữ này lên ảnh chuyển đổi trong Batch File Converter"
   },
   "watermarkLabel": {
     "message": "Chữ bản quyền (Watermark Text):"
@@ -372,8 +375,8 @@
   "watermarkDefault": {
     "message": "BẢN QUYỀN THUỘC VỀ TOI"
   },
-  "removeExifLabel": {
-    "message": "Tự động xóa Exif GPS metadata khỏi file ảnh"
+  "exifNote": {
+    "message": "Exif metadata (vị trí GPS, thông tin máy ảnh) luôn bị loại khỏi ảnh đã chuyển đổi."
   },
   "settingsTitle": {
     "message": "Cài đặt Extension"
@@ -382,10 +385,16 @@
     "message": "Quản lý các bộ lọc tự động và giao diện"
   },
   "autoConvertSettingTitle": {
-    "message": "Tự lưu thêm bản PNG khi Tải xuống (Chrome Downloads)"
+    "message": "Tự lưu thêm bản PNG hoặc JPG khi Tải xuống (Chrome Downloads)"
   },
   "autoConvertSettingDesc": {
-    "message": "Khi bạn tải một ảnh .webp hoặc .jfif trên web, extension lưu thêm một bản .png bên cạnh file gốc. Tính năng này cần quyền đọc mọi trang để lấy được ảnh; trình duyệt sẽ hỏi khi bạn bật."
+    "message": "Khi bạn tải một ảnh .webp hoặc .jfif trên web, extension lưu thêm một bản theo định dạng chọn bên dưới, bên cạnh file gốc. Tính năng này cần quyền đọc mọi trang để lấy được ảnh; trình duyệt sẽ hỏi khi bạn bật."
+  },
+  "autoFormatSettingTitle": {
+    "message": "Định dạng của bản lưu thêm"
+  },
+  "autoFormatSettingDesc": {
+    "message": "PNG giữ nền trong suốt; JPG cho file nhẹ hơn."
   },
   "autoConvertSettingNote": {
     "message": "Chưa bật được: cần chọn \"Cho phép\" khi trình duyệt hỏi quyền đọc mọi trang."
