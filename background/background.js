@@ -2,6 +2,15 @@
  * Background Service Worker for Chrome Extension Manifest V3
  */
 
+const MENU_FORMATS = {
+  'convert-to-webp': 'webp',
+  'convert-to-png': 'png',
+  'convert-to-jpg': 'jpeg'
+};
+const ALL_SITES = { origins: ['<all_urls>'] };
+// How long after the popup asked for access a grant still counts as the answer to it.
+const PENDING_WINDOW_MS = 2 * 60 * 1000;
+
 // Initialize Context Menus on Extension Install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -29,93 +38,180 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+/** The site an image is served from, as a permission pattern; null for data:, blob: and file: addresses. */
+function sitePattern(url) {
+  try {
+    const { protocol, host } = new URL(url);
+    return protocol === 'http:' || protocol === 'https:' ? `${protocol}//${host}/*` : null;
+  } catch {
+    return null;
+  }
+}
+
+/** A file name without its extension, stripped of what a download's name may not contain. */
+function stem(name) {
+  const cleaned = (name || '')
+    .replace(/\.[^.]*$/, '')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+    .replace(/^[.\s]+|[.\s]+$/g, '')
+    .slice(0, 120);
+  return cleaned || null;
+}
+
+/** The name an image has in its address: https://host/a/photo.webp?w=2 gives "photo". */
+function imageName(url) {
+  try {
+    const { protocol, pathname } = new URL(url);
+    if (protocol !== 'http:' && protocol !== 'https:') return null;
+    return stem(decodeURIComponent(pathname.split('/').pop()));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reading an image from another site needs that site's permission unless the site allows every
+ * reader. A service worker may only ask during the click itself, so this runs before anything is
+ * awaited; when the access is already there the browser answers without showing anything.
+ */
+function askForSite(srcUrl, pageUrl) {
+  const pattern = sitePattern(srcUrl);
+  // The click already lets the extension read from the page's own site (activeTab).
+  if (!pattern || pattern === sitePattern(pageUrl)) return Promise.resolve(false);
+  return chrome.permissions.request({ origins: [pattern] }).catch(() => false);
+}
+
+async function convertImage(url, targetFormat, quality) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const imageBitmap = await createImageBitmap(await response.blob());
+
+  // Render on Offscreen Canvas
+  const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+  const ctx = canvas.getContext('2d');
+  if (targetFormat === 'jpeg') {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, imageBitmap.width, imageBitmap.height);
+  }
+  ctx.drawImage(imageBitmap, 0, 0);
+
+  return canvas.convertToBlob({ type: `image/${targetFormat}`, quality });
+}
+
+/** Chrome downloads take an address, not a Blob, and a worker has no object URLs: a data URL it is. */
+function saveImage(blob, filename) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(chrome.downloads.download({ url: reader.result, filename, saveAs: false, conflictAction: 'uniquify' }));
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * A conversion that fails has no window to say so in. The toolbar icon gets a mark and the reason
+ * is kept for the popup, which shows it the next time it opens.
+ */
+async function reportFailure(url, err) {
+  const pattern = sitePattern(url);
+  const allowed = pattern ? await chrome.permissions.contains({ origins: [pattern] }).catch(() => false) : true;
+  let host = '';
+  try {
+    host = new URL(url).host;
+  } catch {
+    // An address that does not parse has no host to name.
+  }
+  // fetch() rejects with a TypeError when the site refuses the extension; anything else is the image itself.
+  const kind = err instanceof TypeError && !allowed ? 'access' : 'failed';
+  await chrome.storage.local.set({ lastFailure: { kind, host, at: Date.now() } });
+  await chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
+  await chrome.action.setBadgeText({ text: '!' });
+}
+
+async function clearFailure() {
+  await chrome.storage.local.remove('lastFailure');
+  await chrome.action.setBadgeText({ text: '' });
+}
+
 // Handle Context Menu clicks
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+chrome.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId === 'open-dashboard') {
     chrome.runtime.openOptionsPage();
     return;
   }
 
-  if (info.srcUrl) {
-    let targetFormat = 'png';
-    if (info.menuItemId === 'convert-to-webp') targetFormat = 'webp';
-    if (info.menuItemId === 'convert-to-jpg') targetFormat = 'jpeg';
+  const targetFormat = MENU_FORMATS[info.menuItemId];
+  if (!targetFormat || !info.srcUrl) return;
 
+  const asked = askForSite(info.srcUrl, info.pageUrl);
+  return convertFromMenu(info.srcUrl, targetFormat, asked);
+});
+
+async function convertFromMenu(srcUrl, targetFormat, asked) {
+  // Whatever the answer, the image is tried: plenty of sites let anyone read their images.
+  await asked;
+  try {
+    const blob = await convertImage(srcUrl, targetFormat, 0.92);
+    const extension = targetFormat === 'jpeg' ? 'jpg' : targetFormat;
+    await saveImage(blob, `${imageName(srcUrl) ?? `converted_image_${Date.now()}`}.${extension}`);
+    await clearFailure();
+  } catch (err) {
+    console.error('Failed to convert image via context menu:', err);
+    await reportFailure(srcUrl, err);
+  }
+}
+
+/**
+ * Chrome has not chosen the file's name yet when onCreated fires, so it is read again once the
+ * converted picture is ready; the name in the address is the fallback.
+ */
+async function downloadName(downloadItem, url) {
+  const [current] = await chrome.downloads.search({ id: downloadItem.id }).catch(() => []);
+  const saved = (current?.filename || downloadItem.filename || '').split(/[\\/]/).pop();
+  return stem(saved) ?? imageName(url) ?? `auto_converted_${Date.now()}`;
+}
+
+// Auto-Convert Chrome Downloads Interceptor (.webp / .jfif -> .png). The download itself is left
+// alone: the converted picture is saved beside it.
+chrome.downloads.onCreated.addListener(async (downloadItem) => {
+  // The converted picture is a download too, and must not come back in here.
+  if (downloadItem.byExtensionId === chrome.runtime.id) return;
+
+  const { autoConvertWebp = false, targetAutoFormat = 'png' } = await chrome.storage.local.get(['autoConvertWebp', 'targetAutoFormat']);
+
+  if (!autoConvertWebp) return;
+
+  const url = downloadItem.finalUrl || downloadItem.url;
+  const isWebpOrJfif = /\.(webp|jfif)(\?.*)?$/i.test(url) || downloadItem.mime === 'image/webp';
+
+  if (isWebpOrJfif) {
+    const extension = targetAutoFormat === 'jpeg' ? 'jpg' : targetAutoFormat;
     try {
-      // Fetch image data
-      const response = await fetch(info.srcUrl);
-      const blob = await response.blob();
-      const imageBitmap = await createImageBitmap(blob);
-
-      // Render on Offscreen Canvas
-      const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-      const ctx = canvas.getContext('2d');
-      if (targetFormat === 'jpeg') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, imageBitmap.width, imageBitmap.height);
-      }
-      ctx.drawImage(imageBitmap, 0, 0);
-
-      const mimeType = `image/${targetFormat}`;
-      const convertedBlob = await canvas.convertToBlob({ type: mimeType, quality: 0.92 });
-
-      // Convert Blob to Data URL for Chrome Download
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result;
-        const filename = `converted_image_${Date.now()}.${targetFormat === 'jpeg' ? 'jpg' : targetFormat}`;
-        chrome.downloads.download({
-          url: dataUrl,
-          filename: filename,
-          saveAs: false
-        });
-      };
-      reader.readAsDataURL(convertedBlob);
+      const blob = await convertImage(url, extension === 'jpg' ? 'jpeg' : extension, 0.95);
+      await saveImage(blob, `${await downloadName(downloadItem, url)}.${extension}`);
+      await clearFailure();
     } catch (err) {
-      console.error('Failed to convert image via context menu:', err);
+      console.warn('Auto-convert download skipped:', err);
+      await reportFailure(url, err);
     }
   }
 });
 
-// Auto-Convert Chrome Downloads Interceptor (.webp / .jfif -> .png)
-chrome.downloads.onCreated.addListener(async (downloadItem) => {
-  const { autoConvertWebp = false, targetAutoFormat = 'png' } = await chrome.storage.local.get(['autoConvertWebp', 'targetAutoFormat']);
-  
-  if (!autoConvertWebp) return;
+// Auto-convert reads images from whatever site a download comes from, so it is only on while the
+// extension may read every site. The popup that asks for that access is closed by the browser's own
+// prompt before the answer arrives: it leaves the time it asked, and the setting is switched on here.
+chrome.permissions.onAdded.addListener(async () => {
+  const { autoConvertPending = 0 } = await chrome.storage.local.get('autoConvertPending');
+  if (!autoConvertPending || Date.now() - autoConvertPending > PENDING_WINDOW_MS) return;
+  if (await chrome.permissions.contains(ALL_SITES)) {
+    await chrome.storage.local.set({ autoConvertWebp: true, autoConvertPending: 0 });
+  }
+});
 
-  const url = downloadItem.finalUrl || downloadItem.url;
-  const isWebpOrJfif = url.match(/\.(webp|jfif)(\?.*)?$/i) || downloadItem.mime === 'image/webp';
-
-  if (isWebpOrJfif) {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const imageBitmap = await createImageBitmap(blob);
-
-      const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-      const ctx = canvas.getContext('2d');
-      if (targetAutoFormat === 'jpg' || targetAutoFormat === 'jpeg') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, imageBitmap.width, imageBitmap.height);
-      }
-      ctx.drawImage(imageBitmap, 0, 0);
-
-      const mimeType = `image/${targetAutoFormat === 'jpg' ? 'jpeg' : targetAutoFormat}`;
-      const convertedBlob = await canvas.convertToBlob({ type: mimeType, quality: 0.95 });
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result;
-        const newFilename = downloadItem.filename.replace(/\.(webp|jfif)$/i, `.${targetAutoFormat}`);
-        chrome.downloads.download({
-          url: dataUrl,
-          filename: newFilename || `auto_converted_${Date.now()}.${targetAutoFormat}`,
-          saveAs: false
-        });
-      };
-      reader.readAsDataURL(convertedBlob);
-    } catch (err) {
-      console.warn('Auto-convert download skipped:', err);
-    }
+chrome.permissions.onRemoved.addListener(async () => {
+  if (!(await chrome.permissions.contains(ALL_SITES))) {
+    await chrome.storage.local.set({ autoConvertWebp: false });
   }
 });

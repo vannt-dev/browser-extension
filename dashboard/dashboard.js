@@ -3,6 +3,7 @@ import { DataEngine } from '../engine/data-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
+import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -606,12 +607,21 @@ function setupDevTools() {
 // Settings Persistence
 function setupSettingsPersistence() {
   if (chrome.storage?.local && autoConvertToggle) {
-    chrome.storage.local.get(['autoConvertWebp'], (res) => {
-      if (res.autoConvertWebp) autoConvertToggle.checked = true;
+    const note = document.getElementById('dash-auto-convert-note');
+    readAutoConvert().then((on) => {
+      autoConvertToggle.checked = on;
     });
 
-    autoConvertToggle.addEventListener('change', (e) => {
-      chrome.storage.local.set({ autoConvertWebp: e.target.checked });
+    autoConvertToggle.addEventListener('change', async (e) => {
+      if (note) note.style.display = 'none';
+      if (!e.target.checked) {
+        await turnOffAutoConvert();
+        return;
+      }
+      if (!(await turnOnAutoConvert())) {
+        e.target.checked = false;
+        if (note) note.style.display = 'block';
+      }
     });
   }
 }

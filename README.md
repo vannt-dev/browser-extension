@@ -34,8 +34,9 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
    - **Watermarking**: Đóng dấu bản quyền chữ/logo lên tài liệu & hình ảnh.
 
 5. **⚡ Tiện Ích Trải Nghiệm (UX Super-pack)**:
-   - **Auto-Convert Chrome Downloads**: Tự động chuyển file `.webp / .jfif` khi bấm tải ảnh bất kỳ trên Web thành `.jpg / .png`.
-   - **Context Menu**: Nhấp chuột phải vào ảnh bất kỳ trên trang web ➔ Chuyển đổi nhanh.
+   - **Auto-Convert Chrome Downloads** (tùy chọn, mặc định tắt): khi bạn tải một ảnh `.webp / .jfif` trên Web, extension lưu thêm một bản `.png` cùng tên bên cạnh file gốc. Khi bật, trình duyệt hỏi quyền đọc mọi trang, vì ảnh có thể đến từ bất kỳ trang nào.
+   - **Context Menu**: Nhấp chuột phải vào ảnh bất kỳ trên trang web ➔ Chuyển đổi nhanh sang WebP, PNG hoặc JPG; file giữ tên của ảnh. Với ảnh nằm trên một trang khác trang đang mở, trình duyệt hỏi quyền đọc trang đó một lần.
+   - Nếu một lần chuyển đổi không thực hiện được, biểu tượng extension hiện dấu `!` và cửa sổ extension cho biết lý do.
    - **Clipboard (`Ctrl+V`)**: Dán trực tiếp từ bộ nhớ tạm vào Extension để convert ngay.
    - **Chuyển đổi hàng loạt**: Tải toàn bộ sản phẩm đã convert về dưới dạng file `.ZIP`.
 

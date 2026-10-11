@@ -9,8 +9,9 @@ Universal File Converter processes every file on your own device, inside the bro
 
 ## What stays on your device
 
-The extension keeps two settings in the browser's local storage: the colour theme, and whether the optional
-auto-convert of downloaded images is on. They never leave your device.
+The extension keeps a few things in the browser's local storage: the colour theme, whether the optional
+auto-convert of downloaded images is on, and, when a right-click or auto-convert could not be done, the name of
+the site the image was on, until you dismiss the notice. They never leave your device.
 
 ## When the extension makes a request
 
@@ -24,8 +25,21 @@ Nothing else is sent anywhere.
 | --- | --- |
 | `downloads` | Saves converted files. With the optional auto-convert setting on, watches new downloads to convert `.webp` and `.jfif` images. |
 | `contextMenus` | Adds the "convert" entries to the right-click menu of images. |
-| `storage` | Keeps the two settings above. |
+| `storage` | Keeps the settings above. |
 | `activeTab` | Lets the extension fetch the image you right-clicked on the current page. |
+
+## Access to sites, asked only when you use it
+
+The extension has no access to any site when it is installed. Many sites only let their own pages read their
+images, so the browser asks you for access at the moment it is needed:
+
+- When you right-click an image that is served from another site than the page you are on, the browser asks
+  for access to that one site. If you decline, the image is still tried, and you are told if it could not be read.
+- When you switch auto-convert on, the browser asks for access to all sites, because a download can come from
+  anywhere. Without it the setting stays off.
+
+The access is used for one thing: fetching the image you asked to convert. You can take it back at any time in the
+browser's extension settings; auto-convert then switches itself off.
 
 ## Contact
 

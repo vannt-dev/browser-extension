@@ -341,6 +341,37 @@ body {
 
 .hidden { display: none; }
 
+.toggle-note {
+  margin-top: 6px;
+  color: #f59e0b;
+  line-height: 1.4;
+}
+
+.notice {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.notice-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.notice-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

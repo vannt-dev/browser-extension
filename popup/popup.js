@@ -3,6 +3,7 @@ import { DataEngine } from '../engine/data-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
+import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
@@ -71,6 +72,11 @@ const clearQueueBtn = document.getElementById('clear-queue-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const openDashboardBtn = document.getElementById('open-dashboard-btn');
 const autoConvertToggle = document.getElementById('auto-convert-download-toggle');
+const autoConvertNote = document.getElementById('auto-convert-note');
+const failureNotice = document.getElementById('failure-notice');
+const failureText = document.getElementById('failure-text');
+const failureAllowBtn = document.getElementById('failure-allow-btn');
+const failureDismissBtn = document.getElementById('failure-dismiss-btn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -416,14 +422,28 @@ function setupSettingsPersistence() {
   });
 
   if (chrome.storage?.local) {
-    chrome.storage.local.get(['theme', 'autoConvertWebp'], (res) => {
+    chrome.storage.local.get(['theme'], (res) => {
       if (res.theme === 'light') document.body.classList.add('light-theme');
-      if (res.autoConvertWebp) autoConvertToggle.checked = true;
     });
 
-    autoConvertToggle.addEventListener('change', (e) => {
-      chrome.storage.local.set({ autoConvertWebp: e.target.checked });
+    readAutoConvert().then((on) => {
+      autoConvertToggle.checked = on;
     });
+
+    autoConvertToggle.addEventListener('change', async (e) => {
+      autoConvertNote.style.display = 'none';
+      if (!e.target.checked) {
+        await turnOffAutoConvert();
+        return;
+      }
+      // The browser's prompt closes this popup; when it does, the service worker finishes the job.
+      if (!(await turnOnAutoConvert())) {
+        e.target.checked = false;
+        autoConvertNote.style.display = 'block';
+      }
+    });
+
+    showLastFailure();
   }
 
   openDashboardBtn.addEventListener('click', () => {
@@ -432,5 +452,31 @@ function setupSettingsPersistence() {
     } else {
       window.open(chrome.runtime.getURL('dashboard/dashboard.html'));
     }
+  });
+}
+
+// A right-click or an auto-convert that failed happened in the background, with nowhere to say
+// so: the service worker marked the toolbar icon and left the reason, which is shown here.
+async function showLastFailure() {
+  const { lastFailure } = await chrome.storage.local.get('lastFailure');
+  if (!lastFailure) return;
+
+  const site = lastFailure.host || 'trang web';
+  const needsAccess = lastFailure.kind === 'access';
+  failureText.textContent = needsAccess
+    ? `Không đọc được ảnh từ ${site} vì extension chưa được phép truy cập trang đó. Hãy chọn "Cho phép" khi trình duyệt hỏi, hoặc cho phép mọi trang.`
+    : `Không chuyển được ảnh từ ${site}. Ảnh có thể đã bị gỡ hoặc không phải định dạng đọc được.`;
+  failureAllowBtn.style.display = needsAccess ? 'inline-block' : 'none';
+  failureNotice.style.display = 'block';
+
+  const dismiss = async () => {
+    failureNotice.style.display = 'none';
+    await chrome.storage.local.remove('lastFailure');
+    await chrome.action.setBadgeText({ text: '' });
+  };
+  failureDismissBtn.addEventListener('click', dismiss);
+  failureAllowBtn.addEventListener('click', async () => {
+    await dismiss();
+    await askForAllSites();
   });
 }

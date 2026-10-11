@@ -23,6 +23,15 @@
       </div>
     </header>
 
+    <!-- What the last right-click or auto-convert could not do -->
+    <div id="failure-notice" class="notice" style="display: none;">
+      <p id="failure-text"></p>
+      <div class="notice-actions">
+        <button id="failure-allow-btn" class="notice-btn" style="display: none;">Cho phép mọi trang</button>
+        <button id="failure-dismiss-btn" class="notice-btn">Đã hiểu</button>
+      </div>
+    </div>
+
     <!-- Nav Category Tabs -->
     <nav class="category-nav">
       <button class="nav-btn active" data-category="image">📷 Ảnh</button>
@@ -64,8 +73,9 @@
       <label class="toggle-switch">
         <input type="checkbox" id="auto-convert-download-toggle">
         <span class="slider"></span>
-        <span class="toggle-label">Tự động đổi đuôi .webp/.jfif khi tải trên Web</span>
+        <span class="toggle-label">Tự lưu thêm bản PNG khi tải ảnh .webp/.jfif trên Web</span>
       </label>
+      <p id="auto-convert-note" class="toggle-note" style="display: none;">Cần quyền đọc mọi trang để lấy được ảnh bạn tải về. Bật lại và chọn "Cho phép" khi trình duyệt hỏi.</p>
     </div>
 
     <!-- File Queue List -->
