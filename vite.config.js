@@ -2,6 +2,19 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import fs from 'fs';
 import { copyTesseractAssets } from './scripts/copy-tesseract-assets.js';
+import { findRemoteCodeInDir, stripRemoteCode } from './scripts/remote-code.js';
+
+// See scripts/remote-code.js: the libraries name scripts on a CDN in branches nothing here runs,
+// and the Chrome Web Store rejects the package for the names alone.
+const stripRemoteCodeFromChunks = () => {
+  return {
+    name: 'strip-remote-code',
+    renderChunk(code) {
+      const stripped = stripRemoteCode(code);
+      return stripped === code ? null : { code: stripped, map: null };
+    }
+  };
+};
 
 const copyExtensionAssets = () => {
   return {
@@ -59,6 +72,17 @@ const copyExtensionAssets = () => {
           ].join('\n')
         );
       }
+
+      // Last, over everything that was written: a package that names remotely hosted code is
+      // not one to upload.
+      const offenders = findRemoteCodeInDir('dist');
+      if (offenders.length) {
+        throw new Error(
+          'The package names remotely hosted code, which Manifest V3 forbids:\n' +
+            offenders.map(({ file, found }) => `  - ${file}: ${found.join(', ')}`).join('\n') +
+            '\nTake it out in scripts/remote-code.js.'
+        );
+      }
     }
   };
 };
@@ -107,5 +131,5 @@ export default defineConfig({
       }
     }
   },
-  plugins: [copyExtensionAssets()]
+  plugins: [stripRemoteCodeFromChunks(), copyExtensionAssets()]
 });

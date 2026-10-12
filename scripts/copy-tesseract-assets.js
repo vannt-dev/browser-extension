@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { stripRemoteCode } from './remote-code.js';
 
 /**
  * Copies every Tesseract.js runtime asset into dist/vendor/tesseract so OCR runs
@@ -10,12 +11,16 @@ import path from 'path';
  * (LSTM_ONLY), which makes tesseract.js request the `-lstm` core variants and the
  * `4.0.0_best_int` traineddata. The `.wasm.js` glue files embed their WASM binary
  * as base64, so the sibling `.wasm` files are not needed.
+ *
+ * The worker script is the one file not copied as it is: it names jsDelivr as the place to fetch
+ * the core and the language data from when no path is given, and the Chrome Web Store rejects a
+ * package that names a script on another host. AiEngine always gives both paths.
  */
 
 const VENDOR_DIR = 'dist/vendor/tesseract';
 
 const ASSETS = [
-  { from: 'node_modules/tesseract.js/dist/worker.min.js', to: 'worker.min.js' },
+  { from: 'node_modules/tesseract.js/dist/worker.min.js', to: 'worker.min.js', strip: true },
   { from: 'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js', to: 'tesseract-core-simd-lstm.wasm.js' },
   { from: 'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js', to: 'tesseract-core-lstm.wasm.js' },
   { from: 'node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz', to: 'lang/eng.traineddata.gz' },
@@ -36,7 +41,11 @@ export function copyTesseractAssets() {
   for (const asset of ASSETS) {
     const dest = path.join(VENDOR_DIR, asset.to);
     fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(path.resolve(asset.from), dest);
+    if (asset.strip) {
+      fs.writeFileSync(dest, stripRemoteCode(fs.readFileSync(path.resolve(asset.from), 'utf-8')));
+    } else {
+      fs.copyFileSync(path.resolve(asset.from), dest);
+    }
     totalBytes += fs.statSync(dest).size;
   }
 
