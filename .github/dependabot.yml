@@ -1,0 +1,29 @@
+# The extension ships the bundles in lib/, made from node_modules by scripts/bundle-vendor-libs.js.
+# An update of jspdf, mammoth, marked, papaparse, yaml or jszip changes nothing in the package
+# until lib/ is made again from it and the result is built, tested and checked by hand.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+      include: scope
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+      include: scope
