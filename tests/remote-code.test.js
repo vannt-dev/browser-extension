@@ -23,9 +23,10 @@ const vendoredJsPdf = () => {
 
 describe('findRemoteCode', () => {
   it('finds the PDFObject script jsPDF keeps for an output mode nothing here uses', () => {
+    // jsPDF 4 builds that script element with createElement, so the address is all there is to
+    // find; 2.5 also wrote a `<script src="' +` string into the new window.
     expect(findRemoteCode(vendoredJsPdf())).toEqual([
-      'https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.min.js',
-      `<script src="' +`
+      'https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.min.js'
     ]);
   });
 
