@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 import mammoth from '../lib/mammoth.js';
 import { marked } from '../lib/marked.js';
 import { jsPDF } from '../lib/jspdf.js';

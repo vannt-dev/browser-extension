@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure pdfjs worker

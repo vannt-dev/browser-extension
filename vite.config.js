@@ -4,6 +4,9 @@ import fs from 'fs';
 import { copyTesseractAssets } from './scripts/copy-tesseract-assets.js';
 import { findRemoteCodeInDir, stripRemoteCode } from './scripts/remote-code.js';
 
+const LICENCE_HEADER =
+  '/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */';
+
 // See scripts/remote-code.js: the libraries name scripts on a CDN in branches nothing here runs,
 // and the Chrome Web Store rejects the package for the names alone.
 const stripRemoteCodeFromChunks = () => {
@@ -89,6 +92,8 @@ const copyExtensionAssets = () => {
 
 export default defineConfig({
   base: './',
+  // Keep /*! licence comments (ours and the vendors') in the built files; Vite drops them by default.
+  esbuild: { legalComments: 'inline' },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -101,6 +106,9 @@ export default defineConfig({
         background: resolve(__dirname, 'background/background.js')
       },
       output: {
+        // Rollup drops the licence comment of popup.js and dashboard.js because it sits on an
+        // import it rewrites, so those two entry files get it back as a banner.
+        banner: (chunk) => (['popup', 'dashboard'].includes(chunk.name) ? LICENCE_HEADER : ''),
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'background') {
             return 'background/background.js';

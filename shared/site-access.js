@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 /**
  * Auto-convert reads images from whatever site a download comes from, so it needs the optional
  * access to all sites. The popup and the dashboard switch it on and off through here.
