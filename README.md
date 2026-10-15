@@ -4,6 +4,7 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![100% Client-Side](https://img.shields.io/badge/Privacy-100%25%20Offline-success)
+[![Official vannt-dev build](https://vannt-dev.github.io/badges/official.svg)](https://vannt-dev.github.io/official.html)
 
 🛒 **Chrome Web Store**: [Universal File Converter](https://chromewebstore.google.com/detail/universal-file-converter/bekbobpfdajniiiiadbpiedlbhccidnp) · 🔒 [Chính sách riêng tư](PRIVACY.md)
 
