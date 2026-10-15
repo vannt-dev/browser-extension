@@ -19,6 +19,21 @@ const stripRemoteCodeFromChunks = () => {
   };
 };
 
+// tesseract.js reads its version with require('../../../package.json').version. Vite 8 (Rolldown)
+// then ships the whole package.json, whose scripts name a .js address on localhost; only the
+// version goes in.
+const tesseractVersionOnly = () => {
+  return {
+    name: 'tesseract-version-only',
+    enforce: 'pre',
+    load(id) {
+      if (!/node_modules[\\/]tesseract\.js[\\/]package\.json$/.test(id)) return null;
+      const { version } = JSON.parse(fs.readFileSync(id, 'utf-8'));
+      return JSON.stringify({ version });
+    }
+  };
+};
+
 const copyExtensionAssets = () => {
   return {
     name: 'copy-extension-assets',
@@ -92,23 +107,24 @@ const copyExtensionAssets = () => {
 
 export default defineConfig({
   base: './',
-  // Keep /*! licence comments (ours and the vendors') in the built files; Vite drops them by default.
-  esbuild: { legalComments: 'inline' },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     target: 'esnext',
     modulePreload: false, // Disables Vite modulepreload links to prevent Chrome Extension cross-world warnings
-    rollupOptions: {
+    rolldownOptions: {
       input: {
-        popup: resolve(__dirname, 'popup/popup.html'),
-        dashboard: resolve(__dirname, 'dashboard/dashboard.html'),
-        background: resolve(__dirname, 'background/background.js')
+        popup: resolve(import.meta.dirname, 'popup/popup.html'),
+        dashboard: resolve(import.meta.dirname, 'dashboard/dashboard.html'),
+        background: resolve(import.meta.dirname, 'background/background.js')
       },
       output: {
-        // Rollup drops the licence comment of popup.js and dashboard.js because it sits on an
-        // import it rewrites, so those two entry files get it back as a banner.
+        // The bundler drops the licence comment of popup.js and dashboard.js because it sits on
+        // an import it rewrites, so those two entry files get it back as a banner.
         banner: (chunk) => (['popup', 'dashboard'].includes(chunk.name) ? LICENCE_HEADER : ''),
+        // Keep /*! licence comments (ours and the vendors') through minification, which
+        // otherwise drops them.
+        comments: { legal: true },
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'background') {
             return 'background/background.js';
@@ -139,5 +155,5 @@ export default defineConfig({
       }
     }
   },
-  plugins: [stripRemoteCodeFromChunks(), copyExtensionAssets()]
+  plugins: [tesseractVersionOnly(), stripRemoteCodeFromChunks(), copyExtensionAssets()]
 });
