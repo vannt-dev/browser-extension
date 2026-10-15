@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 /**
  * The interface's two languages. The strings live in _locales/, where the browser also reads the
  * extension's description for its own pages; they are bundled here as well because the user may

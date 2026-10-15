@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout Repository
@@ -31,6 +33,11 @@ jobs:
       - name: Package Release ZIP
         run: npm run zip
 
+      - name: Attest Release ZIP
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/zips/*.zip
+
       - name: Get Tag Version
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
@@ -44,6 +51,9 @@ jobs:
             
             ### 📦 Download Ready-to-Upload Store Package
             Download the attached `universal-file-converter-${{ env.VERSION }}.zip` below and upload directly to Chrome Web Store or Microsoft Edge Add-ons Developer Dashboard.
+
+            ### 🔏 Verify
+            `gh attestation verify universal-file-converter-${{ env.VERSION }}.zip --owner vannt-dev`
           files: |
             dist/zips/*.zip
           draft: false

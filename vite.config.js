@@ -4,6 +4,9 @@ import fs from 'fs';
 import { copyTesseractAssets } from './scripts/copy-tesseract-assets.js';
 import { findRemoteCodeInDir, stripRemoteCode } from './scripts/remote-code.js';
 
+const LICENCE_HEADER =
+  '/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */';
+
 // See scripts/remote-code.js: the libraries name scripts on a CDN in branches nothing here runs,
 // and the Chrome Web Store rejects the package for the names alone.
 const stripRemoteCodeFromChunks = () => {
@@ -12,6 +15,21 @@ const stripRemoteCodeFromChunks = () => {
     renderChunk(code) {
       const stripped = stripRemoteCode(code);
       return stripped === code ? null : { code: stripped, map: null };
+    }
+  };
+};
+
+// tesseract.js reads its version with require('../../../package.json').version. Vite 8 (Rolldown)
+// then ships the whole package.json, whose scripts name a .js address on localhost; only the
+// version goes in.
+const tesseractVersionOnly = () => {
+  return {
+    name: 'tesseract-version-only',
+    enforce: 'pre',
+    load(id) {
+      if (!/node_modules[\\/]tesseract\.js[\\/]package\.json$/.test(id)) return null;
+      const { version } = JSON.parse(fs.readFileSync(id, 'utf-8'));
+      return JSON.stringify({ version });
     }
   };
 };
@@ -94,13 +112,19 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'esnext',
     modulePreload: false, // Disables Vite modulepreload links to prevent Chrome Extension cross-world warnings
-    rollupOptions: {
+    rolldownOptions: {
       input: {
-        popup: resolve(__dirname, 'popup/popup.html'),
-        dashboard: resolve(__dirname, 'dashboard/dashboard.html'),
-        background: resolve(__dirname, 'background/background.js')
+        popup: resolve(import.meta.dirname, 'popup/popup.html'),
+        dashboard: resolve(import.meta.dirname, 'dashboard/dashboard.html'),
+        background: resolve(import.meta.dirname, 'background/background.js')
       },
       output: {
+        // The bundler drops the licence comment of popup.js and dashboard.js because it sits on
+        // an import it rewrites, so those two entry files get it back as a banner.
+        banner: (chunk) => (['popup', 'dashboard'].includes(chunk.name) ? LICENCE_HEADER : ''),
+        // Keep /*! licence comments (ours and the vendors') through minification, which
+        // otherwise drops them.
+        comments: { legal: true },
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'background') {
             return 'background/background.js';
@@ -131,5 +155,5 @@ export default defineConfig({
       }
     }
   },
-  plugins: [stripRemoteCodeFromChunks(), copyExtensionAssets()]
+  plugins: [tesseractVersionOnly(), stripRemoteCodeFromChunks(), copyExtensionAssets()]
 });

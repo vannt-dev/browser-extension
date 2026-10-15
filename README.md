@@ -9,6 +9,9 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
 
 ---
 
+Các bản build chính thức được liệt kê tại [vannt-dev.github.io/official.html](https://vannt-dev.github.io/official.html);
+bản nào không có ở đó thì không phải do vannt-dev phát hành.
+
 ## 🌟 Tính Năng Nổi Bật
 
 1. **📷 Chuyển Đổi Hình Ảnh**:
