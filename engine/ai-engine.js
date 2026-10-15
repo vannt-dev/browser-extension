@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 import { createWorker } from 'tesseract.js';
 import { decodeHeic, isHeic } from './heic-decoder.js';
 import { t } from '../shared/i18n.js';

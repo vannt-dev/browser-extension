@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 import Papa from '../lib/papaparse.js';
 import YAML from '../lib/yaml.js';
 

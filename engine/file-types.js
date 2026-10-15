@@ -1,3 +1,4 @@
+/*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 /**
  * Which files the converter treats as images. One list for the popup and the
  * dashboard, so a format added here is routed the same way in both.
