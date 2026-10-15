@@ -12,6 +12,10 @@ import { stripRemoteCode } from './remote-code.js';
  * `4.0.0_best_int` traineddata. The `.wasm.js` glue files embed their WASM binary
  * as base64, so the sibling `.wasm` files are not needed.
  *
+ * The worker picks one core by what the browser supports: relaxed SIMD (Chrome 114 and
+ * later), then SIMD, then neither. All three ship, or OCR fails on the browsers that
+ * take the missing one.
+ *
  * The worker script is the one file not copied as it is: it names jsDelivr as the place to fetch
  * the core and the language data from when no path is given, and the Chrome Web Store rejects a
  * package that names a script on another host. AiEngine always gives both paths.
@@ -19,8 +23,12 @@ import { stripRemoteCode } from './remote-code.js';
 
 const VENDOR_DIR = 'dist/vendor/tesseract';
 
-const ASSETS = [
+export const ASSETS = [
   { from: 'node_modules/tesseract.js/dist/worker.min.js', to: 'worker.min.js', strip: true },
+  {
+    from: 'node_modules/tesseract.js-core/tesseract-core-relaxedsimd-lstm.wasm.js',
+    to: 'tesseract-core-relaxedsimd-lstm.wasm.js'
+  },
   { from: 'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js', to: 'tesseract-core-simd-lstm.wasm.js' },
   { from: 'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js', to: 'tesseract-core-lstm.wasm.js' },
   { from: 'node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz', to: 'lang/eng.traineddata.gz' },
