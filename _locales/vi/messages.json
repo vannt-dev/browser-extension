@@ -152,11 +152,41 @@
   "formatPdfSplit": {
     "message": "Tách PDF theo trang (.pdf)"
   },
+  "formatPdfRotate": {
+    "message": "Xoay trang PDF (.pdf)"
+  },
+  "formatPdfDelete": {
+    "message": "Xóa trang PDF (.pdf)"
+  },
+  "formatPdfReorder": {
+    "message": "Sắp xếp lại trang PDF (.pdf)"
+  },
   "splitRangesLabel": {
     "message": "Trang cần tách (để trống = mỗi trang một file):"
   },
   "splitRangesPlaceholder": {
     "message": "Ví dụ: 1-3, 5, 8-"
+  },
+  "pagesToRotateLabel": {
+    "message": "Trang cần xoay (để trống = mọi trang):"
+  },
+  "pagesToDeleteLabel": {
+    "message": "Trang cần xóa:"
+  },
+  "pageOrderLabel": {
+    "message": "Thứ tự trang mới (trang không ghi thì giữ thứ tự cũ, xếp phía sau):"
+  },
+  "rotateAngleLabel": {
+    "message": "Xoay trang:"
+  },
+  "rotate90": {
+    "message": "90° theo chiều kim đồng hồ"
+  },
+  "rotate180": {
+    "message": "180°"
+  },
+  "rotate270": {
+    "message": "90° ngược chiều kim đồng hồ"
   },
   "dashQualityLabel": {
     "message": "Chất lượng nén:"

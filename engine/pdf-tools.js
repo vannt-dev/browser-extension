@@ -1,9 +1,9 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, degrees } from 'pdf-lib';
 
 /**
- * Merging and splitting PDF files, page for page and without re-rendering:
- * text stays text, vectors stay vectors, and nothing is recompressed.
+ * Merging, splitting, rotating, deleting and reordering PDF pages, page for page and without
+ * re-rendering: text stays text, vectors stay vectors, and nothing is recompressed.
  */
 
 function baseName(name) {
@@ -95,4 +95,80 @@ export async function splitPdf(file, ranges = '') {
     });
   }
   return results;
+}
+
+/**
+ * The pages a selection such as `2, 5-7` names, each once, in the order written.
+ */
+function selectedPages(text, pageCount) {
+  return [...new Set(parsePageRanges(text, pageCount).flat())];
+}
+
+/** The angles a page can be turned by, clockwise. */
+export const ROTATIONS = [90, 180, 270];
+
+/**
+ * Turns pages clockwise, on top of any turn they already have.
+ * @param {File} file
+ * @param {number} angle 90, 180 or 270
+ * @param {string} [pages] A selection such as `1-3, 5`; left out, every page turns.
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function rotatePdfPages(file, angle, pages = '') {
+  const turn = Number(angle);
+  if (!ROTATIONS.includes(turn)) throw new Error('Pages turn by 90, 180 or 270 degrees.');
+  const doc = await load(file);
+  const indexes = String(pages).trim() ? selectedPages(pages, doc.getPageCount()) : doc.getPageIndices();
+  for (const index of indexes) {
+    const page = doc.getPage(index);
+    page.setRotation(degrees((((page.getRotation().angle + turn) % 360) + 360) % 360));
+  }
+  return {
+    blob: toBlob(await doc.save()),
+    filename: `${baseName(file.name)}_rotated.pdf`,
+    pageCount: doc.getPageCount(),
+  };
+}
+
+/**
+ * Takes pages out of a PDF.
+ * @param {File} file
+ * @param {string} pages A selection such as `2, 5-7`
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function deletePdfPages(file, pages) {
+  const doc = await load(file);
+  const indexes = selectedPages(pages, doc.getPageCount());
+  if (indexes.length === doc.getPageCount()) throw new Error('Deleting every page would leave an empty PDF.');
+  // From the last page back, so the indexes still to remove keep pointing at the same pages.
+  [...indexes].sort((a, b) => b - a).forEach((index) => doc.removePage(index));
+  return {
+    blob: toBlob(await doc.save()),
+    filename: `${baseName(file.name)}_pages_deleted.pdf`,
+    pageCount: doc.getPageCount(),
+  };
+}
+
+/**
+ * Puts the pages of a PDF in a new order.
+ * @param {File} file
+ * @param {string} order A selection such as `3, 1-2`: those pages come first, in that order, and
+ *   the pages it leaves out follow in their old order. A page named twice is refused.
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function reorderPdfPages(file, order) {
+  const source = await load(file);
+  const pageCount = source.getPageCount();
+  const named = parsePageRanges(order, pageCount).flat();
+  const twice = named.find((index, position) => named.indexOf(index) !== position);
+  if (twice !== undefined) throw new Error(`Page ${twice + 1} is named more than once.`);
+  const indexes = [...named, ...source.getPageIndices().filter((index) => !named.includes(index))];
+  const reordered = await PDFDocument.create();
+  const pages = await reordered.copyPages(source, indexes);
+  pages.forEach((page) => reordered.addPage(page));
+  return {
+    blob: toBlob(await reordered.save()),
+    filename: `${baseName(file.name)}_reordered.pdf`,
+    pageCount,
+  };
 }

@@ -52,6 +52,9 @@
                 <option value="pdf">PDF Document (.pdf)</option>
                 <option value="pdf-merge" data-i18n="formatPdfMerge">Merge the PDF files into one (.pdf)</option>
                 <option value="pdf-split" data-i18n="formatPdfSplit">Split a PDF by page (.pdf)</option>
+                <option value="pdf-rotate" data-i18n="formatPdfRotate">Rotate PDF pages (.pdf)</option>
+                <option value="pdf-delete" data-i18n="formatPdfDelete">Delete PDF pages (.pdf)</option>
+                <option value="pdf-reorder" data-i18n="formatPdfReorder">Reorder PDF pages (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
                 <option value="csv">CSV Table (.csv)</option>
@@ -60,6 +63,18 @@
             <div class="form-group" id="dash-split-group" style="display: none;">
               <label for="dash-split-ranges" data-i18n="splitRangesLabel">Pages to take out (empty = one file per page):</label>
               <input type="text" id="dash-split-ranges" class="dash-input" placeholder="e.g. 1-3, 5, 8-" data-i18n-placeholder="splitRangesPlaceholder">
+            </div>
+            <div class="form-group" id="dash-page-tools-group" style="display: none;">
+              <label for="dash-page-tools-pages" id="dash-page-tools-label"></label>
+              <input type="text" id="dash-page-tools-pages" class="dash-input" placeholder="e.g. 1-3, 5, 8-" data-i18n-placeholder="splitRangesPlaceholder">
+            </div>
+            <div class="form-group" id="dash-rotate-group" style="display: none;">
+              <label for="dash-rotate-angle" data-i18n="rotateAngleLabel">Turn the pages:</label>
+              <select id="dash-rotate-angle" class="dash-select">
+                <option value="90" data-i18n="rotate90">90° clockwise</option>
+                <option value="180" data-i18n="rotate180">180°</option>
+                <option value="270" data-i18n="rotate270">90° counter-clockwise</option>
+              </select>
             </div>
             <div class="form-group">
               <label><span data-i18n="dashQualityLabel">Compression quality:</span> <span id="dash-quality-val">90%</span></label>

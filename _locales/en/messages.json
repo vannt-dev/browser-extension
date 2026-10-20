@@ -152,11 +152,41 @@
   "formatPdfSplit": {
     "message": "Split a PDF by page (.pdf)"
   },
+  "formatPdfRotate": {
+    "message": "Rotate PDF pages (.pdf)"
+  },
+  "formatPdfDelete": {
+    "message": "Delete PDF pages (.pdf)"
+  },
+  "formatPdfReorder": {
+    "message": "Reorder PDF pages (.pdf)"
+  },
   "splitRangesLabel": {
     "message": "Pages to take out (empty = one file per page):"
   },
   "splitRangesPlaceholder": {
     "message": "e.g. 1-3, 5, 8-"
+  },
+  "pagesToRotateLabel": {
+    "message": "Pages to rotate (empty = every page):"
+  },
+  "pagesToDeleteLabel": {
+    "message": "Pages to delete:"
+  },
+  "pageOrderLabel": {
+    "message": "New page order (pages left out follow in their old order):"
+  },
+  "rotateAngleLabel": {
+    "message": "Turn the pages:"
+  },
+  "rotate90": {
+    "message": "90° clockwise"
+  },
+  "rotate180": {
+    "message": "180°"
+  },
+  "rotate270": {
+    "message": "90° counter-clockwise"
   },
   "dashQualityLabel": {
     "message": "Compression quality:"

@@ -28,6 +28,7 @@ bản nào không có ở đó thì không phải do vannt-dev phát hành.
    - `Markdown / TXT / HTML ➔ PDF`.
    - **Gộp PDF**: chọn nhiều file PDF rồi chọn định dạng đích "Gộp các file PDF thành một" — các file được nối theo thứ tự trong danh sách chờ, file không phải PDF bị bỏ qua.
    - **Tách PDF**: mỗi trang một file, hoặc (trong Dashboard) theo khoảng trang như `1-3, 5, 8-` — mỗi khoảng một file, nhiều file thì đóng gói ZIP. Gộp và tách sao chép nguyên trang (bằng `pdf-lib`), không render lại: chữ vẫn là chữ, không giảm chất lượng. PDF có mật khẩu không mở được.
+   - **Xoay, xóa, sắp xếp lại trang PDF** (trong Dashboard): xoay 90°/180°/270° mọi trang hoặc các trang chọn như `1-3, 5`; xóa các trang chọn; đặt thứ tự trang mới như `3, 1-2` (trang không ghi giữ thứ tự cũ, xếp phía sau). Cửa sổ extension có sẵn lệnh xoay mọi trang. Cũng không render lại trang.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
