@@ -161,6 +161,12 @@
   "formatPdfReorder": {
     "message": "Reorder PDF pages (.pdf)"
   },
+  "formatOcrPdf": {
+    "message": "Searchable PDF with OCR, from scans or images (.pdf)"
+  },
+  "ocrPdfNeedsScan": {
+    "message": "Searchable PDF needs a scanned PDF or an image"
+  },
   "splitRangesLabel": {
     "message": "Pages to take out (empty = one file per page):"
   },
@@ -218,7 +224,7 @@
     "message": "📄 AI OCR - Extract text from images / scans"
   },
   "ocrCardHint": {
-    "message": "Choose a photo of text or a scanned document to extract Vietnamese / English text"
+    "message": "Choose a photo of text, or a scanned document (image or PDF), to extract Vietnamese / English text"
   },
   "ocrLangLabel": {
     "message": "Recognition language:"
@@ -231,6 +237,23 @@
   },
   "ocrLangEng": {
     "message": "English"
+  },
+  "ocrOutputLabel": {
+    "message": "Result:"
+  },
+  "ocrOutputText": {
+    "message": "Text only"
+  },
+  "ocrOutputPdf": {
+    "message": "Text and a searchable PDF (download)"
+  },
+  "ocrPdfDone": {
+    "message": "✅ Searchable PDF saved: $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "runOcr": {
     "message": "🔍 Start reading text (OCR)"

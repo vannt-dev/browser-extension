@@ -23,6 +23,8 @@ export class PdfEngine {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale });
+      // The page's own size in points, as it shows (its rotation applied).
+      const { width, height } = page.getViewport({ scale: 1 });
 
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width;
@@ -40,6 +42,8 @@ export class PdfEngine {
 
       pageImages.push({
         pageNumber: i,
+        width,
+        height,
         blob,
         dataUrl,
         filename: `${file.name.replace(/\.[^/.]+$/, '')}_page_${i}.${format}`

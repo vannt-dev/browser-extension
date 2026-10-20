@@ -54,6 +54,7 @@ const dashQueueList = document.getElementById('dash-queue-list');
 // AI Studio Elements
 const ocrFileInput = document.getElementById('ocr-file-input');
 const ocrLangSelect = document.getElementById('ocr-lang-select');
+const ocrOutputSelect = document.getElementById('ocr-output-select');
 const runOcrBtn = document.getElementById('run-ocr-btn');
 const ocrProgress = document.getElementById('ocr-progress');
 const ocrResultText = document.getElementById('ocr-result-text');
@@ -198,12 +199,23 @@ function setupAiStudio() {
 
       try {
         const AiEngine = await loadAiEngine();
-        const res = await AiEngine.extractTextFromImage(file, lang, (percent) => {
+        const onProgress = (percent) => {
           ocrProgress.textContent = t('ocrProgress', percent);
-        });
+        };
+        // A PDF is read page by page from pictures of its pages, which the searchable-PDF path does.
+        const wantsPdf = ocrOutputSelect?.value === 'pdf';
+        const res =
+          wantsPdf || isPdfFile(file)
+            ? await AiEngine.createSearchablePdf(file, lang, onProgress)
+            : await AiEngine.extractTextFromImage(file, lang, onProgress);
 
         ocrResultText.value = res.text || t('ocrNoText');
-        ocrProgress.textContent = t('ocrDone');
+        if (wantsPdf) {
+          ZipEngine.downloadBlob(res.blob, res.filename);
+          ocrProgress.textContent = t('ocrPdfDone', res.filename);
+        } else {
+          ocrProgress.textContent = t('ocrDone');
+        }
       } catch (err) {
         console.error('OCR Error:', err);
         ocrProgress.textContent = t('ocrError', err.message);
@@ -518,6 +530,13 @@ async function processDashSingleFile(file, targetFormat, quality) {
     if (targetFormat === 'pdf-rotate') return tools.rotatePdfPages(file, ROTATE_ANGLE(), PAGE_TOOL_PAGES());
     if (targetFormat === 'pdf-delete') return tools.deletePdfPages(file, PAGE_TOOL_PAGES());
     return tools.reorderPdfPages(file, PAGE_TOOL_PAGES());
+  }
+
+  // OCR reads scans and photos alike: both become a PDF with a text layer.
+  if (targetFormat === 'ocr-pdf') {
+    if (!IMAGE_EXTENSIONS.includes(ext) && !isPdfFile(file)) throw new Error(t('ocrPdfNeedsScan'));
+    const AiEngine = await loadAiEngine();
+    return AiEngine.createSearchablePdf(file, 'vie+eng');
   }
 
   // Image Processing
