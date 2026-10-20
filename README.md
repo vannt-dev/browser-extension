@@ -35,6 +35,7 @@ bản nào không có ở đó thì không phải do vannt-dev phát hành.
 
 4. **🤖 Xử Lý Ảnh Nâng Cao & Bảo Mật Offline**:
    - **Offline OCR**: Đọc trích xuất chữ từ ảnh/PDF scan (Tiếng Việt & Anh) bằng `Tesseract.js`. Toàn bộ WASM core và traineddata được đóng gói sẵn trong extension — không tải gì từ CDN.
+   - **PDF tìm kiếm được (OCR)**: biến PDF scan hoặc ảnh thành PDF giữ nguyên hình trang, có lớp chữ vô hình đặt đúng chỗ các từ nhận dạng được, nên bôi đen, sao chép và tìm (`Ctrl+F`) được, kể cả tiếng Việt có dấu. Trang PDF giữ kích thước gốc. Có trong Dashboard (thẻ OCR và Batch File Converter) và cửa sổ extension. Lớp chữ do bộ PDF của Tesseract (đã có trong gói) tạo, không cần thêm font hay tải gì về.
    - **Xóa nền đơn sắc**: Dò màu nền từ viền ảnh, loang vùng đồng màu và làm mượt biên alpha, xuất PNG trong suốt. Đây là thuật toán so màu xác định (không phải mô hình AI): hiệu quả với ảnh chụp trên nền một màu, không tách sạch được ảnh nền phức tạp.
    - **Watermarking**: Bật trong tab *Watermark & Security* để đóng dấu một dòng chữ bản quyền (góc dưới bên phải) lên các ảnh chuyển đổi bằng Batch File Converter. Mặc định tắt.
 

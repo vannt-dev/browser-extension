@@ -55,6 +55,7 @@
                 <option value="pdf-rotate" data-i18n="formatPdfRotate">Rotate PDF pages (.pdf)</option>
                 <option value="pdf-delete" data-i18n="formatPdfDelete">Delete PDF pages (.pdf)</option>
                 <option value="pdf-reorder" data-i18n="formatPdfReorder">Reorder PDF pages (.pdf)</option>
+                <option value="ocr-pdf" data-i18n="formatOcrPdf">Searchable PDF with OCR, from scans or images (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
                 <option value="csv">CSV Table (.csv)</option>
@@ -100,7 +101,7 @@
             <p style="font-size: 13px; color: var(--text-secondary);" data-i18n="ocrCardHint">Choose a photo of text or a scanned document to extract Vietnamese / English text</p>
 
             <div class="form-group" style="margin-top: 12px;">
-              <input type="file" id="ocr-file-input" accept="image/*" class="dash-input">
+              <input type="file" id="ocr-file-input" accept="image/*,.heic,.heif,.pdf,application/pdf" class="dash-input">
             </div>
 
             <div class="form-group">
@@ -109,6 +110,14 @@
                 <option value="vie+eng" data-i18n="ocrLangBoth">Vietnamese &amp; English</option>
                 <option value="vie" data-i18n="ocrLangVie">Vietnamese</option>
                 <option value="eng" data-i18n="ocrLangEng">English</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="ocr-output-select" data-i18n="ocrOutputLabel">Result:</label>
+              <select id="ocr-output-select" class="dash-select">
+                <option value="text" data-i18n="ocrOutputText">Text only</option>
+                <option value="pdf" data-i18n="ocrOutputPdf">Text and a searchable PDF (download)</option>
               </select>
             </div>
 

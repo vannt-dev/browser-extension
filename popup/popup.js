@@ -39,7 +39,8 @@ const FORMAT_OPTIONS = {
     { label: 'Split PDF, one file per page (.pdf)', value: 'pdf-split' },
     { label: 'Rotate all PDF pages 90° clockwise (.pdf)', value: 'pdf-rotate-90' },
     { label: 'Rotate all PDF pages 180° (.pdf)', value: 'pdf-rotate-180' },
-    { label: 'Rotate all PDF pages 90° counter-clockwise (.pdf)', value: 'pdf-rotate-270' }
+    { label: 'Rotate all PDF pages 90° counter-clockwise (.pdf)', value: 'pdf-rotate-270' },
+    { label: 'Searchable PDF via OCR, from a scan (.pdf)', value: 'ocr-pdf' }
   ],
   data: [
     { label: 'JSON Format (.json)', value: 'json' },
@@ -51,6 +52,7 @@ const FORMAT_OPTIONS = {
   ],
   ai: [
     { label: 'AI OCR Text Extraction (.txt)', value: 'ocr-txt' },
+    { label: 'Searchable PDF via OCR (.pdf)', value: 'ocr-pdf' },
     { label: 'Target Size Compress (.jpg)', value: 'target-compress' }
   ]
 };
@@ -337,6 +339,10 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
       const res = await ImageEngine.compressToTargetSize(file, targetSizeKB);
       return { blob: res.blob, filename: `compressed_${file.name}` };
     }
+    if (targetFormat === 'ocr-pdf') {
+      const AiEngine = await loadAiEngine();
+      return AiEngine.createSearchablePdf(file);
+    }
     if (targetFormat === 'ocr-txt' || targetFormat === 'ocr-docx') {
       const AiEngine = await loadAiEngine();
       const ocrRes = await AiEngine.extractTextFromImage(file);
@@ -369,6 +375,10 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
     if (ROTATION_OF(targetFormat)) {
       const { rotatePdfPages } = await loadPdfTools();
       return rotatePdfPages(file, ROTATION_OF(targetFormat));
+    }
+    if (targetFormat === 'ocr-pdf') {
+      const AiEngine = await loadAiEngine();
+      return AiEngine.createSearchablePdf(file);
     }
     if (targetFormat === 'pdf-split') {
       const { splitPdf } = await loadPdfTools();

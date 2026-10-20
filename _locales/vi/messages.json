@@ -161,6 +161,12 @@
   "formatPdfReorder": {
     "message": "Sắp xếp lại trang PDF (.pdf)"
   },
+  "formatOcrPdf": {
+    "message": "PDF tìm kiếm được bằng OCR, từ bản scan hoặc ảnh (.pdf)"
+  },
+  "ocrPdfNeedsScan": {
+    "message": "PDF tìm kiếm được cần một file PDF scan hoặc một ảnh"
+  },
   "splitRangesLabel": {
     "message": "Trang cần tách (để trống = mỗi trang một file):"
   },
@@ -218,7 +224,7 @@
     "message": "📄 AI OCR - Trích xuất văn bản từ Ảnh / Scan"
   },
   "ocrCardHint": {
-    "message": "Tải ảnh chụp văn bản hoặc tài liệu để trích xuất chữ tiếng Việt / Tiếng Anh"
+    "message": "Tải ảnh chụp văn bản hoặc tài liệu scan (ảnh hoặc PDF) để trích xuất chữ tiếng Việt / Tiếng Anh"
   },
   "ocrLangLabel": {
     "message": "Ngôn ngữ nhận diện:"
@@ -231,6 +237,23 @@
   },
   "ocrLangEng": {
     "message": "Tiếng Anh"
+  },
+  "ocrOutputLabel": {
+    "message": "Kết quả:"
+  },
+  "ocrOutputText": {
+    "message": "Chỉ văn bản"
+  },
+  "ocrOutputPdf": {
+    "message": "Văn bản và một file PDF tìm kiếm được (tải về)"
+  },
+  "ocrPdfDone": {
+    "message": "✅ Đã lưu PDF tìm kiếm được: $NAME$",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   },
   "runOcr": {
     "message": "🔍 Bắt đầu đọc chữ (OCR)"
