@@ -2,19 +2,34 @@
 import JSZip from '../lib/jszip.js';
 
 /**
+ * The name itself the first time, then `name (2).ext`, `name (3).ext`, ...: a batch can turn
+ * photo.jpg and photo.webp into two photo.png, and a ZIP keeps only one file per name.
+ */
+function uniqueName(name, taken) {
+  const dot = name.lastIndexOf('.');
+  const [stem, ext] = dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ''];
+  let candidate = name;
+  for (let n = 2; taken.has(candidate.toLowerCase()); n++) candidate = `${stem} (${n})${ext}`;
+  taken.add(candidate.toLowerCase());
+  return candidate;
+}
+
+/**
  * Universal Archive Engine (JSZip Batch Compression & Chrome Extension Downloader)
  */
 export class ZipEngine {
   /**
    * Bundles array of converted files into a downloadable ZIP Blob
-   * @param {Array<{name: string, blob: Blob}>} files 
+   * @param {Array<{filename?: string, name?: string, blob: Blob}>} files The converters' results,
+   *   named by `filename`, or files named by `name`
    * @param {string} zipFilename 
    */
   static async createZip(files, zipFilename = 'converted_files.zip') {
     const zip = new JSZip();
+    const taken = new Set();
 
-    files.forEach((file) => {
-      zip.file(file.name, file.blob);
+    files.forEach((file, index) => {
+      zip.file(uniqueName(file.filename || file.name || `file_${index + 1}`, taken), file.blob);
     });
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
