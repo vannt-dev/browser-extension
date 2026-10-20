@@ -13,8 +13,10 @@ const loadAiEngine = () => import('../engine/ai-engine.js').then((m) => m.AiEngi
 const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocEngine);
 const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
 const loadPdfTools = () => import('../engine/pdf-tools.js');
-// The popup has no field for page ranges: a split here is always one file per page.
+// The popup has no field for page ranges: a split here is always one file per page, and a
+// rotation turns every page. Deleting and reordering pages are in the dashboard.
 const SPLIT_RANGES = () => '';
+const ROTATION_OF = (format) => Number(/^pdf-rotate-(\d+)$/.exec(format)?.[1]) || 0;
 
 // Format Mapping Options
 const FORMAT_OPTIONS = {
@@ -34,7 +36,10 @@ const FORMAT_OPTIONS = {
     { label: 'Markdown (.md)', value: 'md' },
     { label: 'Images PNG (Page-by-page)', value: 'png-pages' },
     { label: 'Merge PDFs into one (.pdf)', value: 'pdf-merge' },
-    { label: 'Split PDF, one file per page (.pdf)', value: 'pdf-split' }
+    { label: 'Split PDF, one file per page (.pdf)', value: 'pdf-split' },
+    { label: 'Rotate all PDF pages 90° clockwise (.pdf)', value: 'pdf-rotate-90' },
+    { label: 'Rotate all PDF pages 180° (.pdf)', value: 'pdf-rotate-180' },
+    { label: 'Rotate all PDF pages 90° counter-clockwise (.pdf)', value: 'pdf-rotate-270' }
   ],
   data: [
     { label: 'JSON Format (.json)', value: 'json' },
@@ -361,6 +366,10 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
 
   // PDF Processing
   if (ext === 'pdf') {
+    if (ROTATION_OF(targetFormat)) {
+      const { rotatePdfPages } = await loadPdfTools();
+      return rotatePdfPages(file, ROTATION_OF(targetFormat));
+    }
     if (targetFormat === 'pdf-split') {
       const { splitPdf } = await loadPdfTools();
       const parts = await splitPdf(file, SPLIT_RANGES());

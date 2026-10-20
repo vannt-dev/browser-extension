@@ -14,6 +14,14 @@ const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocE
 const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
 const loadPdfTools = () => import('../engine/pdf-tools.js');
 const SPLIT_RANGES = () => document.getElementById('dash-split-ranges')?.value || '';
+const PAGE_TOOL_PAGES = () => document.getElementById('dash-page-tools-pages')?.value || '';
+const ROTATE_ANGLE = () => Number(document.getElementById('dash-rotate-angle')?.value || 90);
+// The jobs that change the pages of one PDF, each with the label of its page field.
+const PDF_PAGE_TOOLS = {
+  'pdf-rotate': () => t('pagesToRotateLabel'),
+  'pdf-delete': () => t('pagesToDeleteLabel'),
+  'pdf-reorder': () => t('pageOrderLabel')
+};
 
 // State for Dashboard Batch Converter & Lightbox
 let dashFileQueue = [];
@@ -27,10 +35,18 @@ const dashFileInput = document.getElementById('dash-file-input');
 const dashTargetFormat = document.getElementById('dash-target-format');
 const dashQualityRange = document.getElementById('dash-quality-range');
 const dashSplitGroup = document.getElementById('dash-split-group');
-// The page selection only means something when splitting.
-dashTargetFormat?.addEventListener('change', () => {
-  if (dashSplitGroup) dashSplitGroup.style.display = dashTargetFormat.value === 'pdf-split' ? 'block' : 'none';
-});
+const dashPageToolsGroup = document.getElementById('dash-page-tools-group');
+const dashPageToolsLabel = document.getElementById('dash-page-tools-label');
+const dashRotateGroup = document.getElementById('dash-rotate-group');
+// The page fields only mean something for the PDF job they belong to.
+function showFormatFields() {
+  const format = dashTargetFormat?.value;
+  if (dashSplitGroup) dashSplitGroup.style.display = format === 'pdf-split' ? 'block' : 'none';
+  if (dashPageToolsGroup) dashPageToolsGroup.style.display = PDF_PAGE_TOOLS[format] ? 'block' : 'none';
+  if (dashPageToolsLabel && PDF_PAGE_TOOLS[format]) dashPageToolsLabel.textContent = PDF_PAGE_TOOLS[format]();
+  if (dashRotateGroup) dashRotateGroup.style.display = format === 'pdf-rotate' ? 'block' : 'none';
+}
+dashTargetFormat?.addEventListener('change', showFormatFields);
 const dashQualityVal = document.getElementById('dash-quality-val');
 const dashConvertBtn = document.getElementById('dash-convert-btn');
 const dashQueueList = document.getElementById('dash-queue-list');
@@ -496,6 +512,14 @@ async function mergeDashQueue() {
 async function processDashSingleFile(file, targetFormat, quality) {
   const ext = file.name.split('.').pop().toLowerCase();
 
+  if (PDF_PAGE_TOOLS[targetFormat]) {
+    if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
+    const tools = await loadPdfTools();
+    if (targetFormat === 'pdf-rotate') return tools.rotatePdfPages(file, ROTATE_ANGLE(), PAGE_TOOL_PAGES());
+    if (targetFormat === 'pdf-delete') return tools.deletePdfPages(file, PAGE_TOOL_PAGES());
+    return tools.reorderPdfPages(file, PAGE_TOOL_PAGES());
+  }
+
   // Image Processing
   if (IMAGE_EXTENSIONS.includes(ext)) {
     if (targetFormat === 'pdf') {
@@ -620,7 +644,10 @@ function setupSettingsPersistence() {
   // right-click menu follows through the service worker, which watches the stored choice.
   const languageSelect = document.getElementById('dash-language-select');
   if (chrome.storage?.local && languageSelect) {
-    bindLanguageSelect(languageSelect, renderDashQueue);
+    bindLanguageSelect(languageSelect, () => {
+      renderDashQueue();
+      showFormatFields();
+    });
   }
 
   if (chrome.storage?.local && autoConvertToggle) {

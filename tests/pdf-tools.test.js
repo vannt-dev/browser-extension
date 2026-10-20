@@ -1,21 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
-import { mergePdfs, parsePageRanges, splitPdf } from '../engine/pdf-tools.js';
+import { PDFDocument, degrees } from 'pdf-lib';
+import {
+  deletePdfPages,
+  mergePdfs,
+  parsePageRanges,
+  reorderPdfPages,
+  rotatePdfPages,
+  splitPdf,
+} from '../engine/pdf-tools.js';
 
 /**
  * Real PDFs in, real PDFs out: the fixtures are written with pdf-lib and the
  * results are read back with it. Every page has its own width, so a page can
  * be told apart after it has been copied into another file.
  */
-async function pdfFile(name, widths) {
+async function pdfFile(name, widths, rotations = []) {
   const doc = await PDFDocument.create();
-  widths.forEach((width) => doc.addPage([width, 200]));
+  widths.forEach((width, index) => doc.addPage([width, 200]).setRotation(degrees(rotations[index] ?? 0)));
   return new File([await doc.save()], name, { type: 'application/pdf' });
 }
 
 async function pageWidths(blob) {
   const doc = await PDFDocument.load(await blob.arrayBuffer());
   return doc.getPages().map((page) => page.getWidth());
+}
+
+async function pageRotations(blob) {
+  const doc = await PDFDocument.load(await blob.arrayBuffer());
+  return doc.getPages().map((page) => page.getRotation().angle);
 }
 
 describe('parsePageRanges', () => {
@@ -83,5 +95,79 @@ describe('splitPdf', () => {
 
   it('reports a range outside the document', async () => {
     await expect(splitPdf(await pdfFile('short.pdf', [100, 100]), '3')).rejects.toThrow('goes past the last page (2)');
+  });
+});
+
+describe('rotatePdfPages', () => {
+  it('turns every page when no pages are named', async () => {
+    const rotated = await rotatePdfPages(await pdfFile('scan.pdf', [101, 102, 103]), 90);
+
+    expect(rotated.filename).toBe('scan_rotated.pdf');
+    expect(rotated.pageCount).toBe(3);
+    expect(await pageRotations(rotated.blob)).toEqual([90, 90, 90]);
+    expect(await pageWidths(rotated.blob)).toEqual([101, 102, 103]);
+  });
+
+  it('turns only the pages named, on top of the turn they already have', async () => {
+    const file = await pdfFile('mixed.pdf', [101, 102, 103, 104], [0, 90, 270, 0]);
+    const rotated = await rotatePdfPages(file, 180, '2-3');
+
+    expect(await pageRotations(rotated.blob)).toEqual([0, 270, 90, 0]);
+    expect(await pageRotations((await rotatePdfPages(file, 270, '1, 3')).blob)).toEqual([270, 90, 180, 0]);
+  });
+
+  it('refuses an angle that is not a quarter turn, and pages outside the document', async () => {
+    const file = await pdfFile('short.pdf', [100, 100]);
+    await expect(rotatePdfPages(file, 45)).rejects.toThrow('90, 180 or 270');
+    await expect(rotatePdfPages(file, 90, '3')).rejects.toThrow('goes past the last page (2)');
+  });
+});
+
+describe('deletePdfPages', () => {
+  it('takes out the pages named and keeps the rest in order', async () => {
+    const widths = [101, 102, 103, 104, 105, 106];
+    const trimmed = await deletePdfPages(await pdfFile('deck.pdf', widths), '2, 4-5');
+
+    expect(trimmed.filename).toBe('deck_pages_deleted.pdf');
+    expect(trimmed.pageCount).toBe(3);
+    expect(await pageWidths(trimmed.blob)).toEqual([101, 103, 106]);
+  });
+
+  it('keeps the turn of the pages it leaves', async () => {
+    const trimmed = await deletePdfPages(await pdfFile('turned.pdf', [101, 102], [0, 90]), '1');
+    expect(await pageRotations(trimmed.blob)).toEqual([90]);
+  });
+
+  it('will not delete every page, and needs pages to be named', async () => {
+    const file = await pdfFile('two.pdf', [101, 102]);
+    await expect(deletePdfPages(file, '1-2')).rejects.toThrow('empty PDF');
+    await expect(deletePdfPages(file, '2, 1')).rejects.toThrow('empty PDF');
+    await expect(deletePdfPages(file, '')).rejects.toThrow('No pages were given.');
+  });
+});
+
+describe('reorderPdfPages', () => {
+  it('puts the pages in the order written', async () => {
+    const reordered = await reorderPdfPages(await pdfFile('slides.pdf', [101, 102, 103, 104]), '4, 2, 3, 1');
+
+    expect(reordered.filename).toBe('slides_reordered.pdf');
+    expect(reordered.pageCount).toBe(4);
+    expect(await pageWidths(reordered.blob)).toEqual([104, 102, 103, 101]);
+  });
+
+  it('lets the pages left out follow in their old order', async () => {
+    const file = await pdfFile('book.pdf', [101, 102, 103, 104, 105]);
+    expect(await pageWidths((await reorderPdfPages(file, '4-5')).blob)).toEqual([104, 105, 101, 102, 103]);
+    expect(await pageWidths((await reorderPdfPages(file, '3')).blob)).toEqual([103, 101, 102, 104, 105]);
+  });
+
+  it('keeps the turn of each page', async () => {
+    const reordered = await reorderPdfPages(await pdfFile('turned.pdf', [101, 102], [90, 0]), '2, 1');
+    expect(await pageRotations(reordered.blob)).toEqual([0, 90]);
+  });
+
+  it('refuses a page named twice', async () => {
+    const file = await pdfFile('three.pdf', [101, 102, 103]);
+    await expect(reorderPdfPages(file, '2, 1-3')).rejects.toThrow('Page 2 is named more than once.');
   });
 });
