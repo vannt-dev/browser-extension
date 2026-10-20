@@ -32,6 +32,7 @@ bản nào không có ở đó thì không phải do vannt-dev phát hành.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
+   - **Bảng tính** `XLSX / XLS / ODS ➔ CSV / JSON / XML / YAML`, và `CSV / JSON / XML / YAML ➔ XLSX / ODS`; đổi qua lại giữa XLSX, XLS và ODS. File nhiều sheet ra mỗi sheet một CSV (đóng gói ZIP), hoặc một JSON dạng `{ "tên sheet": [các dòng] }` — JSON dạng này chuyển ngược lại thành đủ các sheet. Dùng SheetJS Community Edition (Apache-2.0) đóng gói sẵn, khoảng 480 KB, chỉ nạp khi gặp bảng tính.
 
 4. **🤖 Xử Lý Ảnh Nâng Cao & Bảo Mật Offline**:
    - **Offline OCR**: Đọc trích xuất chữ từ ảnh/PDF scan (Tiếng Việt & Anh) bằng `Tesseract.js`. Toàn bộ WASM core và traineddata được đóng gói sẵn trong extension — không tải gì từ CDN.
@@ -93,4 +94,4 @@ Tất cả các thao tác xử lý dữ liệu và nhận dạng chữ (OCR) đ�
 
 Mã nguồn của extension phát hành theo giấy phép [MIT](LICENSE).
 
-Gói extension có kèm thư viện giải mã HEIC (`heic-to`, dựa trên libheif) theo giấy phép LGPL-3.0; nội dung giấy phép và ghi chú đi kèm nằm trong `licenses/` và `THIRD_PARTY_NOTICES.txt` của gói.
+Gói extension có kèm thư viện giải mã HEIC (`heic-to`, dựa trên libheif) theo giấy phép LGPL-3.0 và SheetJS Community Edition (`xlsx`) theo giấy phép Apache-2.0; nội dung giấy phép và ghi chú đi kèm nằm trong `licenses/` và `THIRD_PARTY_NOTICES.txt` của gói.

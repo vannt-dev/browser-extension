@@ -7,6 +7,9 @@
  */
 export const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'ico', 'svg', 'gif', 'avif', 'heic', 'heif'];
 
+/** Spreadsheets, read by engine/sheet-engine.js. Listed here so routing a file does not load it. */
+export const SPREADSHEET_EXTENSIONS = ['xlsx', 'xls', 'ods'];
+
 export function extensionOf(name) {
   return String(name || '').split('.').pop().toLowerCase();
 }

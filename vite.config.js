@@ -91,6 +91,28 @@ const copyExtensionAssets = () => {
         );
       }
 
+      // SheetJS Community Edition (spreadsheets) is Apache-2.0, which asks for its licence to
+      // travel with the copies handed on.
+      const sheetLicence = 'node_modules/xlsx/LICENSE';
+      if (fs.existsSync(sheetLicence)) {
+        const sheetVersion = JSON.parse(fs.readFileSync('node_modules/xlsx/package.json', 'utf-8')).version;
+        fs.mkdirSync('dist/licenses', { recursive: true });
+        fs.copyFileSync(sheetLicence, 'dist/licenses/xlsx-Apache-2.0.txt');
+        fs.appendFileSync(
+          'dist/THIRD_PARTY_NOTICES.txt',
+          [
+            '',
+            'Other third-party software whose licence asks for a copy to ship with it',
+            '',
+            `SheetJS Community Edition (xlsx) ${sheetVersion} (https://git.sheetjs.com/sheetjs/sheetjs),`,
+            'Copyright (C) 2012-present SheetJS LLC, reads and writes spreadsheets. It is licensed under the',
+            'Apache License, version 2.0: licenses/xlsx-Apache-2.0.txt. It is the file',
+            'chunks/vendor-xlsx-*.js.',
+            ''
+          ].join('\n')
+        );
+      }
+
       // Last, over everything that was written: a package that names remotely hosted code is
       // not one to upload.
       const offenders = findRemoteCodeInDir('dist');
@@ -139,6 +161,7 @@ export default defineConfig({
           // libheif is LGPL: it stays a file of its own, replaceable without rebuilding the rest.
           if (id.includes('node_modules/heic-to')) return 'vendor-heic';
           if (id.includes('node_modules/pdf-lib') || id.includes('node_modules/@pdf-lib')) return 'vendor-pdf-lib';
+          if (id.includes('node_modules/xlsx')) return 'vendor-xlsx';
           if (id.includes('/lib/mammoth.js') || id.includes('/lib/marked.js')) return 'vendor-doc';
           if (id.includes('/lib/jspdf') || id.includes('/lib/html2canvas') || id.includes('/lib/index.es')) return 'vendor-pdf-export';
           if (id.includes('/lib/jszip.js')) return 'vendor-zip';

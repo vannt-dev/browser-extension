@@ -3,7 +3,7 @@ import { ImageEngine } from '../engine/image-engine.js';
 import { DataEngine } from '../engine/data-engine.js';
 import { ZipEngine } from '../engine/zip-engine.js';
 import { readFileAsText } from '../engine/file-reader.js';
-import { IMAGE_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
+import { IMAGE_EXTENSIONS, SPREADSHEET_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
 
@@ -13,6 +13,7 @@ const loadAiEngine = () => import('../engine/ai-engine.js').then((m) => m.AiEngi
 const loadDocEngine = () => import('../engine/doc-engine.js').then((m) => m.DocEngine);
 const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfEngine);
 const loadPdfTools = () => import('../engine/pdf-tools.js');
+const loadSheetEngine = () => import('../engine/sheet-engine.js');
 // The popup has no field for page ranges: a split here is always one file per page, and a
 // rotation turns every page. Deleting and reordering pages are in the dashboard.
 const SPLIT_RANGES = () => '';
@@ -47,6 +48,8 @@ const FORMAT_OPTIONS = {
     { label: 'CSV Table (.csv)', value: 'csv' },
     { label: 'YAML Format (.yaml)', value: 'yaml' },
     { label: 'XML Format (.xml)', value: 'xml' },
+    { label: 'Excel Workbook (.xlsx)', value: 'xlsx' },
+    { label: 'OpenDocument Spreadsheet (.ods)', value: 'ods' },
     { label: 'TypeScript Types (.ts)', value: 'ts' },
     { label: 'Go Struct (.go)', value: 'go' }
   ],
@@ -215,7 +218,7 @@ function addFilesToQueue(files) {
       switchCategory('image');
     } else if (['docx', 'pdf', 'md', 'html', 'txt'].includes(ext)) {
       switchCategory('doc');
-    } else if (['json', 'csv', 'xml', 'yaml', 'yml'].includes(ext)) {
+    } else if (['json', 'csv', 'xml', 'yaml', 'yml', ...SPREADSHEET_EXTENSIONS].includes(ext)) {
       switchCategory('data');
     }
   }
@@ -401,10 +404,37 @@ async function processSingleFile(file, targetFormat, quality, targetSizeKB) {
     return { blob: zipRes.blob, filename: zipRes.filename };
   }
 
+  // Spreadsheets: CSV (one per sheet), JSON, the other data formats, or another spreadsheet format
+  if (SPREADSHEET_EXTENSIONS.includes(ext)) {
+    const sheets = await loadSheetEngine();
+    const bytes = await file.arrayBuffer();
+    const base = file.name.replace(/\.[^/.]+$/, '');
+    if (sheets.SPREADSHEET_OUTPUTS[targetFormat]) {
+      return { blob: sheets.convertSpreadsheet(bytes, targetFormat), filename: `${base}.${targetFormat}` };
+    }
+    if (targetFormat === 'csv') {
+      const files = sheets.spreadsheetToCsv(bytes, file.name);
+      if (files.length === 1) return files[0];
+      // createZip names entries by filename and keeps sheets whose names clash once made safe.
+      const zipRes = await ZipEngine.createZip(files, `${base}_sheets.zip`);
+      return { blob: zipRes.blob, filename: zipRes.filename };
+    }
+    const finalFormat = ['json', 'xml', 'yaml', 'ts', 'go'].includes(targetFormat) ? targetFormat : 'json';
+    const outputText = DataEngine.convert(sheets.readSpreadsheet(bytes), finalFormat);
+    const mimeTypes = { json: 'application/json', xml: 'text/xml', yaml: 'text/yaml' };
+    return { blob: new Blob([outputText], { type: mimeTypes[finalFormat] || 'text/plain' }), filename: `${base}.${finalFormat}` };
+  }
+
   // Data Processing (JSON, CSV, XML, YAML)
   if (['json', 'csv', 'xml', 'yaml', 'yml'].includes(ext)) {
     const text = await readFileAsText(file);
     const parsedData = DataEngine.parse(text, ext === 'yml' ? 'yaml' : ext);
+    if (['xlsx', 'ods'].includes(targetFormat)) {
+      const { dataToSpreadsheet } = await loadSheetEngine();
+      // CSV gives every value as text; plain numbers go into the sheet as numbers.
+      const blob = dataToSpreadsheet(parsedData, targetFormat, { numbersFromText: ext === 'csv' });
+      return { blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.${targetFormat}` };
+    }
     const validDataFormats = ['json', 'csv', 'xml', 'yaml', 'ts', 'go'];
     const finalFormat = validDataFormats.includes(targetFormat) ? targetFormat : 'json';
     const outputText = DataEngine.convert(parsedData, finalFormat);
