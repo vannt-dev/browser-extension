@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest';
 import { resolve } from 'path';
 import { pathToFileURL } from 'url';
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { jsPDF } from '../lib/jspdf.js';
 import { PdfEngine } from '../engine/pdf-engine.js';
 
@@ -38,14 +38,14 @@ function pdfFixture(pages, name = 'fixture.pdf') {
 }
 
 beforeAll(() => {
-  // pdf-engine.js points workerSrc at `new URL('pdfjs-dist/build/pdf.worker.mjs',
+  // pdf-engine.js points workerSrc at `new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs',
   // import.meta.url)`. Vite rewrites that to the emitted asset at build time (the
-  // build really does produce dist/assets/pdf.worker-*.mjs), but vitest leaves the
+  // build really does produce dist/assets/pdf.worker.min-*.mjs), but vitest leaves the
   // bare specifier alone, so it resolves against the dev server origin and the ESM
   // loader rejects the resulting http:// URL. Point it at the on-disk worker so the
   // fixtures are parsed by the same pdf.js that ships in the extension.
   pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
-    resolve('node_modules/pdfjs-dist/build/pdf.worker.mjs')
+    resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs')
   ).href;
 });
 
@@ -112,26 +112,30 @@ describe('PdfEngine.renderPdfToImages (pdf.js stubbed)', () => {
     const renderCalls = [];
     const viewportCalls = [];
     const canvases = [];
+    const documentCalls = [];
 
     vi.resetModules();
-    vi.doMock('pdfjs-dist', () => ({
+    vi.doMock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
       GlobalWorkerOptions: {},
-      getDocument: vi.fn(() => ({
-        promise: Promise.resolve({
-          numPages,
-          getPage: vi.fn(async (pageNumber) => ({
-            pageNumber,
-            getViewport: vi.fn((options) => {
-              viewportCalls.push(options);
-              return { width: 200 * options.scale, height: 100 * options.scale };
-            }),
-            render: vi.fn((options) => {
-              renderCalls.push(options);
-              return { promise: Promise.resolve() };
-            })
-          }))
-        })
-      }))
+      getDocument: vi.fn((params) => {
+        documentCalls.push(params);
+        return {
+          promise: Promise.resolve({
+            numPages,
+            getPage: vi.fn(async (pageNumber) => ({
+              pageNumber,
+              getViewport: vi.fn((options) => {
+                viewportCalls.push(options);
+                return { width: 200 * options.scale, height: 100 * options.scale };
+              }),
+              render: vi.fn((options) => {
+                renderCalls.push(options);
+                return { promise: Promise.resolve() };
+              })
+            }))
+          })
+        };
+      })
     }));
 
     const originalCreateElement = document.createElement.bind(document);
@@ -157,11 +161,11 @@ describe('PdfEngine.renderPdfToImages (pdf.js stubbed)', () => {
 
     const { PdfEngine: Engine } = await import('../engine/pdf-engine.js');
     const file = { name: 'report.pdf', arrayBuffer: async () => new ArrayBuffer(8) };
-    return { Engine, file, renderCalls, viewportCalls, canvases };
+    return { Engine, file, renderCalls, viewportCalls, canvases, documentCalls };
   }
 
   afterEach(() => {
-    vi.doUnmock('pdfjs-dist');
+    vi.doUnmock('pdfjs-dist/legacy/build/pdf.mjs');
   });
 
   it('renders one image per page and numbers them from 1', async () => {
@@ -194,6 +198,15 @@ describe('PdfEngine.renderPdfToImages (pdf.js stubbed)', () => {
 
     expect(viewportCalls[0]).toEqual({ scale: 3 });
     expect(canvases[0].width).toBe(600);
+  });
+
+  it('tells pdf.js where the packaged WebAssembly decoders are', async () => {
+    const { Engine, file, documentCalls } = await withStubbedPdfjs({ numPages: 1 });
+    await Engine.renderPdfToImages(file);
+
+    // pdf.js appends the file name to wasmUrl, so it must be a folder; scanned pages (JBIG2,
+    // CCITT fax) and JPEG 2000 images come out blank without it.
+    expect(documentCalls[0].wasmUrl).toMatch(/\/vendor\/pdfjs\/$/);
   });
 
   it('passes the canvas context and viewport through to pdf.js render', async () => {
