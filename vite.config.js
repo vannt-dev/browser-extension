@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import fs from 'fs';
+import { copyPdfjsAssets } from './scripts/copy-pdfjs-assets.js';
 import { copyTesseractAssets } from './scripts/copy-tesseract-assets.js';
 import { findRemoteCodeInDir, stripRemoteCode } from './scripts/remote-code.js';
 
@@ -43,6 +44,10 @@ const copyExtensionAssets = () => {
       // OCR must run offline: MV3 blocks the CDN paths tesseract.js defaults to.
       const { count, totalBytes } = copyTesseractAssets();
       console.log(`  tesseract assets  ${count} files │ ${(totalBytes / 1024 / 1024).toFixed(2)} MB`);
+
+      // Scanned PDFs need pdf.js's WebAssembly decoders, which it loads by address, not import.
+      const pdfjs = copyPdfjsAssets();
+      console.log(`  pdf.js assets     ${pdfjs.count} files │ ${(pdfjs.totalBytes / 1024 / 1024).toFixed(2)} MB`);
 
       // Copy and adjust manifest for dist folder
       if (fs.existsSync('manifest.json')) {
@@ -108,6 +113,23 @@ const copyExtensionAssets = () => {
             'Copyright (C) 2012-present SheetJS LLC, reads and writes spreadsheets. It is licensed under the',
             'Apache License, version 2.0: licenses/xlsx-Apache-2.0.txt. It is the file',
             'chunks/vendor-xlsx-*.js.',
+            ''
+          ].join('\n')
+        );
+      }
+
+      // pdf.js's image decoders are WebAssembly builds of PDFium's JBIG2 code and of OpenJPEG,
+      // whose BSD licences ask for their notices to ship with the binaries.
+      if (fs.existsSync('dist/vendor/pdfjs')) {
+        fs.appendFileSync(
+          'dist/THIRD_PARTY_NOTICES.txt',
+          [
+            '',
+            'pdf.js image decoders',
+            '',
+            'vendor/pdfjs/jbig2.wasm (JBIG2 and CCITT fax images, from PDFium) and',
+            'vendor/pdfjs/openjpeg.wasm (JPEG 2000 images, from OpenJPEG) come with pdf.js',
+            '(https://github.com/mozilla/pdf.js). Their licences are the LICENSE_* files beside them.',
             ''
           ].join('\n')
         );
