@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,ocr]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,ocr,background]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -39,7 +39,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'ocr'];
+const groups = ['convert', 'png', 'text', 'ocr', 'background'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -136,9 +136,15 @@ const putFile = (page, inputId, name, type, bytes) =>
     input.dispatchEvent(new Event("change", { bubbles: true }));
   })()`);
 
-/** Polls a page expression (JSON) until `done(state)` or the time is up; returns the last state. */
+/**
+ * Polls a page expression (JSON) until `done(state)` or the time is up; returns the last state.
+ * Its `seen` (not printed) lists every visibility state the page had while it was polled.
+ */
 async function poll(page, expression, done, seconds) {
   let state = {};
+  const seen = new Set();
+  const result = (extra) =>
+    Object.defineProperty({ ...state, ...extra }, 'seen', { value: [...seen] });
   for (const end = Date.now() + seconds * 1000; Date.now() < end; ) {
     await sleep(250);
     state = JSON.parse(
@@ -146,9 +152,10 @@ async function poll(page, expression, done, seconds) {
         `JSON.stringify({ ...${expression}, visibility: document.visibilityState })`
       )
     );
-    if (done(state)) return state;
+    seen.add(state.visibility);
+    if (done(state)) return result();
   }
-  return { ...state, timedOut: `after ${seconds} s` };
+  return result({ timedOut: `after ${seconds} s` });
 }
 
 // ---------------------------------------------------------------- the run
@@ -242,8 +249,11 @@ try {
     return null;
   }
 
-  /** Queues one file in the dashboard's converter and converts it to `format`. */
-  async function dashConvert(name, type, bytes, format, seconds = 120) {
+  /**
+   * Queues one file in the dashboard's converter and converts it to `format`. `afterStart` runs
+   * once the button is clicked, before the waiting starts.
+   */
+  async function dashConvert(name, type, bytes, format, { seconds = 120, afterStart } = {}) {
     await dash.evaluate(`document.getElementById("dash-clear-queue-btn")?.click()`);
     await putFile(dash, 'dash-file-input', name, type, bytes);
     await dash.evaluate(`(() => {
@@ -252,6 +262,7 @@ try {
       select.dispatchEvent(new Event("change", { bubbles: true }));
       document.getElementById("dash-convert-btn").click();
     })()`);
+    await afterStart?.();
     const state = await poll(
       dash,
       `{ busy: document.getElementById("dash-convert-btn").disabled,
@@ -263,8 +274,11 @@ try {
     return { state, file: await nextDownload(state.timedOut ? 1 : 90) };
   }
 
-  /** Runs OCR from the dashboard's AI Studio and waits for it to finish. */
-  async function dashOcr(name, type, bytes, lang, output, seconds = 180) {
+  /**
+   * Runs OCR from the dashboard's AI Studio and waits for it to finish. `afterStart` runs once the
+   * button is clicked, before the waiting starts.
+   */
+  async function dashOcr(name, type, bytes, lang, output, { seconds = 180, afterStart } = {}) {
     await dash.evaluate(`document.querySelector('.menu-item[data-tab="ai-studio"]').click()`);
     await putFile(dash, 'ocr-file-input', name, type, bytes);
     await dash.evaluate(`(() => {
@@ -272,6 +286,7 @@ try {
       document.getElementById("ocr-output-select").value = "${output}";
       document.getElementById("run-ocr-btn").click();
     })()`);
+    await afterStart?.();
     return poll(
       dash,
       `{ busy: document.getElementById("run-ocr-btn").disabled,
@@ -419,14 +434,15 @@ try {
     await popup.close();
   });
 
+  const words = await picture(
+    dash,
+    900,
+    300,
+    'ctx.font = "bold 64px Arial, Helvetica, sans-serif"; ctx.fillText("Hello World 2026", 40, 110); ctx.fillText("Xin chao Viet Nam", 40, 220);'
+  );
+
   // ---- tesseract.js: worker, core and language data
   await group('ocr', '4. OCR (dashboard, AI Studio)', async () => {
-    const words = await picture(
-      dash,
-      900,
-      300,
-      'ctx.font = "bold 64px Arial, Helvetica, sans-serif"; ctx.fillText("Hello World 2026", 40, 110); ctx.fillText("Xin chao Viet Nam", 40, 220);'
-    );
     let state = await dashOcr('words.png', 'image/png', words, 'vie+eng', 'text');
     check(
       'a picture is read in Vietnamese + English',
@@ -443,9 +459,69 @@ try {
     const file = await nextDownload(state.timedOut ? 1 : 60);
     check(
       'a searchable PDF is saved',
-      isPdf(file) && file.name === 'scan-g4_searchable.pdf',
+      isPdf(file) && /^scan-g4_searchable( \(\d+\))?\.pdf$/.test(file.name),
       describe(file)
     );
+  });
+
+  // ---- the same work while the user looks at another tab. Chrome stops animation frames and
+  // throttles timers in a background tab; OCR has to finish anyway.
+  await group('background', '5. OCR with the dashboard in a background tab', async () => {
+    let other;
+    const toBackground = async () => {
+      other = await newPage(browser);
+      await other.front();
+    };
+    const hidden = (state) => state.seen.length > 0 && state.seen.every((v) => v === 'hidden');
+    try {
+      let state = await dashOcr('words.png', 'image/png', words, 'eng', 'text', {
+        seconds: 90,
+        afterStart: toBackground
+      });
+      check('picture: the dashboard stays hidden while OCR runs', hidden(state), state.seen.join());
+      check(
+        'picture: OCR finishes in the background',
+        /Hello World 2026/.test(state.text ?? ''),
+        JSON.stringify(state).slice(0, 300)
+      );
+      await other.close();
+      await dash.front();
+
+      state = await dashOcr('scan-g4.pdf', 'application/pdf', scan, 'eng', 'pdf', {
+        seconds: 90,
+        afterStart: toBackground
+      });
+      check('scan: the dashboard stays hidden while OCR runs', hidden(state), state.seen.join());
+      check(
+        'scan: OCR of both pages finishes in the background',
+        SCAN_PAGES.flat().every((line) => new RegExp(line, 'i').test(state.text ?? '')),
+        JSON.stringify(state).slice(0, 300)
+      );
+      const file = await nextDownload(state.timedOut ? 1 : 60);
+      check(
+        'scan: the searchable PDF is saved',
+        isPdf(file) && /^scan-g4_searchable( \(\d+\))?\.pdf$/.test(file.name),
+        describe(file)
+      );
+      await other.close();
+      await dash.front();
+
+      const { state: png, file: pages } = await dashConvert(
+        'scan-g4.pdf',
+        'application/pdf',
+        scan,
+        'png',
+        { seconds: 90, afterStart: toBackground }
+      );
+      check('PDF -> PNG: the dashboard stays hidden meanwhile', hidden(png), png.seen.join());
+      check(
+        'PDF -> PNG finishes in the background',
+        png.text === 'Done' && Boolean(pages?.name.endsWith('.zip')),
+        `${JSON.stringify(png)}, ${describe(pages)}`
+      );
+    } finally {
+      await other?.close().catch(() => {});
+    }
   });
 
   // ---- where everything went

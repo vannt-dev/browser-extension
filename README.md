@@ -95,12 +95,13 @@ npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
 npm run test:offline -- dist/zips/universal-file-converter-v1.2.1.zip   # kiểm tra file ZIP
-npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, ocr
+npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, ocr, background
 ```
 
 - Các mục được kiểm tra: ảnh → PDF và DOCX → PDF (jsPDF, mammoth); PDF → PNG với PDF có font nhúng,
   bản scan CCITT G4, JBIG2, JPEG 2000 (pdf.js + WebAssembly), kiểm tra ảnh xuất ra có nội dung;
   PDF → text trong popup; OCR ảnh (vie+eng) và OCR bản scan ra PDF tìm kiếm được (tesseract.js);
+  OCR và PDF → PNG khi dashboard nằm ở tab nền (Chrome dừng animation frame ở tab nền);
   cuối cùng là **không có request nào ra khỏi gói extension**.
 - Trình duyệt: biến môi trường `CHROME=<đường dẫn chrome>`, nếu không có thì tự tìm Chromium của
   Playwright (`npx playwright install chromium`). Google Chrome bản thường từ 137 bỏ qua

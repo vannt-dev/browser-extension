@@ -42,7 +42,12 @@ export class PdfEngine {
       canvas.height = viewport.height;
       const ctx = canvas.getContext('2d');
 
-      await page.render({ canvasContext: ctx, viewport }).promise;
+      // With the default 'display' intent pdf.js draws each slice of the page in an animation
+      // frame, and Chrome runs no animation frames in a background tab: converting a PDF, or
+      // OCR of one, stopped while the dashboard was not the active tab. 'print' draws without
+      // waiting for frames, and keeps the annotations meant to be printed, which is what a
+      // picture of the page should hold.
+      await page.render({ canvasContext: ctx, viewport, intent: 'print' }).promise;
 
       const mimeType = format === 'jpg' || format === 'jpeg' ? 'image/jpeg' : 'image/png';
       const dataUrl = canvas.toDataURL(mimeType, 0.92);

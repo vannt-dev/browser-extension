@@ -15,7 +15,8 @@ import { PdfEngine } from '../engine/pdf-engine.js';
  *  - renderPdfToImages does rasterise, and jsdom has no canvas backend, so pdf.js
  *    is swapped for a stub. What is under test there is PdfEngine's own
  *    orchestration — page iteration, viewport scale, mime routing and filename
- *    derivation — not pdf.js's rendering.
+ *    derivation — not pdf.js's rendering. One test keeps the real pdf.js with a
+ *    context that draws nothing, to check how pdf.js schedules the drawing.
  */
 
 /** Builds a real PDF File whose pages carry the given lines of text. */
@@ -101,6 +102,56 @@ describe('PdfEngine.extractPdfText (real pdf.js round-trip)', () => {
 
     await expect(PdfEngine.extractPdfText(notPdf)).rejects.toThrow();
   });
+});
+
+describe('PdfEngine.renderPdfToImages in a background tab (real pdf.js)', () => {
+  /**
+   * A 2D context that takes every call pdf.js makes and draws nothing: jsdom has no canvas
+   * backend, and what is under test is how pdf.js schedules its drawing, not the drawing.
+   */
+  function inertContext(canvas) {
+    const values = { canvas };
+    return new Proxy(values, {
+      get: (target, key) =>
+        key in target
+          ? target[key]
+          : key === 'getTransform'
+            ? () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
+            : key === 'then'
+              ? undefined
+              : () => undefined,
+      set: (target, key, value) => {
+        target[key] = value;
+        return true;
+      }
+    });
+  }
+
+  it('finishes when the browser runs no animation frames', async () => {
+    // Chrome runs no animation frames in a background tab; pdf.js's default 'display' rendering
+    // waits for one per slice of the page, so a PDF conversion or OCR there never ended.
+    const frames = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', frames);
+    const originalCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag !== 'canvas') return originalCreateElement(tag);
+      const canvas = { width: 0, height: 0, toDataURL: () => 'data:image/png;base64,AAAA' };
+      const context = inertContext(canvas);
+      canvas.getContext = () => context;
+      return canvas;
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => new Blob(['png'], { type: 'image/png' }) }))
+    );
+
+    const file = pdfFixture([[''], ['']]);
+    const stalled = new Promise((resolve) => setTimeout(() => resolve('stalled'), 5000));
+    const pages = await Promise.race([PdfEngine.renderPdfToImages(file), stalled]);
+
+    expect(pages).toHaveLength(2);
+    expect(frames).not.toHaveBeenCalled();
+  }, 10000);
 });
 
 describe('PdfEngine.renderPdfToImages (pdf.js stubbed)', () => {
@@ -215,6 +266,13 @@ describe('PdfEngine.renderPdfToImages (pdf.js stubbed)', () => {
 
     expect(renderCalls[0].canvasContext).toEqual({ id: 'ctx' });
     expect(renderCalls[0].viewport).toMatchObject({ width: 300, height: 150 });
+  });
+
+  it("renders with the 'print' intent, which pdf.js draws without animation frames", async () => {
+    const { Engine, file, renderCalls } = await withStubbedPdfjs({ numPages: 1 });
+    await Engine.renderPdfToImages(file);
+
+    expect(renderCalls[0].intent).toBe('print');
   });
 
   it('encodes JPEG when asked and PNG otherwise', async () => {
