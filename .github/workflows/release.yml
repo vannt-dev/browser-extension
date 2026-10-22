@@ -33,6 +33,16 @@ jobs:
       - name: Package Release ZIP
         run: npm run zip
 
+      # Reads the ZIP the way the Chrome Web Store review does (the 1.1.3 rejection, "Blue Argon").
+      - name: Find the Store ZIP
+        id: zip
+        run: echo "path=$(ls dist/zips/*.zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Check the Store ZIP for remotely hosted code
+        uses: vannt-dev/mv3-remote-code-check@v0
+        with:
+          path: ${{ steps.zip.outputs.path }}
+
       - name: Attest Release ZIP
         uses: actions/attest-build-provenance@v4
         with:
