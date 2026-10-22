@@ -83,6 +83,34 @@ npm test
 > Thư mục `dist/` là sản phẩm build và **không** được commit vào git — hãy chạy `npm run build` sau khi clone.
 > Bước build sẽ copy runtime Tesseract (WASM core + traineddata `eng`/`vie`, ~11.8 MB) vào `dist/vendor/tesseract/`.
 
+### 🧪 Bộ test trình duyệt offline (chạy trước mỗi lần upload Store)
+
+`npm test` chỉ chạy unit test trong jsdom. Trước khi upload lên Chrome Web Store, hãy chạy bộ test
+offline trên **đúng gói sẽ upload**: nó mở Chromium thật với extension đã build, trong trạng thái
+không phân giải được tên miền nào (`--host-resolver-rules=MAP * ~NOTFOUND`), rồi chạy các tính năng
+và báo `PASS`/`FAIL` từng mục (mã thoát khác 0 nếu có mục lỗi):
+
+```bash
+npm run build
+npm run test:offline                     # kiểm tra thư mục dist/
+npm run zip
+npm run test:offline -- dist/zips/universal-file-converter-v1.2.1.zip   # kiểm tra file ZIP
+npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, ocr
+```
+
+- Các mục được kiểm tra: ảnh → PDF và DOCX → PDF (jsPDF, mammoth); PDF → PNG với PDF có font nhúng,
+  bản scan CCITT G4, JBIG2, JPEG 2000 (pdf.js + WebAssembly), kiểm tra ảnh xuất ra có nội dung;
+  PDF → text trong popup; OCR ảnh (vie+eng) và OCR bản scan ra PDF tìm kiếm được (tesseract.js);
+  cuối cùng là **không có request nào ra khỏi gói extension**.
+- Trình duyệt: biến môi trường `CHROME=<đường dẫn chrome>`, nếu không có thì tự tìm Chromium của
+  Playwright (`npx playwright install chromium`). Google Chrome bản thường từ 137 bỏ qua
+  `--load-extension`, nên phải dùng Chromium hoặc Chrome for Testing.
+- Trình duyệt chạy có cửa sổ (headless đặt tên file tải về theo GUID); trên Linux không có màn hình
+  thì chạy qua `xvfb-run -a npm run test:offline`. Workflow **Offline browser kit** trên GitHub
+  Actions (chạy tay) làm đúng việc này với file ZIP build từ nhánh được chọn.
+- Bộ test không nằm trong `npm test`. File test lấy từ pdf.js nằm ở `tests/offline/fixtures/`
+  (Apache-2.0, xem `NOTICE.md` ở đó); các file còn lại được tạo lúc chạy.
+
 ---
 
 ## 🔒 Cam Kết Bảo Mật (Privacy Guarantee)

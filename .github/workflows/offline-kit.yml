@@ -1,0 +1,50 @@
+name: Offline browser kit
+
+# Runs tests/offline/run.mjs on the Store package built from the chosen branch: the features in a
+# real Chromium that cannot resolve any host name. Started by hand (Actions > Run workflow),
+# for example before a Store upload; it is not part of every push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-kit:
+    name: Offline kit on the release ZIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Unit tests, build and ZIP, as the release workflow makes them.
+      - name: Package Release ZIP
+        run: npm run zip
+
+      # Branded Google Chrome ignores --load-extension, so the kit runs on Playwright's Chromium.
+      - name: Install Chromium
+        run: npx --yes playwright@1.64.1 install --with-deps chromium
+
+      # The kit runs a headed browser (headless Chrome names downloads by GUID); xvfb is its screen.
+      - name: Run the offline kit
+        run: xvfb-run -a npm run test:offline -- dist/zips/universal-file-converter-v*.zip --work=offline-kit-work
+
+      - name: Keep the kit's files when it fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: offline-kit-work
+          path: |
+            offline-kit-work/console.log
+            offline-kit-work/downloads/
+          if-no-files-found: ignore

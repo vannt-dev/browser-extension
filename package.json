@@ -13,6 +13,7 @@
     "zip": "node scripts/zip-extension.js",
     "release": "node scripts/release.js",
     "test": "vitest run",
+    "test:offline": "node tests/offline/run.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

@@ -6,4 +6,5 @@
 
 ## 🧪 Kiểm thử (Testing)
 - [ ] Đã chạy `npm test` thành công 100%
+- [ ] Đã chạy `npm run test:offline` trên bản build (bắt buộc với PR phát hành / trước khi upload Store)
 - [ ] Đã kiểm tra tính năng trên Chrome / Edge
