@@ -496,5 +496,44 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfNumber": {
+    "message": "Đánh số trang PDF (.pdf)"
+  },
+  "pagesToNumberLabel": {
+    "message": "Trang cần đánh số (để trống = mọi trang):"
+  },
+  "numberPositionLabel": {
+    "message": "Vị trí số trang:"
+  },
+  "numberBottomCenter": {
+    "message": "Dưới, giữa"
+  },
+  "numberBottomRight": {
+    "message": "Dưới, phải"
+  },
+  "numberBottomLeft": {
+    "message": "Dưới, trái"
+  },
+  "numberTopCenter": {
+    "message": "Trên, giữa"
+  },
+  "numberTopRight": {
+    "message": "Trên, phải"
+  },
+  "numberTopLeft": {
+    "message": "Trên, trái"
+  },
+  "numberStyleLabel": {
+    "message": "Cách ghi:"
+  },
+  "numberStylePlain": {
+    "message": "3"
+  },
+  "numberStyleOfTotal": {
+    "message": "3 / 12"
+  },
+  "numberStartLabel": {
+    "message": "Số của trang đầu tiên (0 để trang bìa không có số):"
   }
 }

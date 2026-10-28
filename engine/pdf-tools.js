@@ -1,5 +1,5 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
-import { PDFDocument, degrees } from '@cantoo/pdf-lib';
+import { PDFDocument, StandardFonts, degrees, rgb } from '@cantoo/pdf-lib';
 import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfPasswordError } from './pdf-password.js';
 
 /**
@@ -198,6 +198,81 @@ export async function reorderPdfPages(file, order, { password = '' } = {}) {
   return {
     blob: toBlob(await reordered.save()),
     filename: `${baseName(file.name)}_reordered.pdf`,
+    pageCount,
+  };
+}
+
+/** Where page numbers can go, as the reader sees the page. */
+export const NUMBER_POSITIONS = ['bottom-center', 'bottom-right', 'bottom-left', 'top-center', 'top-right', 'top-left'];
+
+/** How a page number reads: `3`, or `3 / 12`. */
+export const NUMBER_STYLES = ['plain', 'of-total'];
+
+/** Distance from the edge of the page, and the size of the digits, in points. */
+const NUMBER_MARGIN = 24;
+const NUMBER_SIZE = 10;
+
+/**
+ * Places a point given as the reader sees the page (origin at the bottom left of the page as
+ * shown, after its /Rotate) in the page's own coordinates, with the turn text needs to read
+ * upright there.
+ */
+function fromView(box, angle, x, y) {
+  switch (angle) {
+    case 90:
+      return { x: box.x + box.width - y, y: box.y + x, rotate: 90 };
+    case 180:
+      return { x: box.x + box.width - x, y: box.y + box.height - y, rotate: 180 };
+    case 270:
+      return { x: box.x + y, y: box.y + box.height - x, rotate: 270 };
+    default:
+      return { x: box.x + x, y: box.y + y, rotate: 0 };
+  }
+}
+
+/**
+ * Writes a number on pages of a PDF. The rest of each page is left as it is.
+ * @param {File} file
+ * @param {object} [options]
+ * @param {string} [options.position] One of NUMBER_POSITIONS, as the page is seen
+ * @param {string} [options.style] One of NUMBER_STYLES
+ * @param {number} [options.start] The number of the first page; 0 leaves a cover unnumbered at 1
+ * @param {string} [options.pages] A selection such as `2-`; left out, every page is numbered
+ * @param {string} [options.password] The password, if the PDF is locked with one
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function numberPdfPages(
+  file,
+  { position = 'bottom-center', style = 'plain', start = 1, pages = '', password = '' } = {}
+) {
+  if (!NUMBER_POSITIONS.includes(position)) throw new Error(`"${position}" is not a place for page numbers.`);
+  if (!NUMBER_STYLES.includes(style)) throw new Error(`"${style}" is not a way to write page numbers.`);
+  const first = Number(start);
+  if (!Number.isInteger(first)) throw new Error('The first page number has to be a whole number.');
+  const doc = await load(file, password);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const pageCount = doc.getPageCount();
+  const last = first + pageCount - 1;
+  const indexes = String(pages).trim() ? selectedPages(pages, pageCount) : doc.getPageIndices();
+  const [vertical, horizontal] = position.split('-');
+  for (const index of indexes) {
+    const page = doc.getPage(index);
+    const angle = (((page.getRotation().angle % 360) + 360) % 360);
+    const box = page.getCropBox();
+    const sideways = angle === 90 || angle === 270;
+    const viewWidth = sideways ? box.height : box.width;
+    const viewHeight = sideways ? box.width : box.height;
+    const text = style === 'of-total' ? `${first + index} / ${last}` : String(first + index);
+    const width = font.widthOfTextAtSize(text, NUMBER_SIZE);
+    const x =
+      horizontal === 'left' ? NUMBER_MARGIN : horizontal === 'right' ? viewWidth - NUMBER_MARGIN - width : (viewWidth - width) / 2;
+    const y = vertical === 'top' ? viewHeight - NUMBER_MARGIN - NUMBER_SIZE : NUMBER_MARGIN;
+    const at = fromView(box, angle, x, y);
+    page.drawText(text, { x: at.x, y: at.y, size: NUMBER_SIZE, font, color: rgb(0.2, 0.2, 0.2), rotate: degrees(at.rotate) });
+  }
+  return {
+    blob: toBlob(await doc.save()),
+    filename: `${baseName(file.name)}_numbered.pdf`,
     pageCount,
   };
 }

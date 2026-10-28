@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,ocr,background]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,ocr,background]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -22,14 +22,19 @@ import {
 } from 'node:fs';
 import { homedir, platform, tmpdir } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
 import sharp from 'sharp';
 import { launch, newPage, serviceWorker, sleep } from './cdp.mjs';
 import { PDFDocument } from '@cantoo/pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { SCAN_PAGES, TEXT_DOC, docx, g4ScanPdf, lockedPdf, picture, textPdf } from './fixtures.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
+// The PDFs the extension writes are read back here with the pdf.js the extension ships.
+pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
+  resolve(here, '../../node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs')
+).href;
 const options = Object.fromEntries(
   process.argv
     .slice(2)
@@ -40,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'ocr', 'background'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'ocr', 'background'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -254,7 +259,7 @@ try {
    * Queues one file in the dashboard's converter and converts it to `format`. `afterStart` runs
    * once the button is clicked, before the waiting starts.
    */
-  async function dashConvert(name, type, bytes, format, { seconds = 120, afterStart, password = '' } = {}) {
+  async function dashConvert(name, type, bytes, format, { seconds = 120, afterStart, password = '', fields = {} } = {}) {
     await dash.evaluate(`document.getElementById("dash-clear-queue-btn")?.click()`);
     await putFile(dash, 'dash-file-input', name, type, bytes);
     await dash.evaluate(`(() => {
@@ -262,6 +267,7 @@ try {
       select.value = "${format}";
       select.dispatchEvent(new Event("change", { bubbles: true }));
       document.getElementById("dash-pdf-password").value = ${JSON.stringify(password)};
+      for (const [id, value] of Object.entries(${JSON.stringify(fields)})) document.getElementById(id).value = value;
       document.getElementById("dash-convert-btn").click();
     })()`);
     await afterStart?.();
@@ -471,6 +477,41 @@ try {
     check('its pages come out in a ZIP', file?.bytes.subarray(0, 2).toString() === 'PK', describe(file));
   });
 
+  // ---- pdf-lib writing on pages, read back with pdf.js as a viewer would
+  await group('numbers', '5. Page numbers (dashboard)', async () => {
+    const shown = await dash.evaluate(`(() => {
+      const select = document.getElementById("dash-target-format");
+      select.value = "pdf-number";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      return getComputedStyle(document.getElementById("dash-number-group")).display;
+    })()`);
+    check('the numbering fields show for "Add page numbers"', shown === 'block', String(shown));
+
+    const { state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-number', {
+      fields: { 'dash-number-position': 'top-right', 'dash-number-style': 'of-total', 'dash-number-start': '0', 'dash-page-tools-pages': '2-' },
+    });
+    check('numbering ends as done', state.text === 'Done', JSON.stringify(state));
+    let numbers = 'no file';
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes) }).promise;
+      numbers = [];
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const view = page.getViewport({ scale: 1 });
+        const hit = (await page.getTextContent()).items.find((item) => /^\d+ \/ \d+$/.test(item.str));
+        const [, , , , e, f] = hit ? pdfjsLib.Util.transform(view.transform, hit.transform) : [];
+        numbers.push(hit ? `${hit.str}@${e / view.width > 0.8 ? 'right' : 'x'},${f / view.height < 0.1 ? 'top' : 'y'}` : '-');
+      }
+    } catch (error) {
+      numbers = String(error.message);
+    }
+    check(
+      'document_numbered.pdf: no number on the cover, then 1 / 2 and 2 / 2 at the top right',
+      file?.name === 'document_numbered.pdf' && JSON.stringify(numbers) === JSON.stringify(['-', '1 / 2@right,top', '2 / 2@right,top']),
+      `${describe(file)}: ${JSON.stringify(numbers)}`
+    );
+  });
+
   const words = await picture(
     dash,
     900,
@@ -479,7 +520,7 @@ try {
   );
 
   // ---- tesseract.js: worker, core and language data
-  await group('ocr', '5. OCR (dashboard, AI Studio)', async () => {
+  await group('ocr', '6. OCR (dashboard, AI Studio)', async () => {
     let state = await dashOcr('words.png', 'image/png', words, 'vie+eng', 'text');
     check(
       'a picture is read in Vietnamese + English',
@@ -503,7 +544,7 @@ try {
 
   // ---- the same work while the user looks at another tab. Chrome stops animation frames and
   // throttles timers in a background tab; OCR has to finish anyway.
-  await group('background', '6. OCR with the dashboard in a background tab', async () => {
+  await group('background', '7. OCR with the dashboard in a background tab', async () => {
     let other;
     const toBackground = async () => {
       other = await newPage(browser);
