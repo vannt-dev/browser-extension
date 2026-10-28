@@ -6,11 +6,12 @@ import sharp from 'sharp';
 import {
   PDFDocument,
   PDFName,
+  StandardFonts,
   concatTransformationMatrix,
   drawObject,
   popGraphicsState,
   pushGraphicsState
-} from 'pdf-lib';
+} from '@cantoo/pdf-lib';
 import { newPage } from './cdp.mjs';
 
 /** The sentences the generated text document carries, one heading per page. */
@@ -186,4 +187,16 @@ export async function docx(sentence) {
       `<w:body><w:p><w:r><w:t>${sentence}</w:t></w:r></w:p></w:body></w:document>`
   );
   return zip.generateAsync({ type: 'nodebuffer' });
+}
+
+/**
+ * A PDF locked with a password: `user` to read it (empty: anyone may read it, only printing and
+ * copying are limited). Its pages are 300, 400 and 500 points wide, so each can be told apart.
+ */
+export async function lockedPdf(user) {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  for (const width of [300, 400, 500]) doc.addPage([width, 400]).drawText(`Width ${width}`, { x: 40, y: 200, size: 32, font });
+  doc.encrypt({ userPassword: user, ownerPassword: 'offline-kit-owner' });
+  return Buffer.from(await doc.save());
 }

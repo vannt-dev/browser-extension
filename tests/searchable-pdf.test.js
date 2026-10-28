@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '@cantoo/pdf-lib';
 import { createWorker } from 'tesseract.js';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { buildSearchablePdf } from '../engine/searchable-pdf.js';

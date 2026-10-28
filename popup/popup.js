@@ -6,6 +6,7 @@ import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, SPREADSHEET_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
+import { errorReason, passwordStatus } from '../shared/error-text.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
@@ -279,7 +280,7 @@ convertBtn.addEventListener('click', async () => {
       ZipEngine.downloadBlob(merged.blob, merged.filename);
     } catch (err) {
       console.error('PDF merge error:', err);
-      pdfIndexes.forEach((index) => mark(index, t('errorWithReason', err.message), null, '#ef4444'));
+      pdfIndexes.forEach((index) => mark(index, t('errorWithReason', errorReason(err, 'popup')), null, '#ef4444'));
     }
     convertSpinner.classList.add('hidden');
     convertBtn.disabled = false;
@@ -305,8 +306,8 @@ convertBtn.addEventListener('click', async () => {
     } catch (err) {
       console.error('File conversion error:', err);
       if (statusEl) {
-        statusEl.textContent = t('statusError');
-        statusEl.title = err?.message || '';
+        statusEl.textContent = passwordStatus(err) || t('statusError');
+        statusEl.title = errorReason(err, 'popup');
         statusEl.style.color = '#ef4444';
       }
     }

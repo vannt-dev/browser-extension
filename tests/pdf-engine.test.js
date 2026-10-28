@@ -4,6 +4,8 @@ import { pathToFileURL } from 'url';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { jsPDF } from '../lib/jspdf.js';
 import { PdfEngine } from '../engine/pdf-engine.js';
+import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG } from '../engine/pdf-password.js';
+import { PDFDocument, StandardFonts } from '@cantoo/pdf-lib';
 
 /**
  * Two layers of coverage:
@@ -101,6 +103,33 @@ describe('PdfEngine.extractPdfText (real pdf.js round-trip)', () => {
     notPdf.arrayBuffer = async () => new TextEncoder().encode('this is plain text, not a pdf').buffer;
 
     await expect(PdfEngine.extractPdfText(notPdf)).rejects.toThrow();
+  });
+});
+
+describe('PdfEngine.extractPdfText on a PDF locked with a password (real pdf.js)', () => {
+  async function lockedFixture(user) {
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    doc.addPage().drawText('Locked words', { x: 50, y: 700, font });
+    doc.encrypt({ userPassword: user, ownerPassword: 'owner-secret' });
+    return new File([await doc.save()], 'locked.pdf', { type: 'application/pdf' });
+  }
+
+  it('asks for the password when none is given', async () => {
+    const error = await PdfEngine.extractPdfText(await lockedFixture('abc')).catch((caught) => caught);
+    expect(error.code).toBe(PDF_PASSWORD_NEEDED);
+    expect(error.fileName).toBe('locked.pdf');
+  });
+
+  it('says the password is wrong', async () => {
+    const file = await lockedFixture('abc');
+    const error = await PdfEngine.extractPdfText(file, { password: 'nope' }).catch((caught) => caught);
+    expect(error.code).toBe(PDF_PASSWORD_WRONG);
+  });
+
+  it('reads the text with the password, and without one when only printing or copying is limited', async () => {
+    expect(await PdfEngine.extractPdfText(await lockedFixture('abc'), { password: 'abc' })).toContain('Locked words');
+    expect(await PdfEngine.extractPdfText(await lockedFixture(''))).toContain('Locked words');
   });
 });
 

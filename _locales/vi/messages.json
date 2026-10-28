@@ -463,5 +463,38 @@
   },
   "languageLabel": {
     "message": "Ngôn ngữ:"
+  },
+  "pdfPasswordLabel": {
+    "message": "Mật khẩu PDF (chỉ khi PDF bị khoá bằng mật khẩu):"
+  },
+  "statusPasswordNeeded": {
+    "message": "Cần mật khẩu"
+  },
+  "statusPasswordWrong": {
+    "message": "Sai mật khẩu"
+  },
+  "pdfPasswordNeeded": {
+    "message": "$NAME$ bị khoá bằng mật khẩu: nhập mật khẩu vào ô Mật khẩu PDF rồi chuyển đổi lại.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "pdfPasswordNeededPopup": {
+    "message": "$NAME$ bị khoá bằng mật khẩu: mở nó trong Dashboard và nhập mật khẩu ở đó.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "pdfPasswordWrong": {
+    "message": "Mật khẩu của $NAME$ không đúng.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

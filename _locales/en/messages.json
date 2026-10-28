@@ -463,5 +463,38 @@
   },
   "languageLabel": {
     "message": "Language:"
+  },
+  "pdfPasswordLabel": {
+    "message": "PDF password (only for a PDF locked with one):"
+  },
+  "statusPasswordNeeded": {
+    "message": "Needs a password"
+  },
+  "statusPasswordWrong": {
+    "message": "Wrong password"
+  },
+  "pdfPasswordNeeded": {
+    "message": "$NAME$ is locked with a password: enter it in the PDF password field and convert again.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "pdfPasswordNeededPopup": {
+    "message": "$NAME$ is locked with a password: open it in the Dashboard and enter the password there.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "pdfPasswordWrong": {
+    "message": "The password for $NAME$ is wrong.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

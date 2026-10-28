@@ -1,5 +1,5 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from '@cantoo/pdf-lib';
 
 /**
  * Searchable PDF: every page is the scanned image with the words OCR found laid over it as

@@ -110,16 +110,16 @@ export class AiEngine {
   /**
    * Makes a searchable PDF of a scanned PDF or of an image: the pages as they look, with the
    * recognised text laid invisibly over them (see engine/searchable-pdf.js). The pages of a PDF
-   * are read from pictures of them and keep their size.
+   * are read from pictures of them and keep their size. A locked PDF needs `password`.
    * @returns {Promise<{ blob: Blob, filename: string, text: string, pageCount: number }>}
    */
-  static async createSearchablePdf(file, lang = 'eng+vie', onProgress = null) {
+  static async createSearchablePdf(file, lang = 'eng+vie', onProgress = null, { password = '' } = {}) {
     const name = String(file.name || 'scan').replace(/\.[^/.]+$/, '');
     let pages;
     if (/\.pdf$/i.test(file.name || '') || file.type === 'application/pdf') {
       const { PdfEngine } = await import('./pdf-engine.js');
       // 144 dpi: enough for OCR to read body text, and JPEG keeps each page small.
-      const rendered = await PdfEngine.renderPdfToImages(file, { format: 'jpg', scale: 2 });
+      const rendered = await PdfEngine.renderPdfToImages(file, { format: 'jpg', scale: 2, password });
       pages = rendered.map(({ blob, width, height }) => ({ image: blob, width, height }));
     } else {
       pages = [{ image: await this.readable(file) }];

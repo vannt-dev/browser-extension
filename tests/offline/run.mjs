@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,ocr,background]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,ocr,background]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -26,7 +26,8 @@ import { fileURLToPath } from 'node:url';
 import JSZip from 'jszip';
 import sharp from 'sharp';
 import { launch, newPage, serviceWorker, sleep } from './cdp.mjs';
-import { SCAN_PAGES, TEXT_DOC, docx, g4ScanPdf, picture, textPdf } from './fixtures.mjs';
+import { PDFDocument } from '@cantoo/pdf-lib';
+import { SCAN_PAGES, TEXT_DOC, docx, g4ScanPdf, lockedPdf, picture, textPdf } from './fixtures.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const options = Object.fromEntries(
@@ -39,7 +40,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'ocr', 'background'];
+const groups = ['convert', 'png', 'text', 'password', 'ocr', 'background'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -253,13 +254,14 @@ try {
    * Queues one file in the dashboard's converter and converts it to `format`. `afterStart` runs
    * once the button is clicked, before the waiting starts.
    */
-  async function dashConvert(name, type, bytes, format, { seconds = 120, afterStart } = {}) {
+  async function dashConvert(name, type, bytes, format, { seconds = 120, afterStart, password = '' } = {}) {
     await dash.evaluate(`document.getElementById("dash-clear-queue-btn")?.click()`);
     await putFile(dash, 'dash-file-input', name, type, bytes);
     await dash.evaluate(`(() => {
       const select = document.getElementById("dash-target-format");
       select.value = "${format}";
       select.dispatchEvent(new Event("change", { bubbles: true }));
+      document.getElementById("dash-pdf-password").value = ${JSON.stringify(password)};
       document.getElementById("dash-convert-btn").click();
     })()`);
     await afterStart?.();
@@ -434,6 +436,41 @@ try {
     await popup.close();
   });
 
+  // ---- pdf-lib and pdf.js opening PDFs locked with a password
+  await group('password', '4. PDFs locked with a password (dashboard)', async () => {
+    const locked = await lockedPdf('kit-pass');
+    let { state, file } = await dashConvert('locked.pdf', 'application/pdf', locked, 'pdf-rotate', { seconds: 30 });
+    const shown = await dash.evaluate(`getComputedStyle(document.getElementById("dash-pdf-password-group")).display`);
+    check('the password field shows once a PDF is queued', shown === 'block', String(shown));
+    check('no password: says it needs one', state.text === 'Needs a password' && !file, JSON.stringify(state));
+
+    ({ state, file } = await dashConvert('locked.pdf', 'application/pdf', locked, 'pdf-rotate', { seconds: 30, password: 'nope' }));
+    check('a wrong password: says so', state.text === 'Wrong password' && !file, JSON.stringify(state));
+
+    ({ state, file } = await dashConvert('locked.pdf', 'application/pdf', locked, 'pdf-rotate', { password: 'kit-pass' }));
+    check('the right password: rotating ends as done', state.text === 'Done', JSON.stringify(state));
+    let pages = null;
+    try {
+      const doc = await PDFDocument.load(file.bytes);
+      pages = doc.getPages().map((page) => `${page.getWidth()}@${page.getRotation().angle}`);
+    } catch (error) {
+      pages = String(error.message);
+    }
+    check(
+      'the rotated PDF opens without a password, every page turned',
+      isPdf(file) && !file.bytes.includes('/Encrypt') && JSON.stringify(pages) === JSON.stringify(['300@90', '400@90', '500@90']),
+      `${describe(file)}: ${JSON.stringify(pages)}`
+    );
+
+    ({ state, file } = await dashConvert('locked.pdf', 'application/pdf', locked, 'png', { password: 'kit-pass' }));
+    check('the right password: PDF -> PNG ends as done', state.text === 'Done', JSON.stringify(state));
+    check('the pages come out as PNG pictures in a ZIP', file?.bytes.subarray(0, 2).toString() === 'PK', describe(file));
+
+    ({ state, file } = await dashConvert('restricted.pdf', 'application/pdf', await lockedPdf(''), 'pdf-split'));
+    check('a PDF that only limits printing splits without a password', state.text === 'Done', JSON.stringify(state));
+    check('its pages come out in a ZIP', file?.bytes.subarray(0, 2).toString() === 'PK', describe(file));
+  });
+
   const words = await picture(
     dash,
     900,
@@ -442,7 +479,7 @@ try {
   );
 
   // ---- tesseract.js: worker, core and language data
-  await group('ocr', '4. OCR (dashboard, AI Studio)', async () => {
+  await group('ocr', '5. OCR (dashboard, AI Studio)', async () => {
     let state = await dashOcr('words.png', 'image/png', words, 'vie+eng', 'text');
     check(
       'a picture is read in Vietnamese + English',
@@ -466,7 +503,7 @@ try {
 
   // ---- the same work while the user looks at another tab. Chrome stops animation frames and
   // throttles timers in a background tab; OCR has to finish anyway.
-  await group('background', '5. OCR with the dashboard in a background tab', async () => {
+  await group('background', '6. OCR with the dashboard in a background tab', async () => {
     let other;
     const toBackground = async () => {
       other = await newPage(browser);
