@@ -1,5 +1,6 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
-import { PDFDocument, degrees } from 'pdf-lib';
+import { PDFDocument, degrees } from '@cantoo/pdf-lib';
+import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfPasswordError } from './pdf-password.js';
 
 /**
  * Merging, splitting, rotating, deleting and reordering PDF pages, page for page and without
@@ -10,16 +11,39 @@ function baseName(name) {
   return String(name || 'document').replace(/\.[^/.]+$/, '');
 }
 
-async function load(file) {
+/**
+ * Opens a PDF. One locked with a password opens with that password, and one that only limits
+ * printing or copying opens without any; either way its pages come out in a new document with no
+ * password, so what is saved opens anywhere.
+ * @param {File} file
+ * @param {string} [password]
+ */
+async function load(file, password = '') {
+  const bytes = await file.arrayBuffer();
   try {
-    return await PDFDocument.load(await file.arrayBuffer());
+    return await PDFDocument.load(bytes);
   } catch (error) {
-    // pdf-lib's own messages do not say which file of a batch was the problem.
-    const reason = /encrypted/i.test(error?.message || '')
-      ? 'it is password-protected'
-      : error?.message || 'it could not be read';
-    throw new Error(`Cannot open ${file.name}: ${reason}`);
+    if (!/encrypted/i.test(error?.message || '')) {
+      // pdf-lib's own messages do not say which file of a batch was the problem.
+      throw new Error(`Cannot open ${file.name}: ${error?.message || 'it could not be read'}`);
+    }
   }
+  let locked = null;
+  for (const attempt of password ? ['', password] : ['']) {
+    try {
+      locked = await PDFDocument.load(bytes, { password: attempt });
+      break;
+    } catch (error) {
+      if (!/password/i.test(error?.message || '')) {
+        throw new Error(`Cannot open ${file.name}: ${error?.message || 'it could not be read'}`);
+      }
+    }
+  }
+  if (!locked) throw pdfPasswordError(file.name, password ? PDF_PASSWORD_WRONG : PDF_PASSWORD_NEEDED);
+  const open = await PDFDocument.create();
+  const pages = await open.copyPages(locked, locked.getPageIndices());
+  pages.forEach((page) => open.addPage(page));
+  return open;
 }
 
 function toBlob(bytes) {
@@ -49,13 +73,14 @@ export function parsePageRanges(text, pageCount) {
 /**
  * Joins PDF files into one, in the order given.
  * @param {File[]} files
+ * @param {{ password?: string }} [options] The password of a locked PDF (the same for every file)
  * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
  */
-export async function mergePdfs(files) {
+export async function mergePdfs(files, { password = '' } = {}) {
   if (!files || files.length < 2) throw new Error('Merging needs at least two PDF files.');
   const merged = await PDFDocument.create();
   for (const file of files) {
-    const source = await load(file);
+    const source = await load(file, password);
     const pages = await merged.copyPages(source, source.getPageIndices());
     pages.forEach((page) => merged.addPage(page));
   }
@@ -71,10 +96,11 @@ export async function mergePdfs(files) {
  * @param {File} file
  * @param {string} [ranges] A selection such as `1-3, 5, 8-`: one output per range.
  *   Left out, every page becomes its own file.
+ * @param {{ password?: string }} [options] The password, if the PDF is locked with one
  * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }[]>}
  */
-export async function splitPdf(file, ranges = '') {
-  const source = await load(file);
+export async function splitPdf(file, ranges = '', { password = '' } = {}) {
+  const source = await load(file, password);
   const pageCount = source.getPageCount();
   const groups = String(ranges).trim()
     ? parsePageRanges(ranges, pageCount)
@@ -112,12 +138,13 @@ export const ROTATIONS = [90, 180, 270];
  * @param {File} file
  * @param {number} angle 90, 180 or 270
  * @param {string} [pages] A selection such as `1-3, 5`; left out, every page turns.
+ * @param {{ password?: string }} [options] The password, if the PDF is locked with one
  * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
  */
-export async function rotatePdfPages(file, angle, pages = '') {
+export async function rotatePdfPages(file, angle, pages = '', { password = '' } = {}) {
   const turn = Number(angle);
   if (!ROTATIONS.includes(turn)) throw new Error('Pages turn by 90, 180 or 270 degrees.');
-  const doc = await load(file);
+  const doc = await load(file, password);
   const indexes = String(pages).trim() ? selectedPages(pages, doc.getPageCount()) : doc.getPageIndices();
   for (const index of indexes) {
     const page = doc.getPage(index);
@@ -134,10 +161,11 @@ export async function rotatePdfPages(file, angle, pages = '') {
  * Takes pages out of a PDF.
  * @param {File} file
  * @param {string} pages A selection such as `2, 5-7`
+ * @param {{ password?: string }} [options] The password, if the PDF is locked with one
  * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
  */
-export async function deletePdfPages(file, pages) {
-  const doc = await load(file);
+export async function deletePdfPages(file, pages, { password = '' } = {}) {
+  const doc = await load(file, password);
   const indexes = selectedPages(pages, doc.getPageCount());
   if (indexes.length === doc.getPageCount()) throw new Error('Deleting every page would leave an empty PDF.');
   // From the last page back, so the indexes still to remove keep pointing at the same pages.
@@ -154,10 +182,11 @@ export async function deletePdfPages(file, pages) {
  * @param {File} file
  * @param {string} order A selection such as `3, 1-2`: those pages come first, in that order, and
  *   the pages it leaves out follow in their old order. A page named twice is refused.
+ * @param {{ password?: string }} [options] The password, if the PDF is locked with one
  * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
  */
-export async function reorderPdfPages(file, order) {
-  const source = await load(file);
+export async function reorderPdfPages(file, order, { password = '' } = {}) {
+  const source = await load(file, password);
   const pageCount = source.getPageCount();
   const named = parsePageRanges(order, pageCount).flat();
   const twice = named.find((index, position) => named.indexOf(index) !== position);

@@ -182,7 +182,7 @@ export default defineConfig({
           if (id.includes('node_modules/pdfjs-dist')) return 'vendor-pdfjs';
           // libheif is LGPL: it stays a file of its own, replaceable without rebuilding the rest.
           if (id.includes('node_modules/heic-to')) return 'vendor-heic';
-          if (id.includes('node_modules/pdf-lib') || id.includes('node_modules/@pdf-lib')) return 'vendor-pdf-lib';
+          if (id.includes('node_modules/@cantoo/pdf-lib') || id.includes('node_modules/@pdf-lib')) return 'vendor-pdf-lib';
           if (id.includes('node_modules/xlsx')) return 'vendor-xlsx';
           if (id.includes('/lib/mammoth.js') || id.includes('/lib/marked.js')) return 'vendor-doc';
           if (id.includes('/lib/jspdf') || id.includes('/lib/html2canvas') || id.includes('/lib/index.es')) return 'vendor-pdf-export';

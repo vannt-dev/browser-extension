@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PDFDocument, degrees } from 'pdf-lib';
+import { PDFDocument, degrees } from '@cantoo/pdf-lib';
 import {
   deletePdfPages,
   mergePdfs,
@@ -8,6 +8,7 @@ import {
   rotatePdfPages,
   splitPdf,
 } from '../engine/pdf-tools.js';
+import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG } from '../engine/pdf-password.js';
 
 /**
  * Real PDFs in, real PDFs out: the fixtures are written with pdf-lib and the
@@ -18,6 +19,18 @@ async function pdfFile(name, widths, rotations = []) {
   const doc = await PDFDocument.create();
   widths.forEach((width, index) => doc.addPage([width, 200]).setRotation(degrees(rotations[index] ?? 0)));
   return new File([await doc.save()], name, { type: 'application/pdf' });
+}
+
+/** A PDF locked with the fork's own encryption: `user` to read it, `owner` for full access. */
+async function lockedPdfFile(name, widths, { user, owner = 'owner-secret' }) {
+  const doc = await PDFDocument.create();
+  widths.forEach((width) => doc.addPage([width, 200]));
+  doc.encrypt({ userPassword: user, ownerPassword: owner });
+  return new File([await doc.save()], name, { type: 'application/pdf' });
+}
+
+async function isEncrypted(blob) {
+  return /\/Encrypt/.test(new TextDecoder('latin1').decode(await blob.arrayBuffer()));
 }
 
 async function pageWidths(blob) {
@@ -169,5 +182,59 @@ describe('reorderPdfPages', () => {
   it('refuses a page named twice', async () => {
     const file = await pdfFile('three.pdf', [101, 102, 103]);
     await expect(reorderPdfPages(file, '2, 1-3')).rejects.toThrow('Page 2 is named more than once.');
+  });
+});
+
+describe('PDFs locked with a password', () => {
+  it('asks for the password, naming the file, when none is given', async () => {
+    const locked = await lockedPdfFile('secret.pdf', [100, 200], { user: 'abc' });
+    const error = await rotatePdfPages(locked, 90).catch((caught) => caught);
+    expect(error.code).toBe(PDF_PASSWORD_NEEDED);
+    expect(error.fileName).toBe('secret.pdf');
+    expect(error.message).toMatch(/^Cannot open secret\.pdf: it is password-protected/);
+  });
+
+  it('says the password is wrong', async () => {
+    const locked = await lockedPdfFile('secret.pdf', [100], { user: 'abc' });
+    const error = await splitPdf(locked, '', { password: 'nope' }).catch((caught) => caught);
+    expect(error.code).toBe(PDF_PASSWORD_WRONG);
+    expect(error.message).toBe('Cannot open secret.pdf: the password is wrong.');
+  });
+
+  it('opens with the password and saves pages that open without one', async () => {
+    const locked = await lockedPdfFile('secret.pdf', [101, 102, 103], { user: 'abc' });
+    const rotated = await rotatePdfPages(locked, 90, '2', { password: 'abc' });
+    expect(await isEncrypted(rotated.blob)).toBe(false);
+    expect(await pageWidths(rotated.blob)).toEqual([101, 102, 103]);
+    expect(await pageRotations(rotated.blob)).toEqual([0, 90, 0]);
+
+    const deleted = await deletePdfPages(locked, '1', { password: 'abc' });
+    expect(await isEncrypted(deleted.blob)).toBe(false);
+    expect(await pageWidths(deleted.blob)).toEqual([102, 103]);
+
+    const reordered = await reorderPdfPages(locked, '3', { password: 'abc' });
+    expect(await pageWidths(reordered.blob)).toEqual([103, 101, 102]);
+  });
+
+  it('opens with the owner password too', async () => {
+    const locked = await lockedPdfFile('secret.pdf', [101, 102], { user: 'abc', owner: 'boss' });
+    const parts = await splitPdf(locked, '', { password: 'boss' });
+    expect(parts).toHaveLength(2);
+    expect(await pageWidths(parts[1].blob)).toEqual([102]);
+  });
+
+  it('opens a PDF that only limits printing or copying without asking', async () => {
+    const restricted = await lockedPdfFile('restricted.pdf', [101, 102], { user: '' });
+    const parts = await splitPdf(restricted);
+    expect(parts.map((part) => part.filename)).toEqual(['restricted_page_1.pdf', 'restricted_page_2.pdf']);
+    expect(await isEncrypted(parts[0].blob)).toBe(false);
+  });
+
+  it('merges a locked PDF with plain ones, which ignore the password', async () => {
+    const plain = await pdfFile('plain.pdf', [101]);
+    const locked = await lockedPdfFile('secret.pdf', [201, 202], { user: 'abc' });
+    const merged = await mergePdfs([plain, locked], { password: 'abc' });
+    expect(await pageWidths(merged.blob)).toEqual([101, 201, 202]);
+    expect(await isEncrypted(merged.blob)).toBe(false);
   });
 });

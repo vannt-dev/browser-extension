@@ -6,6 +6,7 @@ import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, SPREADSHEET_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
+import { errorReason, passwordStatus } from '../shared/error-text.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -17,6 +18,8 @@ const loadSheetEngine = () => import('../engine/sheet-engine.js');
 const SPLIT_RANGES = () => document.getElementById('dash-split-ranges')?.value || '';
 const PAGE_TOOL_PAGES = () => document.getElementById('dash-page-tools-pages')?.value || '';
 const ROTATE_ANGLE = () => Number(document.getElementById('dash-rotate-angle')?.value || 90);
+// One password for the batch: a PDF that needs none opens as before.
+const PDF_OPTIONS = () => ({ password: document.getElementById('dash-pdf-password')?.value || '' });
 // The jobs that change the pages of one PDF, each with the label of its page field.
 const PDF_PAGE_TOOLS = {
   'pdf-rotate': () => t('pagesToRotateLabel'),
@@ -207,7 +210,7 @@ function setupAiStudio() {
         const wantsPdf = ocrOutputSelect?.value === 'pdf';
         const res =
           wantsPdf || isPdfFile(file)
-            ? await AiEngine.createSearchablePdf(file, lang, onProgress)
+            ? await AiEngine.createSearchablePdf(file, lang, onProgress, PDF_OPTIONS())
             : await AiEngine.extractTextFromImage(file, lang, onProgress);
 
         ocrResultText.value = res.text || t('ocrNoText');
@@ -219,7 +222,7 @@ function setupAiStudio() {
         }
       } catch (err) {
         console.error('OCR Error:', err);
-        ocrProgress.textContent = t('ocrError', err.message);
+        ocrProgress.textContent = t('ocrError', errorReason(err, 'dashboard'));
       } finally {
         runOcrBtn.disabled = false;
         runOcrBtn.textContent = t('runOcr');
@@ -368,6 +371,9 @@ function addFilesToDashQueue(files) {
 }
 
 function renderDashQueue() {
+  // The password field only matters once there is a PDF to open.
+  const passwordGroup = document.getElementById('dash-pdf-password-group');
+  if (passwordGroup) passwordGroup.style.display = dashFileQueue.some(isPdfFile) ? 'block' : 'none';
   if (!dashQueueList) return;
   dashQueueList.innerHTML = '';
 
@@ -461,9 +467,9 @@ async function executeDashBatchConversion() {
     } catch (err) {
       console.error(`Error converting ${file.name}:`, err);
       if (statusEl) {
-        statusEl.textContent = t('statusError');
+        statusEl.textContent = passwordStatus(err) || t('statusError');
         // The reason, for whoever hovers over the red label.
-        statusEl.title = err?.message || '';
+        statusEl.title = errorReason(err, 'dashboard');
         statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
         statusEl.style.color = '#ef4444';
       }
@@ -511,13 +517,13 @@ async function mergeDashQueue() {
   pdfIndexes.forEach((index) => setDashStatus(index, t('statusMerging')));
   try {
     const { mergePdfs } = await loadPdfTools();
-    const merged = await mergePdfs(pdfIndexes.map((index) => dashFileQueue[index]));
+    const merged = await mergePdfs(pdfIndexes.map((index) => dashFileQueue[index]), PDF_OPTIONS());
     dashConvertedResults = [merged];
     pdfIndexes.forEach((index) => setDashStatus(index, t('statusMerged'), 'done'));
     ZipEngine.downloadBlob(merged.blob, merged.filename);
   } catch (err) {
     console.error('Error merging PDFs:', err);
-    pdfIndexes.forEach((index) => setDashStatus(index, t('errorWithReason', err.message), 'error'));
+    pdfIndexes.forEach((index) => setDashStatus(index, t('errorWithReason', errorReason(err, 'dashboard')), 'error'));
   }
 }
 
@@ -528,16 +534,16 @@ async function processDashSingleFile(file, targetFormat, quality) {
   if (PDF_PAGE_TOOLS[targetFormat]) {
     if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
     const tools = await loadPdfTools();
-    if (targetFormat === 'pdf-rotate') return tools.rotatePdfPages(file, ROTATE_ANGLE(), PAGE_TOOL_PAGES());
-    if (targetFormat === 'pdf-delete') return tools.deletePdfPages(file, PAGE_TOOL_PAGES());
-    return tools.reorderPdfPages(file, PAGE_TOOL_PAGES());
+    if (targetFormat === 'pdf-rotate') return tools.rotatePdfPages(file, ROTATE_ANGLE(), PAGE_TOOL_PAGES(), PDF_OPTIONS());
+    if (targetFormat === 'pdf-delete') return tools.deletePdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
+    return tools.reorderPdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
   }
 
   // OCR reads scans and photos alike: both become a PDF with a text layer.
   if (targetFormat === 'ocr-pdf') {
     if (!IMAGE_EXTENSIONS.includes(ext) && !isPdfFile(file)) throw new Error(t('ocrPdfNeedsScan'));
     const AiEngine = await loadAiEngine();
-    return AiEngine.createSearchablePdf(file, 'vie+eng');
+    return AiEngine.createSearchablePdf(file, 'vie+eng', null, PDF_OPTIONS());
   }
 
   // Image Processing
@@ -570,18 +576,18 @@ async function processDashSingleFile(file, targetFormat, quality) {
   if (ext === 'pdf') {
     if (targetFormat === 'pdf-split') {
       const { splitPdf } = await loadPdfTools();
-      const parts = await splitPdf(file, SPLIT_RANGES());
+      const parts = await splitPdf(file, SPLIT_RANGES(), PDF_OPTIONS());
       if (parts.length === 1) return parts[0];
       const zipRes = await ZipEngine.createZip(parts.map(p => ({ name: p.filename, blob: p.blob })), `${file.name.replace(/\.[^/.]+$/, '')}_split.zip`);
       return { blob: zipRes.blob, filename: zipRes.filename };
     }
     const PdfEngine = await loadPdfEngine();
     if (targetFormat === 'txt') {
-      const text = await PdfEngine.extractPdfText(file);
+      const text = await PdfEngine.extractPdfText(file, PDF_OPTIONS());
       const blob = new Blob([text], { type: 'text/plain' });
       return { blob, filename: `${file.name.replace(/\.[^/.]+$/, '')}.txt` };
     }
-    const pages = await PdfEngine.renderPdfToImages(file, { format: 'png' });
+    const pages = await PdfEngine.renderPdfToImages(file, { format: 'png', ...PDF_OPTIONS() });
     if (pages.length === 1) {
       return { blob: pages[0].blob, filename: pages[0].filename };
     }

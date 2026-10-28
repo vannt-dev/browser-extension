@@ -9,7 +9,7 @@ import { applyI18n, bindLanguageSelect, browserLanguage, currentLanguage, setLan
 const read = (file) => readFileSync(file, 'utf8');
 
 const PAGES = ['popup/popup.html', 'dashboard/dashboard.html'];
-const SCRIPTS = ['popup/popup.js', 'dashboard/dashboard.js', 'background/background.js', 'engine/ai-engine.js'];
+const SCRIPTS = ['popup/popup.js', 'dashboard/dashboard.js', 'background/background.js', 'engine/ai-engine.js', 'shared/error-text.js'];
 
 /** Every key a page asks for through a data-i18n attribute. */
 const keysInPage = (html) => [...html.matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)].map((match) => match[1]);

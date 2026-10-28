@@ -3,6 +3,7 @@
 // Uint8Array.prototype.toHex on every document, which Chrome only has since 140), while the
 // legacy one runs on Chrome 125 and later and on the Node versions the tests run on.
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfPasswordError } from './pdf-password.js';
 
 // Configure pdfjs worker. The minified one: the full legacy worker names a .mjs file on
 // github.com in a comment, which the build's remote-code check stops on.
@@ -16,7 +17,18 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 // built into dist/chunks/, so the folder is dist/vendor/pdfjs/ whichever folder is loaded.
 const WASM_URL = new URL(/* @vite-ignore */ `../vendor/pdfjs/`, import.meta.url).href;
 
-const openPdf = (data) => pdfjsLib.getDocument({ data, wasmUrl: WASM_URL }).promise;
+// A PDF that only limits printing or copying opens without a password; one locked to readers
+// needs it. pdf.js says which by a PasswordException: code 1 none given, 2 wrong.
+async function openPdf(file, password = '') {
+  const data = await file.arrayBuffer();
+  try {
+    return await pdfjsLib.getDocument({ data, wasmUrl: WASM_URL, ...(password ? { password } : {}) }).promise;
+  } catch (error) {
+    if (error?.name !== 'PasswordException') throw error;
+    const wrong = error.code === pdfjsLib.PasswordResponses.INCORRECT_PASSWORD;
+    throw pdfPasswordError(file.name, wrong ? PDF_PASSWORD_WRONG : PDF_PASSWORD_NEEDED);
+  }
+}
 
 /**
  * Universal PDF Engine (Extract PDF Pages as Images, PDF to Text)
@@ -26,9 +38,8 @@ export class PdfEngine {
    * Reads a PDF file and renders all pages as PNG/JPG images
    */
   static async renderPdfToImages(file, options = {}) {
-    const { format = 'png', scale = 1.5 } = options;
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await openPdf(arrayBuffer);
+    const { format = 'png', scale = 1.5, password = '' } = options;
+    const pdf = await openPdf(file, password);
     const pageImages = [];
 
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -71,10 +82,10 @@ export class PdfEngine {
 
   /**
    * Extract all plain text from a PDF file
+   * @param {{ password?: string }} [options] The password, if the PDF is locked with one
    */
-  static async extractPdfText(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await openPdf(arrayBuffer);
+  static async extractPdfText(file, { password = '' } = {}) {
+    const pdf = await openPdf(file, password);
     let fullText = '';
 
     for (let i = 1; i <= pdf.numPages; i++) {

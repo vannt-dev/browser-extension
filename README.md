@@ -27,7 +27,8 @@ bản nào không có ở đó thì không phải do vannt-dev phát hành.
    - `PDF ➔ PNG Images (Từng trang)` hoặc trích xuất văn bản `TXT`.
    - `Markdown / TXT / HTML ➔ PDF`.
    - **Gộp PDF**: chọn nhiều file PDF rồi chọn định dạng đích "Gộp các file PDF thành một" — các file được nối theo thứ tự trong danh sách chờ, file không phải PDF bị bỏ qua.
-   - **Tách PDF**: mỗi trang một file, hoặc (trong Dashboard) theo khoảng trang như `1-3, 5, 8-` — mỗi khoảng một file, nhiều file thì đóng gói ZIP. Gộp và tách sao chép nguyên trang (bằng `pdf-lib`), không render lại: chữ vẫn là chữ, không giảm chất lượng. PDF có mật khẩu không mở được.
+   - **Tách PDF**: mỗi trang một file, hoặc (trong Dashboard) theo khoảng trang như `1-3, 5, 8-` — mỗi khoảng một file, nhiều file thì đóng gói ZIP. Gộp và tách sao chép nguyên trang (bằng bản `pdf-lib` còn được duy trì, `@cantoo/pdf-lib`), không render lại: chữ vẫn là chữ, không giảm chất lượng.
+   - **PDF có mật khẩu**: trong Dashboard, nhập mật khẩu vào ô *Mật khẩu PDF* (hiện ra khi hàng đợi có PDF); mọi việc với PDF (gộp, tách, xoay, xoá, sắp trang, sang ảnh, OCR) đều mở được, và file làm ra không còn mật khẩu. PDF chỉ cấm in/chép mở được mà không cần mật khẩu. Popup không có ô mật khẩu: nó báo mở file trong Dashboard.
    - **Xoay, xóa, sắp xếp lại trang PDF** (trong Dashboard): xoay 90°/180°/270° mọi trang hoặc các trang chọn như `1-3, 5`; xóa các trang chọn; đặt thứ tự trang mới như `3, 1-2` (trang không ghi giữ thứ tự cũ, xếp phía sau). Cửa sổ extension có sẵn lệnh xoay mọi trang. Cũng không render lại trang.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
@@ -95,7 +96,7 @@ npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
 npm run test:offline -- dist/zips/universal-file-converter-v1.2.1.zip   # kiểm tra file ZIP
-npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, ocr, background
+npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, ocr, background
 ```
 
 - Các mục được kiểm tra: ảnh → PDF và DOCX → PDF (jsPDF, mammoth); PDF → PNG với PDF có font nhúng,
