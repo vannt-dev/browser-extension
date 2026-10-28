@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PDFDocument, degrees } from '@cantoo/pdf-lib';
+import { jsPDF } from '../lib/jspdf.js';
 import {
   deletePdfPages,
   mergePdfs,
@@ -228,6 +229,18 @@ describe('PDFs locked with a password', () => {
     const parts = await splitPdf(restricted);
     expect(parts.map((part) => part.filename)).toEqual(['restricted_page_1.pdf', 'restricted_page_2.pdf']);
     expect(await isEncrypted(parts[0].blob)).toBe(false);
+  });
+
+  it('opens a PDF another program locked (jsPDF, RC4)', async () => {
+    const doc = new jsPDF({ encryption: { userPassword: 'abc', ownerPassword: 'own', userPermissions: ['print'] } });
+    doc.text('first', 15, 20);
+    doc.addPage();
+    doc.text('second', 15, 20);
+    const locked = new File([doc.output('arraybuffer')], 'jspdf.pdf', { type: 'application/pdf' });
+    await expect(rotatePdfPages(locked, 90)).rejects.toMatchObject({ code: PDF_PASSWORD_NEEDED });
+    const rotated = await rotatePdfPages(locked, 90, '', { password: 'abc' });
+    expect(await isEncrypted(rotated.blob)).toBe(false);
+    expect(await pageRotations(rotated.blob)).toEqual([90, 90]);
   });
 
   it('merges a locked PDF with plain ones, which ignore the password', async () => {
