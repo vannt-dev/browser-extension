@@ -55,6 +55,7 @@
                 <option value="pdf-rotate" data-i18n="formatPdfRotate">Rotate PDF pages (.pdf)</option>
                 <option value="pdf-delete" data-i18n="formatPdfDelete">Delete PDF pages (.pdf)</option>
                 <option value="pdf-reorder" data-i18n="formatPdfReorder">Reorder PDF pages (.pdf)</option>
+                <option value="pdf-number" data-i18n="formatPdfNumber">Add page numbers to a PDF (.pdf)</option>
                 <option value="ocr-pdf" data-i18n="formatOcrPdf">Searchable PDF with OCR, from scans or images (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
@@ -78,6 +79,24 @@
                 <option value="180" data-i18n="rotate180">180°</option>
                 <option value="270" data-i18n="rotate270">90° counter-clockwise</option>
               </select>
+            </div>
+            <div class="form-group" id="dash-number-group" style="display: none;">
+              <label for="dash-number-position" data-i18n="numberPositionLabel">Where the numbers go:</label>
+              <select id="dash-number-position" class="dash-select">
+                <option value="bottom-center" data-i18n="numberBottomCenter">Bottom, centre</option>
+                <option value="bottom-right" data-i18n="numberBottomRight">Bottom, right</option>
+                <option value="bottom-left" data-i18n="numberBottomLeft">Bottom, left</option>
+                <option value="top-center" data-i18n="numberTopCenter">Top, centre</option>
+                <option value="top-right" data-i18n="numberTopRight">Top, right</option>
+                <option value="top-left" data-i18n="numberTopLeft">Top, left</option>
+              </select>
+              <label for="dash-number-style" data-i18n="numberStyleLabel">How they read:</label>
+              <select id="dash-number-style" class="dash-select">
+                <option value="plain" data-i18n="numberStylePlain">3</option>
+                <option value="of-total" data-i18n="numberStyleOfTotal">3 / 12</option>
+              </select>
+              <label for="dash-number-start" data-i18n="numberStartLabel">Number of the first page (0 leaves a cover unnumbered):</label>
+              <input type="number" id="dash-number-start" class="dash-input" value="1" step="1">
             </div>
             <div class="form-group" id="dash-pdf-password-group" style="display: none;">
               <label for="dash-pdf-password" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>

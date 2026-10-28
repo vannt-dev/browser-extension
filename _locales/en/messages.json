@@ -496,5 +496,44 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfNumber": {
+    "message": "Add page numbers to a PDF (.pdf)"
+  },
+  "pagesToNumberLabel": {
+    "message": "Pages to number (empty = every page):"
+  },
+  "numberPositionLabel": {
+    "message": "Where the numbers go:"
+  },
+  "numberBottomCenter": {
+    "message": "Bottom, centre"
+  },
+  "numberBottomRight": {
+    "message": "Bottom, right"
+  },
+  "numberBottomLeft": {
+    "message": "Bottom, left"
+  },
+  "numberTopCenter": {
+    "message": "Top, centre"
+  },
+  "numberTopRight": {
+    "message": "Top, right"
+  },
+  "numberTopLeft": {
+    "message": "Top, left"
+  },
+  "numberStyleLabel": {
+    "message": "How they read:"
+  },
+  "numberStylePlain": {
+    "message": "3"
+  },
+  "numberStyleOfTotal": {
+    "message": "3 / 12"
+  },
+  "numberStartLabel": {
+    "message": "Number of the first page (0 leaves a cover unnumbered):"
   }
 }

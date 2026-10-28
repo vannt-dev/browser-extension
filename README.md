@@ -30,6 +30,7 @@ bản nào không có ở đó thì không phải do vannt-dev phát hành.
    - **Tách PDF**: mỗi trang một file, hoặc (trong Dashboard) theo khoảng trang như `1-3, 5, 8-` — mỗi khoảng một file, nhiều file thì đóng gói ZIP. Gộp và tách sao chép nguyên trang (bằng bản `pdf-lib` còn được duy trì, `@cantoo/pdf-lib`), không render lại: chữ vẫn là chữ, không giảm chất lượng.
    - **PDF có mật khẩu**: trong Dashboard, nhập mật khẩu vào ô *Mật khẩu PDF* (hiện ra khi hàng đợi có PDF); mọi việc với PDF (gộp, tách, xoay, xoá, sắp trang, sang ảnh, OCR) đều mở được, và file làm ra không còn mật khẩu. PDF chỉ cấm in/chép mở được mà không cần mật khẩu. Popup không có ô mật khẩu: nó báo mở file trong Dashboard.
    - **Xoay, xóa, sắp xếp lại trang PDF** (trong Dashboard): xoay 90°/180°/270° mọi trang hoặc các trang chọn như `1-3, 5`; xóa các trang chọn; đặt thứ tự trang mới như `3, 1-2` (trang không ghi giữ thứ tự cũ, xếp phía sau). Cửa sổ extension có sẵn lệnh xoay mọi trang. Cũng không render lại trang.
+   - **Đánh số trang PDF** (trong Dashboard): số ở trên hoặc dưới, trái, giữa hoặc phải, kiểu `3` hay `3 / 12`; chọn số của trang đầu (0 để trang bìa không có số) và các trang cần đánh như `2-`. Số nằm đúng chỗ và đứng thẳng cả trên trang đã xoay. Phần còn lại của trang giữ nguyên.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
@@ -96,7 +97,7 @@ npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
 npm run test:offline -- dist/zips/universal-file-converter-v1.2.1.zip   # kiểm tra file ZIP
-npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, ocr, background
+npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, ocr, background
 ```
 
 - Các mục được kiểm tra: ảnh → PDF và DOCX → PDF (jsPDF, mammoth); PDF → PNG với PDF có font nhúng,

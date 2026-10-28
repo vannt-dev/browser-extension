@@ -18,13 +18,19 @@ const loadSheetEngine = () => import('../engine/sheet-engine.js');
 const SPLIT_RANGES = () => document.getElementById('dash-split-ranges')?.value || '';
 const PAGE_TOOL_PAGES = () => document.getElementById('dash-page-tools-pages')?.value || '';
 const ROTATE_ANGLE = () => Number(document.getElementById('dash-rotate-angle')?.value || 90);
+const NUMBER_OPTIONS = () => ({
+  position: document.getElementById('dash-number-position')?.value || 'bottom-center',
+  style: document.getElementById('dash-number-style')?.value || 'plain',
+  start: Number(document.getElementById('dash-number-start')?.value || 1),
+});
 // One password for the batch: a PDF that needs none opens as before.
 const PDF_OPTIONS = () => ({ password: document.getElementById('dash-pdf-password')?.value || '' });
 // The jobs that change the pages of one PDF, each with the label of its page field.
 const PDF_PAGE_TOOLS = {
   'pdf-rotate': () => t('pagesToRotateLabel'),
   'pdf-delete': () => t('pagesToDeleteLabel'),
-  'pdf-reorder': () => t('pageOrderLabel')
+  'pdf-reorder': () => t('pageOrderLabel'),
+  'pdf-number': () => t('pagesToNumberLabel')
 };
 
 // State for Dashboard Batch Converter & Lightbox
@@ -42,6 +48,7 @@ const dashSplitGroup = document.getElementById('dash-split-group');
 const dashPageToolsGroup = document.getElementById('dash-page-tools-group');
 const dashPageToolsLabel = document.getElementById('dash-page-tools-label');
 const dashRotateGroup = document.getElementById('dash-rotate-group');
+const dashNumberGroup = document.getElementById('dash-number-group');
 // The page fields only mean something for the PDF job they belong to.
 function showFormatFields() {
   const format = dashTargetFormat?.value;
@@ -49,6 +56,7 @@ function showFormatFields() {
   if (dashPageToolsGroup) dashPageToolsGroup.style.display = PDF_PAGE_TOOLS[format] ? 'block' : 'none';
   if (dashPageToolsLabel && PDF_PAGE_TOOLS[format]) dashPageToolsLabel.textContent = PDF_PAGE_TOOLS[format]();
   if (dashRotateGroup) dashRotateGroup.style.display = format === 'pdf-rotate' ? 'block' : 'none';
+  if (dashNumberGroup) dashNumberGroup.style.display = format === 'pdf-number' ? 'block' : 'none';
 }
 dashTargetFormat?.addEventListener('change', showFormatFields);
 const dashQualityVal = document.getElementById('dash-quality-val');
@@ -536,6 +544,9 @@ async function processDashSingleFile(file, targetFormat, quality) {
     const tools = await loadPdfTools();
     if (targetFormat === 'pdf-rotate') return tools.rotatePdfPages(file, ROTATE_ANGLE(), PAGE_TOOL_PAGES(), PDF_OPTIONS());
     if (targetFormat === 'pdf-delete') return tools.deletePdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
+    if (targetFormat === 'pdf-number') {
+      return tools.numberPdfPages(file, { ...NUMBER_OPTIONS(), pages: PAGE_TOOL_PAGES(), ...PDF_OPTIONS() });
+    }
     return tools.reorderPdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
   }
 
