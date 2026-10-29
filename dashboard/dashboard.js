@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
   setupDashDropZone();
   setupAiStudio();
+  setupCropTool();
   setupLightbox();
   setupDevTools();
   setupSettingsPersistence();
@@ -298,6 +299,166 @@ function setupAiStudio() {
       }
     });
   }
+}
+
+// Crop & Flip: one picture, shown scaled down on a canvas. The area to keep is held in the
+// picture's own pixels; dragging over the picture and typing in the fields both set it.
+const crop = { file: null, width: 0, height: 0, area: null };
+const cropEl = (id) => document.getElementById(id);
+const CROP_FIELDS = { x: 'crop-x', y: 'crop-y', width: 'crop-width', height: 'crop-height' };
+
+/** The area typed in the fields, kept inside the picture; null when it holds nothing. */
+function cropAreaFromFields() {
+  const value = (key) => cropEl(CROP_FIELDS[key])?.value;
+  try {
+    const typed = { x: value('x'), y: value('y'), width: value('width') || 0, height: value('height') || 0 };
+    return ImageEngine.cropRect(typed, crop.width, crop.height);
+  } catch {
+    return null;
+  }
+}
+
+/** Draws the box over the picture and the size line for the current area. */
+function showCropArea() {
+  const box = cropEl('crop-box');
+  const size = cropEl('crop-size');
+  const area = crop.area;
+  if (!box || !size) return;
+  box.style.display = area ? 'block' : 'none';
+  if (area) {
+    box.style.left = `${(area.x / crop.width) * 100}%`;
+    box.style.top = `${(area.y / crop.height) * 100}%`;
+    box.style.width = `${(area.width / crop.width) * 100}%`;
+    box.style.height = `${(area.height / crop.height) * 100}%`;
+  }
+  size.textContent = !crop.file ? '' : area ? t('cropSize', area.width, area.height, crop.width, crop.height) : t('cropEmpty');
+  const run = cropEl('run-crop-btn');
+  if (run) run.disabled = !area;
+}
+
+function setCropArea(area, { writeFields = true } = {}) {
+  crop.area = area;
+  if (writeFields && area) {
+    for (const [key, id] of Object.entries(CROP_FIELDS)) cropEl(id).value = area[key];
+  }
+  showCropArea();
+}
+
+async function loadCropPicture(file) {
+  const status = cropEl('crop-status');
+  const canvas = cropEl('crop-canvas');
+  status.textContent = '';
+  try {
+    const img = await ImageEngine.loadImage(file);
+    // The preview needs no more pixels than the screen shows; the saved picture uses them all.
+    const scale = Math.min(1, 1200 / img.naturalWidth, 960 / img.naturalHeight);
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    Object.assign(crop, { file, width: img.naturalWidth, height: img.naturalHeight });
+    cropEl('crop-frame').hidden = false;
+    cropEl('crop-placeholder').hidden = true;
+    cropEl('crop-whole-btn').disabled = false;
+    setCropArea(ImageEngine.cropRect(null, crop.width, crop.height));
+  } catch (err) {
+    console.error('Crop: could not open the picture:', err);
+    Object.assign(crop, { file: null, width: 0, height: 0, area: null });
+    cropEl('crop-frame').hidden = true;
+    cropEl('crop-placeholder').hidden = false;
+    cropEl('crop-whole-btn').disabled = true;
+    showCropArea();
+    status.textContent = t('cropError', errorReason(err, 'dashboard'));
+  }
+}
+
+function setupCropTool() {
+  const input = cropEl('crop-file-input');
+  const frame = cropEl('crop-frame');
+  if (!input || !frame) return;
+
+  input.addEventListener('change', () => {
+    if (input.files?.length) loadCropPicture(input.files[0]);
+  });
+
+  // Typing moves the box at once; leaving a field writes back what was kept inside the picture.
+  for (const id of Object.values(CROP_FIELDS)) {
+    const field = cropEl(id);
+    field.addEventListener('input', () => crop.file && setCropArea(cropAreaFromFields(), { writeFields: false }));
+    field.addEventListener('change', () => crop.file && setCropArea(cropAreaFromFields() ?? crop.area));
+  }
+
+  cropEl('crop-whole-btn').addEventListener('click', () => {
+    if (crop.file) setCropArea(ImageEngine.cropRect(null, crop.width, crop.height));
+  });
+
+  // Dragging: the picture's pixel under the pointer, from where the frame is on the screen.
+  const pixelAt = (event) => {
+    const bounds = frame.getBoundingClientRect();
+    const along = (offset, size, total) => Math.min(total, Math.max(0, Math.round((offset / size) * total)));
+    return {
+      x: along(event.clientX - bounds.left, bounds.width, crop.width),
+      y: along(event.clientY - bounds.top, bounds.height, crop.height)
+    };
+  };
+  let start = null;
+  let before = null;
+  const areaTo = (event) => {
+    const end = pixelAt(event);
+    return {
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
+      width: Math.abs(end.x - start.x),
+      height: Math.abs(end.y - start.y)
+    };
+  };
+  frame.addEventListener('pointerdown', (event) => {
+    if (!crop.file || event.button !== 0) return;
+    event.preventDefault();
+    start = pixelAt(event);
+    before = crop.area;
+    try {
+      frame.setPointerCapture(event.pointerId);
+    } catch {
+      // A pointer the page made up itself cannot be captured; the drag works without.
+    }
+  });
+  frame.addEventListener('pointermove', (event) => {
+    if (start) setCropArea(areaTo(event));
+  });
+  const finish = (event) => {
+    if (!start) return;
+    const area = areaTo(event);
+    start = null;
+    // A click, not a drag, leaves the area as it was.
+    setCropArea(area.width >= 1 && area.height >= 1 ? area : before);
+  };
+  frame.addEventListener('pointerup', finish);
+  frame.addEventListener('pointercancel', () => {
+    if (start) setCropArea(before);
+    start = null;
+  });
+
+  const run = cropEl('run-crop-btn');
+  const status = cropEl('crop-status');
+  run.addEventListener('click', async () => {
+    if (!crop.file || !crop.area) return;
+    run.disabled = true;
+    status.textContent = t('cropRunning');
+    try {
+      const res = await ImageEngine.cropAndFlip(crop.file, {
+        crop: crop.area,
+        flipHorizontal: cropEl('flip-horizontal').checked,
+        flipVertical: cropEl('flip-vertical').checked
+      });
+      ZipEngine.downloadBlob(res.blob, res.filename);
+      status.textContent = t('cropSaved', res.filename, res.width, res.height);
+    } catch (err) {
+      console.error('Crop error:', err);
+      status.textContent = t('cropError', errorReason(err, 'dashboard'));
+    } finally {
+      run.disabled = !crop.area;
+    }
+  });
 }
 
 // Drag & Drop (Supports Files and Directory Traversal)
@@ -711,6 +872,7 @@ function setupSettingsPersistence() {
     bindLanguageSelect(languageSelect, () => {
       renderDashQueue();
       showFormatFields();
+      showCropArea();
     });
   }
 

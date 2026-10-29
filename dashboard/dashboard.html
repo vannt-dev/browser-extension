@@ -17,6 +17,7 @@
       <nav class="sidebar-menu">
         <button class="menu-item active" data-tab="converter">📂 Batch File Converter</button>
         <button class="menu-item" data-tab="ai-studio" data-i18n="menuAiStudio">🔎 OCR &amp; Background Removal</button>
+        <button class="menu-item" data-tab="crop" data-i18n="menuCrop">📐 Crop &amp; Flip Images</button>
         <button class="menu-item" data-tab="devtools">💻 Developer Tools</button>
         <button class="menu-item" data-tab="security">🛡️ Watermark &amp; Security</button>
         <button class="menu-item" data-tab="settings">⚙️ Settings &amp; Auto-Convert</button>
@@ -179,6 +180,42 @@
               <span id="bg-remove-placeholder" style="color: var(--text-secondary); font-size: 13px;" data-i18n="bgPlaceholder">The transparent PNG will be previewed here</span>
             </div>
             <button id="download-bg-remove-btn" class="dash-btn secondary" style="display: none; margin-top: 12px;" data-i18n="downloadBgRemove">💾 Download the transparent PNG</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Crop & Flip -->
+      <section id="tab-crop" class="tab-page">
+        <header class="page-header">
+          <h1 data-i18n="cropTitle">📐 Crop &amp; flip images</h1>
+          <p data-i18n="cropIntro">Keep part of a picture and mirror it, on your device. PNG, JPG, WebP and BMP keep their format; other pictures come out as PNG.</p>
+        </header>
+        <div class="workspace-grid crop-grid">
+          <div class="config-card">
+            <input type="file" id="crop-file-input" accept="image/*,.heic,.heif" class="dash-input">
+            <div id="crop-stage" class="crop-stage">
+              <div id="crop-frame" class="crop-frame" hidden>
+                <canvas id="crop-canvas"></canvas>
+                <div id="crop-box" class="crop-box"></div>
+              </div>
+              <span id="crop-placeholder" class="crop-placeholder" data-i18n="cropPlaceholder">Choose a picture, then drag over it to mark the part to keep</span>
+            </div>
+          </div>
+          <div class="config-card">
+            <h3 data-i18n="cropAreaTitle">Part to keep (in pixels)</h3>
+            <div class="crop-fields">
+              <label class="form-group"><span data-i18n="cropX">From the left (X)</span><input type="number" id="crop-x" class="dash-input" min="0" step="1" value="0"></label>
+              <label class="form-group"><span data-i18n="cropY">From the top (Y)</span><input type="number" id="crop-y" class="dash-input" min="0" step="1" value="0"></label>
+              <label class="form-group"><span data-i18n="cropWidth">Width</span><input type="number" id="crop-width" class="dash-input" min="1" step="1"></label>
+              <label class="form-group"><span data-i18n="cropHeight">Height</span><input type="number" id="crop-height" class="dash-input" min="1" step="1"></label>
+            </div>
+            <span id="crop-size" class="crop-size"></span>
+            <button id="crop-whole-btn" class="dash-btn secondary" disabled data-i18n="cropWhole">Whole picture</button>
+            <h3 data-i18n="flipTitle">Flip the part kept</h3>
+            <label class="crop-check"><input type="checkbox" id="flip-horizontal"> <span data-i18n="flipHorizontal">Left to right (mirror)</span></label>
+            <label class="crop-check"><input type="checkbox" id="flip-vertical"> <span data-i18n="flipVertical">Top to bottom (upside down)</span></label>
+            <button id="run-crop-btn" class="dash-btn primary" disabled data-i18n="runCrop">📐 Crop, flip and save</button>
+            <div id="crop-status" class="crop-status"></div>
           </div>
         </div>
       </section>
