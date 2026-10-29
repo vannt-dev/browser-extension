@@ -535,5 +535,92 @@
   },
   "numberStartLabel": {
     "message": "Number of the first page (0 leaves a cover unnumbered):"
+  },
+  "menuCrop": {
+    "message": "📐 Crop & Flip Images"
+  },
+  "cropTitle": {
+    "message": "📐 Crop & flip images"
+  },
+  "cropIntro": {
+    "message": "Keep part of a picture and mirror it, on your device. PNG, JPG, WebP and BMP keep their format; other pictures come out as PNG."
+  },
+  "cropPlaceholder": {
+    "message": "Choose a picture, then drag over it to mark the part to keep"
+  },
+  "cropAreaTitle": {
+    "message": "Part to keep (in pixels)"
+  },
+  "cropX": {
+    "message": "From the left (X)"
+  },
+  "cropY": {
+    "message": "From the top (Y)"
+  },
+  "cropWidth": {
+    "message": "Width"
+  },
+  "cropHeight": {
+    "message": "Height"
+  },
+  "cropWhole": {
+    "message": "Whole picture"
+  },
+  "flipTitle": {
+    "message": "Flip the part kept"
+  },
+  "flipHorizontal": {
+    "message": "Left to right (mirror)"
+  },
+  "flipVertical": {
+    "message": "Top to bottom (upside down)"
+  },
+  "runCrop": {
+    "message": "📐 Crop, flip and save"
+  },
+  "cropSize": {
+    "message": "Keeps $WIDTH$ × $HEIGHT$ of $FULLWIDTH$ × $FULLHEIGHT$ pixels",
+    "placeholders": {
+      "width": {
+        "content": "$1"
+      },
+      "height": {
+        "content": "$2"
+      },
+      "fullwidth": {
+        "content": "$3"
+      },
+      "fullheight": {
+        "content": "$4"
+      }
+    }
+  },
+  "cropEmpty": {
+    "message": "The part to keep is empty: give it a width and a height of 1 or more"
+  },
+  "cropRunning": {
+    "message": "⏳ Cropping..."
+  },
+  "cropSaved": {
+    "message": "✅ Saved $NAME$ ($WIDTH$ × $HEIGHT$)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "width": {
+        "content": "$2"
+      },
+      "height": {
+        "content": "$3"
+      }
+    }
+  },
+  "cropError": {
+    "message": "❌ Could not crop the picture: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   }
 }

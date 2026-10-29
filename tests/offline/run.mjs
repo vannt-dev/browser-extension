@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,ocr,background]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,crop,ocr,background]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'ocr', 'background'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'crop', 'ocr', 'background'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -130,6 +130,22 @@ async function ink(bytes) {
   return { width: info.width, height: info.height, dark: dark / n, red: red / n };
 }
 const percent = (share) => `${(share * 100).toFixed(2)}%`;
+
+/** Size of a picture and the name of the colour at each point asked for (red, blue, green, black, white). */
+async function colours(bytes, points) {
+  const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const name = ([r, g, b]) =>
+    ({ '100': 'red', '001': 'blue', '010': 'green', '000': 'black', '111': 'white' })[
+      [r, g, b].map((c) => (c > 200 ? 1 : c < 60 ? 0 : '?')).join('')
+    ] ?? `rgb(${r},${g},${b})`;
+  return {
+    size: `${info.width}x${info.height}`,
+    at: points.map(([x, y]) => {
+      const i = (y * info.width + x) * info.channels;
+      return name([data[i], data[i + 1], data[i + 2]]);
+    })
+  };
+}
 
 /** Puts a file into a page's <input type=file> and fires its change event. */
 const putFile = (page, inputId, name, type, bytes) =>
@@ -512,6 +528,82 @@ try {
     );
   });
 
+  // ---- the canvas cropping and mirroring a picture, chosen by dragging and by typing
+  await group('crop', '6. Crop and flip a picture (dashboard)', async () => {
+    // 200 x 120 in four quadrants: red, blue on top; green, black below.
+    const quads = await picture(
+      dash,
+      200,
+      120,
+      'ctx.fillStyle = "#f00"; ctx.fillRect(0, 0, 100, 60); ctx.fillStyle = "#00f"; ctx.fillRect(100, 0, 100, 60);' +
+        'ctx.fillStyle = "#0f0"; ctx.fillRect(0, 60, 100, 60); ctx.fillStyle = "#000"; ctx.fillRect(100, 60, 100, 60);'
+    );
+    const fields = `["crop-x", "crop-y", "crop-width", "crop-height"].map((id) => document.getElementById(id).value).join()`;
+    const open = async (name, type, bytes) => {
+      await dash.evaluate(`document.querySelector('.menu-item[data-tab="crop"]').click()`);
+      await putFile(dash, 'crop-file-input', name, type, bytes);
+      return poll(dash, `{ fields: ${fields}, shown: !document.getElementById("crop-frame").hidden }`, (s) => s.shown && s.fields === '0,0,200,120', 15);
+    };
+    const save = async (area, flips) => {
+      await dash.evaluate(`(() => {
+        const area = ${JSON.stringify(area)};
+        for (const [id, value] of Object.entries(area)) {
+          const field = document.getElementById(id);
+          field.value = value;
+          field.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        document.getElementById("flip-horizontal").checked = ${flips.includes('h')};
+        document.getElementById("flip-vertical").checked = ${flips.includes('v')};
+        document.getElementById("run-crop-btn").click();
+      })()`);
+      const state = await poll(dash, `{ status: document.getElementById("crop-status").textContent }`, (s) => /^(✅|❌)/.test(s.status), 30);
+      return { state, file: await nextDownload(state.timedOut ? 1 : 30) };
+    };
+
+    let state = await open('quads.png', 'image/png', quads);
+    check('the picture shows, the fields hold the whole of it', !state.timedOut, JSON.stringify(state));
+
+    // A drag with the real mouse from the picture's (50, 30) to (150, 90).
+    const frame = JSON.parse(await dash.evaluate(`JSON.stringify(document.getElementById("crop-frame").getBoundingClientRect())`));
+    const at = (x, y) => ({ x: frame.left + (x / 200) * frame.width, y: frame.top + (y / 120) * frame.height });
+    const mouse = (type, { x, y }) =>
+      browser.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 }, dash.sessionId);
+    await mouse('mouseMoved', at(50, 30));
+    await mouse('mousePressed', at(50, 30));
+    await mouse('mouseMoved', at(100, 60));
+    await mouse('mouseMoved', at(150, 90));
+    await mouse('mouseReleased', at(150, 90));
+    const dragged = (await dash.evaluate(fields)).split(',').map(Number);
+    check(
+      'dragging over the picture fills in the area (50, 30, 100 x 60)',
+      dragged.every((v, i) => Math.abs(v - [50, 30, 100, 60][i]) <= 1),
+      dragged.join()
+    );
+
+    let file;
+    ({ state, file } = await save({ 'crop-x': 50, 'crop-y': 30, 'crop-width': 100, 'crop-height': 60 }, 'hv'));
+    let seen = file ? await colours(file.bytes, [[10, 10], [90, 10], [10, 50], [90, 50]]) : null;
+    check(
+      'quads_edited.png: 100x60, the middle part turned both ways (black, green over blue, red)',
+      file?.name === 'quads_edited.png' &&
+        file.bytes.subarray(1, 4).toString() === 'PNG' &&
+        JSON.stringify(seen) === JSON.stringify({ size: '100x60', at: ['black', 'green', 'blue', 'red'] }),
+      `${describe(file)}: ${JSON.stringify(seen)} ${JSON.stringify(state)}`
+    );
+
+    const jpeg = await sharp(quads).jpeg({ quality: 95 }).toBuffer();
+    state = await open('quads.jpg', 'image/jpeg', jpeg);
+    ({ state, file } = await save({ 'crop-x': 0, 'crop-y': 0, 'crop-width': 100, 'crop-height': 120 }, 'v'));
+    seen = file ? await colours(file.bytes, [[50, 20], [50, 100]]) : null;
+    check(
+      'quads_edited.jpg: still a JPEG, the left half upside down (green over red)',
+      file?.name === 'quads_edited.jpg' &&
+        file.bytes[0] === 0xff && file.bytes[1] === 0xd8 &&
+        JSON.stringify(seen) === JSON.stringify({ size: '100x120', at: ['green', 'red'] }),
+      `${describe(file)}: ${JSON.stringify(seen)} ${JSON.stringify(state)}`
+    );
+  });
+
   const words = await picture(
     dash,
     900,
@@ -520,7 +612,7 @@ try {
   );
 
   // ---- tesseract.js: worker, core and language data
-  await group('ocr', '6. OCR (dashboard, AI Studio)', async () => {
+  await group('ocr', '7. OCR (dashboard, AI Studio)', async () => {
     let state = await dashOcr('words.png', 'image/png', words, 'vie+eng', 'text');
     check(
       'a picture is read in Vietnamese + English',
@@ -544,7 +636,7 @@ try {
 
   // ---- the same work while the user looks at another tab. Chrome stops animation frames and
   // throttles timers in a background tab; OCR has to finish anyway.
-  await group('background', '7. OCR with the dashboard in a background tab', async () => {
+  await group('background', '8. OCR with the dashboard in a background tab', async () => {
     let other;
     const toBackground = async () => {
       other = await newPage(browser);

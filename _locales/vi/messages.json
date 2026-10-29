@@ -535,5 +535,92 @@
   },
   "numberStartLabel": {
     "message": "Số của trang đầu tiên (0 để trang bìa không có số):"
+  },
+  "menuCrop": {
+    "message": "📐 Cắt & lật ảnh"
+  },
+  "cropTitle": {
+    "message": "📐 Cắt & lật ảnh"
+  },
+  "cropIntro": {
+    "message": "Giữ lại một phần của ảnh và lật ảnh, ngay trên máy của bạn. PNG, JPG, WebP và BMP giữ nguyên định dạng; ảnh định dạng khác được lưu thành PNG."
+  },
+  "cropPlaceholder": {
+    "message": "Chọn một ảnh, rồi kéo chuột trên ảnh để khoanh phần muốn giữ"
+  },
+  "cropAreaTitle": {
+    "message": "Phần giữ lại (tính bằng pixel)"
+  },
+  "cropX": {
+    "message": "Cách mép trái (X)"
+  },
+  "cropY": {
+    "message": "Cách mép trên (Y)"
+  },
+  "cropWidth": {
+    "message": "Chiều rộng"
+  },
+  "cropHeight": {
+    "message": "Chiều cao"
+  },
+  "cropWhole": {
+    "message": "Cả ảnh"
+  },
+  "flipTitle": {
+    "message": "Lật phần giữ lại"
+  },
+  "flipHorizontal": {
+    "message": "Trái sang phải (soi gương)"
+  },
+  "flipVertical": {
+    "message": "Trên xuống dưới (lộn ngược)"
+  },
+  "runCrop": {
+    "message": "📐 Cắt, lật và lưu"
+  },
+  "cropSize": {
+    "message": "Giữ $WIDTH$ × $HEIGHT$ trong $FULLWIDTH$ × $FULLHEIGHT$ pixel",
+    "placeholders": {
+      "width": {
+        "content": "$1"
+      },
+      "height": {
+        "content": "$2"
+      },
+      "fullwidth": {
+        "content": "$3"
+      },
+      "fullheight": {
+        "content": "$4"
+      }
+    }
+  },
+  "cropEmpty": {
+    "message": "Phần giữ lại đang trống: chiều rộng và chiều cao phải từ 1 trở lên"
+  },
+  "cropRunning": {
+    "message": "⏳ Đang cắt ảnh..."
+  },
+  "cropSaved": {
+    "message": "✅ Đã lưu $NAME$ ($WIDTH$ × $HEIGHT$)",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "width": {
+        "content": "$2"
+      },
+      "height": {
+        "content": "$3"
+      }
+    }
+  },
+  "cropError": {
+    "message": "❌ Không cắt được ảnh: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   }
 }

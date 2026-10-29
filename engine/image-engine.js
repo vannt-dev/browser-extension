@@ -15,6 +15,12 @@ const NATIVE_MIME = {
 /** Formats that cannot carry an alpha channel and need a matte behind the image. */
 const OPAQUE_FORMATS = new Set(['jpg', 'jpeg']);
 
+/**
+ * Formats a crop or flip writes back as they came. The others (GIF, HEIC, AVIF, SVG, ICO) come
+ * out as PNG: the browser cannot encode them, or (ICO) they hold square icons, not a picture.
+ */
+const EDIT_KEEPS_FORMAT = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp']);
+
 /** Icon sizes emitted into a multi-resolution .ico file. */
 const ICO_SIZES = [16, 32, 48, 64, 128, 256];
 
@@ -113,6 +119,78 @@ export class ImageEngine {
       width: targetW,
       height: targetH,
       format: targetFormat,
+      originalName: file.name
+    };
+  }
+
+  /** The format an edited picture is written in: its own when it can be written back, else PNG. */
+  static editFormat(fileName = '') {
+    const name = String(fileName);
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+    return EDIT_KEEPS_FORMAT.has(ext) ? ext : 'png';
+  }
+
+  /**
+   * The area to keep, in whole pixels inside the picture. No area means the whole picture; a
+   * missing width or height reaches the edge.
+   */
+  static cropRect(crop, imageWidth, imageHeight) {
+    if (!crop) return { x: 0, y: 0, width: imageWidth, height: imageHeight };
+    const whole = (value, fallback) =>
+      value === undefined || value === null || value === '' ? fallback : Math.round(Number(value));
+    const x = Math.max(0, whole(crop.x, 0) || 0);
+    const y = Math.max(0, whole(crop.y, 0) || 0);
+    const width = Math.min(whole(crop.width, imageWidth - x), imageWidth - x);
+    const height = Math.min(whole(crop.height, imageHeight - y), imageHeight - y);
+    if (!(width >= 1 && height >= 1)) throw new Error('The crop area is empty.');
+    return { x, y, width, height };
+  }
+
+  /**
+   * Crops a picture and flips it left to right and/or top to bottom, in that order: the area is
+   * chosen on the picture as it is, then the part kept is mirrored. The canvas does the copying, so
+   * the colours (and transparency, where the format keeps it) are not resampled.
+   */
+  static async cropAndFlip(file, options = {}) {
+    const {
+      crop = null,           // { x, y, width, height } in pixels of the picture; null keeps it all
+      flipHorizontal = false,
+      flipVertical = false,
+      targetFormat = this.editFormat(file.name),
+      quality = 0.92
+    } = options;
+
+    const img = await this.loadImage(file);
+    const rect = this.cropRect(crop, img.naturalWidth, img.naturalHeight);
+    const format = String(targetFormat).toLowerCase();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    const ctx = canvas.getContext('2d');
+
+    if (OPAQUE_FORMATS.has(format)) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+    }
+
+    // A mirror is a scale of -1 about the far edge of the piece.
+    ctx.setTransform(
+      flipHorizontal ? -1 : 1, 0, 0, flipVertical ? -1 : 1,
+      flipHorizontal ? rect.width : 0, flipVertical ? rect.height : 0
+    );
+    ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+
+    const { blob, mimeType } = await this.encodeCanvas(canvas, format, quality);
+    const base = String(file.name || 'image').replace(/\.[^/.]+$/, '');
+
+    return {
+      blob,
+      mimeType,
+      width: rect.width,
+      height: rect.height,
+      format,
+      filename: `${base}_edited.${format}`,
       originalName: file.name
     };
   }
