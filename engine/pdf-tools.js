@@ -304,6 +304,19 @@ function stampPages(text, pageCount) {
   return selectedPages(words, pageCount);
 }
 
+/**
+ * The font stamps are written in: Noto Sans Bold (SIL Open Font License 1.1), cut down to Latin,
+ * Latin Extended-A/B and Additional (Vietnamese) and the combining marks. It ships in the package;
+ * the build gives it a hashed name and rewrites this address.
+ */
+const STAMP_FONT_URL = new URL('../assets/fonts/NotoSans-Bold-stamp.ttf', import.meta.url).href;
+
+async function stampFontBytes() {
+  const response = await fetch(STAMP_FONT_URL);
+  if (!response.ok) throw new Error(`The stamp font could not be read (${response.status}).`);
+  return new Uint8Array(await response.arrayBuffer());
+}
+
 /** The bytes of a picture given as a File, a Blob, an ArrayBuffer or a Uint8Array. */
 async function pictureBytes(image) {
   if (typeof image?.arrayBuffer === 'function') return new Uint8Array(await image.arrayBuffer());
@@ -350,7 +363,7 @@ function stampCentre(position, settings, view, width, height) {
 }
 
 /**
- * Puts a stamp on pages of a PDF: a text such as APPROVED (with a date under it, if given)
+ * Puts a stamp on pages of a PDF: a text such as APPROVED or ĐÃ DUYỆT (with a date under it)
  * and/or a PNG or JPG picture such as a signature, stacked picture first. The rest of each page
  * is left as it is. The stamp lands where the reader sees the page, on turned and cropped pages
  * too.
@@ -387,8 +400,9 @@ export async function stampPdf(
     password = '',
   } = {}
 ) {
-  const words = String(text || '').trim();
-  const when = String(date || '').trim();
+  // Composed, so a Vietnamese letter typed as a base and its marks is the one letter the font has.
+  const words = String(text || '').normalize('NFC').trim();
+  const when = String(date || '').normalize('NFC').trim();
   if (!words && !when && !image) throw new Error('Give the stamp a text or a picture.');
   const settings = stampSettings({ position, x, y, size, opacity, rotation, color });
 
@@ -403,9 +417,13 @@ export async function stampPdf(
 
   const doc = await load(file, password);
   const indexes = stampPages(pages, doc.getPageCount());
-  const font = words || when ? await doc.embedFont(StandardFonts.HelveticaBold) : null;
-  if (font) {
-    // The built-in font (bold, as a rubber stamp) draws Latin-1 and a few more (WinAnsi); anything else would come out wrong.
+  let font = null;
+  if (words || when) {
+    const [{ default: fontkit }, bytes] = await Promise.all([import('@cantoo/fontkit'), stampFontBytes()]);
+    doc.registerFontkit(fontkit);
+    // Only the letters used go into the PDF.
+    font = await doc.embedFont(bytes, { subset: true });
+    // The bundled font covers Latin, Vietnamese included; any other script would come out wrong.
     const drawable = new Set(font.getCharacterSet());
     const missing = [...new Set(`${words}${when}`)].filter((ch) => !drawable.has(ch.codePointAt(0)));
     if (missing.length) throw stampTextError(missing);

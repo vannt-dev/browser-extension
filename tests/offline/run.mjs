@@ -563,7 +563,7 @@ try {
     await putFile(dash, 'dash-stamp-image', 'signature.png', 'image/png', signature);
     await dash.evaluate(`document.getElementById("dash-stamp-date").checked = true`);
     let { state, file } = await dashConvert('document.pdf', 'application/pdf', Buffer.from(await turned.save()), 'pdf-stamp', {
-      fields: { 'dash-stamp-text': 'APPROVED', 'dash-stamp-position': 'top-right', 'dash-page-tools-pages': '1-2' },
+      fields: { 'dash-stamp-text': 'ĐÃ DUYỆT', 'dash-stamp-position': 'top-right', 'dash-page-tools-pages': '1-2' },
     });
     check('stamping ends as done', state.text === 'Done', JSON.stringify(state));
     const stamps = [];
@@ -594,7 +594,7 @@ try {
             if (x / view.width > 0.6 && y / view.height < 0.3) pictures++;
           }
         });
-        const text = place(items.find((item) => item.str === 'APPROVED'));
+        const text = place(items.find((item) => item.str === 'ĐÃ DUYỆT'));
         const date = place(items.find((item) => /^\d{4}-\d{2}-\d{2}$/.test(item.str)));
         stamps.push(`${text}|${date}|${pictures}`);
       }
@@ -603,19 +603,19 @@ try {
     }
     const stamped = 'right,top,upright|right,top,upright|1';
     check(
-      'document_stamped.pdf: text, date and picture at the top right of pages 1-2 (one turned), not on 3',
+      'document_stamped.pdf: ĐÃ DUYỆT, date and picture top right on pages 1-2 (one turned), not on 3',
       file?.name === 'document_stamped.pdf' && JSON.stringify(stamps) === JSON.stringify([stamped, stamped, '-|-|0']),
       `${describe(file)}: ${JSON.stringify(stamps)}`
     );
 
-    // Vietnamese marks the PDF's built-in font has no letters for: refused, and said why.
+    // A script the stamp font has no letters for: refused, and said why.
     ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-stamp', {
-      fields: { 'dash-stamp-text': 'ĐÃ DUYỆT' },
+      fields: { 'dash-stamp-text': '承認 OK' },
       expectFile: false,
     }));
     check(
-      'text the built-in font cannot draw: says so and names the letters, writes no file',
-      state.text === 'Text cannot be drawn' && /Đ Ệ/.test(state.why ?? '') && !file,
+      'text the stamp font cannot draw: says so and names the letters, writes no file',
+      state.text === 'Text cannot be drawn' && /承 認/.test(state.why ?? '') && !file,
       JSON.stringify(state)
     );
     await dash.evaluate(`(() => {

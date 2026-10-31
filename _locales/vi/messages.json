@@ -633,7 +633,7 @@
     "message": "Chữ trên dấu (để trống = chỉ dùng ảnh):"
   },
   "stampTextHint": {
-    "message": "Chỉ chữ Latin (font có sẵn trong mọi PDF): phần lớn chữ có dấu tiếng Việt như ă, đ, ơ, ư, ệ không vẽ được. Với các chữ đó, hãy đóng dấu bằng ảnh của chữ."
+    "message": "Chữ Latin, có cả tiếng Việt có dấu. Chữ khác (Trung, Ả Rập...): hãy đóng dấu bằng ảnh của chữ."
   },
   "stampDateLabel": {
     "message": "Thêm ngày hôm nay dưới chữ"
@@ -672,7 +672,7 @@
     "message": "Không vẽ được chữ"
   },
   "stampTextUnsupported": {
-    "message": "Chữ trên dấu có ký tự mà font có sẵn trong mọi PDF không vẽ được: $CHARS$. Hãy viết không có các ký tự đó, hoặc đóng dấu bằng ảnh.",
+    "message": "Chữ trên dấu có ký tự mà font của dấu (chữ Latin, có cả tiếng Việt) không vẽ được: $CHARS$. Hãy viết không có các ký tự đó, hoặc đóng dấu bằng ảnh.",
     "placeholders": {
       "chars": {
         "content": "$1"

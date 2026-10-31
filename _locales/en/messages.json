@@ -633,7 +633,7 @@
     "message": "Stamp text (empty = picture only):"
   },
   "stampTextHint": {
-    "message": "Latin letters only (the font built into every PDF). For other scripts, stamp the text as a picture."
+    "message": "Latin letters, Vietnamese included. For other scripts (Chinese, Arabic...), stamp the text as a picture."
   },
   "stampDateLabel": {
     "message": "Add today's date under the text"
@@ -672,7 +672,7 @@
     "message": "Text cannot be drawn"
   },
   "stampTextUnsupported": {
-    "message": "The stamp text has characters the font built into every PDF cannot draw: $CHARS$. Write it without them, or stamp it as a picture.",
+    "message": "The stamp text has characters its font (Latin letters, Vietnamese included) cannot draw: $CHARS$. Write it without them, or stamp it as a picture.",
     "placeholders": {
       "chars": {
         "content": "$1"

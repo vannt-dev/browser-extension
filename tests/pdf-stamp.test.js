@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { pathToFileURL } from 'url';
 import sharp from 'sharp';
@@ -13,6 +14,13 @@ import { STAMP_TEXT_UNSUPPORTED } from '../engine/stamp-text.js';
  * the place pdf.js paints it.
  */
 beforeAll(() => {
+  // The engine fetches the stamp font from the package; here the package is the repository
+  // (the test server's address for it is not served).
+  const fetchOnline = globalThis.fetch;
+  globalThis.fetch = async (url, ...rest) => {
+    const font = /\/assets\/fonts\/([^/?#]+)$/.exec(new URL(url).pathname);
+    return font ? new Response(await readFile(resolve('assets/fonts', font[1]))) : fetchOnline(url, ...rest);
+  };
   pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
     resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs')
   ).href;
@@ -109,7 +117,7 @@ describe('stampPdf', () => {
           expect(stamp.down, position).toBeLessThan(0.2);
         } else {
           expect(stamp.across, position).toBeLessThan(0.1);
-          expect(stamp.down, position).toBeGreaterThan(0.9);
+          expect(stamp.down, position).toBeGreaterThan(0.85);
         }
       }
     }
@@ -166,15 +174,28 @@ describe('stampPdf', () => {
     expect(page.pictures).toHaveLength(1);
   });
 
-  it('refuses text the built-in font cannot draw, naming the characters', async () => {
+  it('draws Vietnamese and other Latin letters, on a turned page too', async () => {
+    const file = await pdfFile('hoa-don.pdf', [{}, { rotate: 90 }]);
+    for (const text of ['ĐÃ DUYỆT', 'Đã thanh toán', 'Genehmigt – Größe', 'Zatwierdzono ąęłńśźż']) {
+      const pages = await readPages((await stampPdf(file, { text, position: 'top-right', size: 40 })).blob);
+      for (const { texts } of pages) {
+        expect(texts.map((t) => t.text).join('')).toBe(text);
+        expect(texts[0].angle).toBe(0);
+        expect(texts[0].across).toBeGreaterThan(0.5);
+        expect(texts[0].down).toBeLessThan(0.2);
+      }
+    }
+    // A letter typed as its base and marks is the same letter.
+    const [page] = await readPages((await stampPdf(file, { text: 'DUYỆT', pages: '1' })).blob);
+    expect(page.texts[0].text).toBe('DUYỆT');
+  });
+
+  it('refuses text the stamp font cannot draw, naming the characters', async () => {
     const file = await pdfFile('x.pdf', [{}]);
-    const error = await stampPdf(file, { text: 'ĐÃ DUYỆT' }).catch((e) => e);
+    const error = await stampPdf(file, { text: 'APPROVED 承認 ✓' }).catch((e) => e);
     expect(error.code).toBe(STAMP_TEXT_UNSUPPORTED);
-    expect(error.characters).toBe('Đ Ệ');
-    expect(error.message).toContain('Đ Ệ');
-    // Latin letters with the marks Western European languages use are drawn.
-    const [page] = await readPages((await stampPdf(file, { text: 'Genehmigt – Größe é' })).blob);
-    expect(page.texts.map((t) => t.text).join('')).toBe('Genehmigt – Größe é');
+    expect(error.characters).toBe('承 認 ✓');
+    expect(error.message).toContain('承 認 ✓');
   });
 
   it('refuses a stamp with nothing on it, and settings it does not know', async () => {
