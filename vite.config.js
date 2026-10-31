@@ -135,6 +135,26 @@ const copyExtensionAssets = () => {
         );
       }
 
+      // The stamp font is Noto Sans Bold, cut down to Latin and Vietnamese. The SIL Open Font
+      // License asks for its text to travel with the font.
+      if (fs.existsSync('assets/fonts/OFL.txt')) {
+        fs.mkdirSync('dist/licenses', { recursive: true });
+        fs.copyFileSync('assets/fonts/OFL.txt', 'dist/licenses/NotoSans-OFL-1.1.txt');
+        fs.appendFileSync(
+          'dist/THIRD_PARTY_NOTICES.txt',
+          [
+            '',
+            'Font',
+            '',
+            'Noto Sans Bold (https://github.com/notofonts/latin-greek-cyrillic), Copyright 2022 The Noto',
+            'Project Authors, writes the text of PDF stamps. It is licensed under the SIL Open Font',
+            'License, version 1.1: licenses/NotoSans-OFL-1.1.txt. The file assets/NotoSans-Bold-stamp-*.ttf',
+            'holds only its Latin, Latin Extended and Vietnamese letters and punctuation.',
+            ''
+          ].join('\n')
+        );
+      }
+
       // Last, over everything that was written: a package that names remotely hosted code is
       // not one to upload.
       const offenders = findRemoteCodeInDir('dist');
@@ -183,6 +203,8 @@ export default defineConfig({
           // libheif is LGPL: it stays a file of its own, replaceable without rebuilding the rest.
           if (id.includes('node_modules/heic-to')) return 'vendor-heic';
           if (id.includes('node_modules/@cantoo/pdf-lib') || id.includes('node_modules/@pdf-lib')) return 'vendor-pdf-lib';
+          // The stamp font's reader, loaded only when a stamp has text.
+          if (/node_modules\/(@cantoo\/fontkit|brotli|restructure|dfa)\//.test(id)) return 'vendor-fontkit';
           if (id.includes('node_modules/xlsx')) return 'vendor-xlsx';
           if (id.includes('/lib/mammoth.js') || id.includes('/lib/marked.js')) return 'vendor-doc';
           if (id.includes('/lib/jspdf') || id.includes('/lib/html2canvas') || id.includes('/lib/index.es')) return 'vendor-pdf-export';

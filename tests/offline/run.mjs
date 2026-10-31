@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,crop,ocr,background]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,crop,ocr,background]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -26,7 +26,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
 import sharp from 'sharp';
 import { launch, newPage, serviceWorker, sleep } from './cdp.mjs';
-import { PDFDocument } from '@cantoo/pdf-lib';
+import { PDFDocument, degrees } from '@cantoo/pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { SCAN_PAGES, TEXT_DOC, docx, g4ScanPdf, lockedPdf, picture, textPdf } from './fixtures.mjs';
 
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'crop', 'ocr', 'background'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'crop', 'ocr', 'background'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -275,7 +275,13 @@ try {
    * Queues one file in the dashboard's converter and converts it to `format`. `afterStart` runs
    * once the button is clicked, before the waiting starts.
    */
-  async function dashConvert(name, type, bytes, format, { seconds = 120, afterStart, password = '', fields = {} } = {}) {
+  async function dashConvert(
+    name,
+    type,
+    bytes,
+    format,
+    { seconds = 120, afterStart, password = '', fields = {}, expectFile = true } = {}
+  ) {
     await dash.evaluate(`document.getElementById("dash-clear-queue-btn")?.click()`);
     await putFile(dash, 'dash-file-input', name, type, bytes);
     await dash.evaluate(`(() => {
@@ -295,7 +301,7 @@ try {
       (s) => !s.busy,
       seconds
     );
-    return { state, file: await nextDownload(state.timedOut ? 1 : 90) };
+    return { state, file: await nextDownload(state.timedOut || !expectFile ? 3 : 90) };
   }
 
   /**
@@ -528,8 +534,99 @@ try {
     );
   });
 
+  await group('stamp', '6. Stamp a PDF (dashboard)', async () => {
+    const shown = await dash.evaluate(`(() => {
+      const select = document.getElementById("dash-target-format");
+      select.value = "pdf-stamp";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      const fields = getComputedStyle(document.getElementById("dash-stamp-group")).display;
+      const place = document.getElementById("dash-stamp-position");
+      place.value = "custom";
+      place.dispatchEvent(new Event("change", { bubbles: true }));
+      const custom = getComputedStyle(document.getElementById("dash-stamp-custom-group")).display;
+      place.value = "center";
+      place.dispatchEvent(new Event("change", { bubbles: true }));
+      return fields + "," + custom;
+    })()`);
+    check('the stamp fields show for "Stamp a PDF", the custom place on demand', shown === 'flex,flex', String(shown));
+
+    // The sample document with its second page turned a quarter, as a scan saved sideways is.
+    const turned = await PDFDocument.load(textDoc);
+    turned.getPage(1).setRotation(degrees(90));
+    const signature = await picture(
+      dash,
+      200,
+      80,
+      `ctx.strokeStyle = "#1e3a8a"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(10, 60);
+       ctx.bezierCurveTo(60, 0, 90, 90, 190, 20); ctx.stroke();`
+    );
+    await putFile(dash, 'dash-stamp-image', 'signature.png', 'image/png', signature);
+    await dash.evaluate(`document.getElementById("dash-stamp-date").checked = true`);
+    let { state, file } = await dashConvert('document.pdf', 'application/pdf', Buffer.from(await turned.save()), 'pdf-stamp', {
+      fields: { 'dash-stamp-text': 'ĐÃ DUYỆT', 'dash-stamp-position': 'top-right', 'dash-page-tools-pages': '1-2' },
+    });
+    check('stamping ends as done', state.text === 'Done', JSON.stringify(state));
+    const stamps = [];
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes) }).promise;
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const view = page.getViewport({ scale: 1 });
+        const items = (await page.getTextContent()).items;
+        const place = (item) => {
+          if (!item) return '-';
+          const [a, b, , , e, f] = pdfjsLib.Util.transform(view.transform, item.transform);
+          const upright = a > 0 && Math.abs(b) < 1e-6 ? 'upright' : 'turned';
+          return `${e / view.width > 0.6 ? 'right' : 'x'},${f / view.height < 0.45 ? 'top' : 'y'},${upright}`;
+        };
+        // The picture: the centre of each one pdf.js paints, in the top right quarter.
+        const { fnArray, argsArray } = await page.getOperatorList();
+        let ctm = [1, 0, 0, 1, 0, 0];
+        const saved = [];
+        let pictures = 0;
+        fnArray.forEach((fn, i) => {
+          if (fn === pdfjsLib.OPS.save) saved.push(ctm);
+          else if (fn === pdfjsLib.OPS.restore) ctm = saved.pop() ?? ctm;
+          else if (fn === pdfjsLib.OPS.transform) ctm = pdfjsLib.Util.transform(ctm, argsArray[i]);
+          else if (fn === pdfjsLib.OPS.paintImageXObject) {
+            const m = pdfjsLib.Util.transform(view.transform, ctm);
+            const [x, y] = [(m[0] + m[2]) / 2 + m[4], (m[1] + m[3]) / 2 + m[5]];
+            if (x / view.width > 0.6 && y / view.height < 0.3) pictures++;
+          }
+        });
+        const text = place(items.find((item) => item.str === 'ĐÃ DUYỆT'));
+        const date = place(items.find((item) => /^\d{4}-\d{2}-\d{2}$/.test(item.str)));
+        stamps.push(`${text}|${date}|${pictures}`);
+      }
+    } catch (error) {
+      stamps.push(String(error.message));
+    }
+    const stamped = 'right,top,upright|right,top,upright|1';
+    check(
+      'document_stamped.pdf: ĐÃ DUYỆT, date and picture top right on pages 1-2 (one turned), not on 3',
+      file?.name === 'document_stamped.pdf' && JSON.stringify(stamps) === JSON.stringify([stamped, stamped, '-|-|0']),
+      `${describe(file)}: ${JSON.stringify(stamps)}`
+    );
+
+    // A script the stamp font has no letters for: refused, and said why.
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-stamp', {
+      fields: { 'dash-stamp-text': '承認 OK' },
+      expectFile: false,
+    }));
+    check(
+      'text the stamp font cannot draw: says so and names the letters, writes no file',
+      state.text === 'Text cannot be drawn' && /承 認/.test(state.why ?? '') && !file,
+      JSON.stringify(state)
+    );
+    await dash.evaluate(`(() => {
+      const input = document.getElementById("dash-stamp-image");
+      input.value = "";
+      document.getElementById("dash-stamp-date").checked = false;
+    })()`);
+  });
+
   // ---- the canvas cropping and mirroring a picture, chosen by dragging and by typing
-  await group('crop', '6. Crop and flip a picture (dashboard)', async () => {
+  await group('crop', '7. Crop and flip a picture (dashboard)', async () => {
     // 200 x 120 in four quadrants: red, blue on top; green, black below.
     const quads = await picture(
       dash,
@@ -612,7 +709,7 @@ try {
   );
 
   // ---- tesseract.js: worker, core and language data
-  await group('ocr', '7. OCR (dashboard, AI Studio)', async () => {
+  await group('ocr', '8. OCR (dashboard, AI Studio)', async () => {
     let state = await dashOcr('words.png', 'image/png', words, 'vie+eng', 'text');
     check(
       'a picture is read in Vietnamese + English',
@@ -636,7 +733,7 @@ try {
 
   // ---- the same work while the user looks at another tab. Chrome stops animation frames and
   // throttles timers in a background tab; OCR has to finish anyway.
-  await group('background', '8. OCR with the dashboard in a background tab', async () => {
+  await group('background', '9. OCR with the dashboard in a background tab', async () => {
     let other;
     const toBackground = async () => {
       other = await newPage(browser);

@@ -6,7 +6,7 @@ import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, SPREADSHEET_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
-import { errorReason, passwordStatus } from '../shared/error-text.js';
+import { errorReason, shortStatus } from '../shared/error-text.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -23,6 +23,24 @@ const NUMBER_OPTIONS = () => ({
   style: document.getElementById('dash-number-style')?.value || 'plain',
   start: Number(document.getElementById('dash-number-start')?.value || 1),
 });
+const field = (id) => document.getElementById(id);
+// Today as 2026-10-31, the same in every language.
+const today = () => {
+  const now = new Date();
+  return [now.getFullYear(), now.getMonth() + 1, now.getDate()].map((n) => String(n).padStart(2, '0')).join('-');
+};
+const STAMP_OPTIONS = () => ({
+  text: field('dash-stamp-text')?.value || '',
+  date: field('dash-stamp-date')?.checked ? today() : '',
+  image: field('dash-stamp-image')?.files?.[0] || null,
+  position: field('dash-stamp-position')?.value || 'center',
+  x: Number(field('dash-stamp-x')?.value ?? 50),
+  y: Number(field('dash-stamp-y')?.value ?? 50),
+  size: Number(field('dash-stamp-size')?.value || 30),
+  opacity: Number(field('dash-stamp-opacity')?.value || 80) / 100,
+  rotation: field('dash-stamp-rotation')?.value ?? '0',
+  color: field('dash-stamp-color')?.value || '#c62828',
+});
 // One password for the batch: a PDF that needs none opens as before.
 const PDF_OPTIONS = () => ({ password: document.getElementById('dash-pdf-password')?.value || '' });
 // The jobs that change the pages of one PDF, each with the label of its page field.
@@ -30,7 +48,8 @@ const PDF_PAGE_TOOLS = {
   'pdf-rotate': () => t('pagesToRotateLabel'),
   'pdf-delete': () => t('pagesToDeleteLabel'),
   'pdf-reorder': () => t('pageOrderLabel'),
-  'pdf-number': () => t('pagesToNumberLabel')
+  'pdf-number': () => t('pagesToNumberLabel'),
+  'pdf-stamp': () => t('pagesToStampLabel')
 };
 
 // State for Dashboard Batch Converter & Lightbox
@@ -49,6 +68,8 @@ const dashPageToolsGroup = document.getElementById('dash-page-tools-group');
 const dashPageToolsLabel = document.getElementById('dash-page-tools-label');
 const dashRotateGroup = document.getElementById('dash-rotate-group');
 const dashNumberGroup = document.getElementById('dash-number-group');
+const dashStampGroup = document.getElementById('dash-stamp-group');
+const dashStampCustomGroup = document.getElementById('dash-stamp-custom-group');
 // The page fields only mean something for the PDF job they belong to.
 function showFormatFields() {
   const format = dashTargetFormat?.value;
@@ -57,8 +78,16 @@ function showFormatFields() {
   if (dashPageToolsLabel && PDF_PAGE_TOOLS[format]) dashPageToolsLabel.textContent = PDF_PAGE_TOOLS[format]();
   if (dashRotateGroup) dashRotateGroup.style.display = format === 'pdf-rotate' ? 'block' : 'none';
   if (dashNumberGroup) dashNumberGroup.style.display = format === 'pdf-number' ? 'block' : 'none';
+  if (dashStampGroup) dashStampGroup.style.display = format === 'pdf-stamp' ? 'flex' : 'none';
+  if (dashStampCustomGroup) dashStampCustomGroup.style.display = field('dash-stamp-position')?.value === 'custom' ? 'flex' : 'none';
 }
 dashTargetFormat?.addEventListener('change', showFormatFields);
+field('dash-stamp-position')?.addEventListener('change', showFormatFields);
+for (const id of ['dash-stamp-size', 'dash-stamp-opacity']) {
+  field(id)?.addEventListener('input', (e) => {
+    field(`${id}-val`).textContent = `${e.target.value}%`;
+  });
+}
 const dashQualityVal = document.getElementById('dash-quality-val');
 const dashConvertBtn = document.getElementById('dash-convert-btn');
 const dashQueueList = document.getElementById('dash-queue-list');
@@ -636,7 +665,7 @@ async function executeDashBatchConversion() {
     } catch (err) {
       console.error(`Error converting ${file.name}:`, err);
       if (statusEl) {
-        statusEl.textContent = passwordStatus(err) || t('statusError');
+        statusEl.textContent = shortStatus(err) || t('statusError');
         // The reason, for whoever hovers over the red label.
         statusEl.title = errorReason(err, 'dashboard');
         statusEl.style.background = 'rgba(239, 68, 68, 0.2)';
@@ -707,6 +736,9 @@ async function processDashSingleFile(file, targetFormat, quality) {
     if (targetFormat === 'pdf-delete') return tools.deletePdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
     if (targetFormat === 'pdf-number') {
       return tools.numberPdfPages(file, { ...NUMBER_OPTIONS(), pages: PAGE_TOOL_PAGES(), ...PDF_OPTIONS() });
+    }
+    if (targetFormat === 'pdf-stamp') {
+      return tools.stampPdf(file, { ...STAMP_OPTIONS(), pages: PAGE_TOOL_PAGES(), ...PDF_OPTIONS() });
     }
     return tools.reorderPdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
   }
