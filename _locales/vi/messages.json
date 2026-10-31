@@ -622,5 +622,61 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfStamp": {
+    "message": "Đóng dấu PDF bằng chữ hoặc ảnh (.pdf)"
+  },
+  "pagesToStampLabel": {
+    "message": "Trang cần đóng dấu (để trống hoặc all = mọi trang; first = trang đầu, last = trang cuối, hoặc như 1-3, 5):"
+  },
+  "stampTextLabel": {
+    "message": "Chữ trên dấu (để trống = chỉ dùng ảnh):"
+  },
+  "stampTextHint": {
+    "message": "Chỉ chữ Latin (font có sẵn trong mọi PDF): phần lớn chữ có dấu tiếng Việt như ă, đ, ơ, ư, ệ không vẽ được. Với các chữ đó, hãy đóng dấu bằng ảnh của chữ."
+  },
+  "stampDateLabel": {
+    "message": "Thêm ngày hôm nay dưới chữ"
+  },
+  "stampImageLabel": {
+    "message": "Ảnh, ví dụ chữ ký hoặc logo (PNG hoặc JPG, không bắt buộc):"
+  },
+  "stampPositionLabel": {
+    "message": "Vị trí đóng dấu:"
+  },
+  "stampCenter": {
+    "message": "Giữa trang"
+  },
+  "stampCustom": {
+    "message": "Vị trí tự chọn"
+  },
+  "stampXLabel": {
+    "message": "Tâm con dấu, % tính từ mép trái:"
+  },
+  "stampYLabel": {
+    "message": "Tâm con dấu, % tính từ mép trên:"
+  },
+  "stampSizeLabel": {
+    "message": "Chiều rộng, so với chiều rộng trang:"
+  },
+  "stampOpacityLabel": {
+    "message": "Độ đậm:"
+  },
+  "stampRotationLabel": {
+    "message": "Độ nghiêng (độ, ngược chiều kim đồng hồ):"
+  },
+  "stampColorLabel": {
+    "message": "Màu chữ:"
+  },
+  "statusStampTextUnsupported": {
+    "message": "Không vẽ được chữ"
+  },
+  "stampTextUnsupported": {
+    "message": "Chữ trên dấu có ký tự mà font có sẵn trong mọi PDF không vẽ được: $CHARS$. Hãy viết không có các ký tự đó, hoặc đóng dấu bằng ảnh.",
+    "placeholders": {
+      "chars": {
+        "content": "$1"
+      }
+    }
   }
 }

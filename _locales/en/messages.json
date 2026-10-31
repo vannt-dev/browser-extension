@@ -622,5 +622,61 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfStamp": {
+    "message": "Stamp a PDF with a text or a picture (.pdf)"
+  },
+  "pagesToStampLabel": {
+    "message": "Pages to stamp (empty or all = every page; first, last, or pages such as 1-3, 5):"
+  },
+  "stampTextLabel": {
+    "message": "Stamp text (empty = picture only):"
+  },
+  "stampTextHint": {
+    "message": "Latin letters only (the font built into every PDF). For other scripts, stamp the text as a picture."
+  },
+  "stampDateLabel": {
+    "message": "Add today's date under the text"
+  },
+  "stampImageLabel": {
+    "message": "Picture, such as a signature or a logo (PNG or JPG, optional):"
+  },
+  "stampPositionLabel": {
+    "message": "Where the stamp goes:"
+  },
+  "stampCenter": {
+    "message": "Centre"
+  },
+  "stampCustom": {
+    "message": "Custom place"
+  },
+  "stampXLabel": {
+    "message": "Centre of the stamp, % from the left:"
+  },
+  "stampYLabel": {
+    "message": "Centre of the stamp, % from the top:"
+  },
+  "stampSizeLabel": {
+    "message": "Width, as a share of the page width:"
+  },
+  "stampOpacityLabel": {
+    "message": "Opacity:"
+  },
+  "stampRotationLabel": {
+    "message": "Tilt (degrees, counter-clockwise):"
+  },
+  "stampColorLabel": {
+    "message": "Text colour:"
+  },
+  "statusStampTextUnsupported": {
+    "message": "Text cannot be drawn"
+  },
+  "stampTextUnsupported": {
+    "message": "The stamp text has characters the font built into every PDF cannot draw: $CHARS$. Write it without them, or stamp it as a picture.",
+    "placeholders": {
+      "chars": {
+        "content": "$1"
+      }
+    }
   }
 }

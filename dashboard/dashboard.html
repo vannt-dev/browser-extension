@@ -57,6 +57,7 @@
                 <option value="pdf-delete" data-i18n="formatPdfDelete">Delete PDF pages (.pdf)</option>
                 <option value="pdf-reorder" data-i18n="formatPdfReorder">Reorder PDF pages (.pdf)</option>
                 <option value="pdf-number" data-i18n="formatPdfNumber">Add page numbers to a PDF (.pdf)</option>
+                <option value="pdf-stamp" data-i18n="formatPdfStamp">Stamp a PDF with a text or a picture (.pdf)</option>
                 <option value="ocr-pdf" data-i18n="formatOcrPdf">Searchable PDF with OCR, from scans or images (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
@@ -98,6 +99,47 @@
               </select>
               <label for="dash-number-start" data-i18n="numberStartLabel">Number of the first page (0 leaves a cover unnumbered):</label>
               <input type="number" id="dash-number-start" class="dash-input" value="1" step="1">
+            </div>
+            <div class="form-group" id="dash-stamp-group" style="display: none;">
+              <label for="dash-stamp-text" data-i18n="stampTextLabel">Stamp text (empty = picture only):</label>
+              <input type="text" id="dash-stamp-text" class="dash-input" value="APPROVED" list="dash-stamp-presets" maxlength="80">
+              <datalist id="dash-stamp-presets">
+                <option value="APPROVED"></option>
+                <option value="CONFIDENTIAL"></option>
+                <option value="COPY"></option>
+                <option value="DRAFT"></option>
+                <option value="PAID"></option>
+                <option value="RECEIVED"></option>
+              </datalist>
+              <p style="font-size: 13px; color: var(--text-secondary); margin: 0;" data-i18n="stampTextHint">Latin letters only (the font built into every PDF). For other scripts, stamp the text as a picture.</p>
+              <label class="crop-check"><input type="checkbox" id="dash-stamp-date"> <span data-i18n="stampDateLabel">Add today's date under the text</span></label>
+              <label for="dash-stamp-image" data-i18n="stampImageLabel">Picture, such as a signature or a logo (PNG or JPG, optional):</label>
+              <input type="file" id="dash-stamp-image" class="dash-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg">
+              <label for="dash-stamp-position" data-i18n="stampPositionLabel">Where the stamp goes:</label>
+              <select id="dash-stamp-position" class="dash-select">
+                <option value="center" data-i18n="stampCenter">Centre</option>
+                <option value="top-left" data-i18n="numberTopLeft">Top, left</option>
+                <option value="top-center" data-i18n="numberTopCenter">Top, centre</option>
+                <option value="top-right" data-i18n="numberTopRight">Top, right</option>
+                <option value="bottom-left" data-i18n="numberBottomLeft">Bottom, left</option>
+                <option value="bottom-center" data-i18n="numberBottomCenter">Bottom, centre</option>
+                <option value="bottom-right" data-i18n="numberBottomRight">Bottom, right</option>
+                <option value="custom" data-i18n="stampCustom">Custom place</option>
+              </select>
+              <div class="form-group" id="dash-stamp-custom-group" style="display: none;">
+                <label for="dash-stamp-x" data-i18n="stampXLabel">Centre of the stamp, % from the left:</label>
+                <input type="number" id="dash-stamp-x" class="dash-input" value="50" min="0" max="100" step="1">
+                <label for="dash-stamp-y" data-i18n="stampYLabel">Centre of the stamp, % from the top:</label>
+                <input type="number" id="dash-stamp-y" class="dash-input" value="50" min="0" max="100" step="1">
+              </div>
+              <label for="dash-stamp-size"><span data-i18n="stampSizeLabel">Width, as a share of the page width:</span> <span id="dash-stamp-size-val">30%</span></label>
+              <input type="range" id="dash-stamp-size" min="5" max="100" value="30">
+              <label for="dash-stamp-opacity"><span data-i18n="stampOpacityLabel">Opacity:</span> <span id="dash-stamp-opacity-val">80%</span></label>
+              <input type="range" id="dash-stamp-opacity" min="10" max="100" value="80">
+              <label for="dash-stamp-rotation" data-i18n="stampRotationLabel">Tilt (degrees, counter-clockwise):</label>
+              <input type="number" id="dash-stamp-rotation" class="dash-input" value="0" min="-180" max="180" step="5">
+              <label for="dash-stamp-color" data-i18n="stampColorLabel">Text colour:</label>
+              <input type="color" id="dash-stamp-color" value="#c62828">
             </div>
             <div class="form-group" id="dash-pdf-password-group" style="display: none;">
               <label for="dash-pdf-password" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>

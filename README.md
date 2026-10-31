@@ -32,6 +32,7 @@ bản nào không có ở đó thì không phải do vannt-dev phát hành.
    - **PDF có mật khẩu**: trong Dashboard, nhập mật khẩu vào ô *Mật khẩu PDF* (hiện ra khi hàng đợi có PDF); mọi việc với PDF (gộp, tách, xoay, xoá, sắp trang, sang ảnh, OCR) đều mở được, và file làm ra không còn mật khẩu. PDF chỉ cấm in/chép mở được mà không cần mật khẩu. Popup không có ô mật khẩu: nó báo mở file trong Dashboard.
    - **Xoay, xóa, sắp xếp lại trang PDF** (trong Dashboard): xoay 90°/180°/270° mọi trang hoặc các trang chọn như `1-3, 5`; xóa các trang chọn; đặt thứ tự trang mới như `3, 1-2` (trang không ghi giữ thứ tự cũ, xếp phía sau). Cửa sổ extension có sẵn lệnh xoay mọi trang. Cũng không render lại trang.
    - **Đánh số trang PDF** (trong Dashboard): số ở trên hoặc dưới, trái, giữa hoặc phải, kiểu `3` hay `3 / 12`; chọn số của trang đầu (0 để trang bìa không có số) và các trang cần đánh như `2-`. Số nằm đúng chỗ và đứng thẳng cả trên trang đã xoay. Phần còn lại của trang giữ nguyên.
+   - **Đóng dấu PDF** (trong Dashboard): chữ như `APPROVED`, `CONFIDENTIAL`, `COPY` hay chữ tự gõ, thêm ngày hôm nay nếu muốn, và/hoặc một ảnh PNG/JPG (chữ ký, logo); đặt ở giữa, ở góc, giữa cạnh trên/dưới hoặc vị trí tự chọn theo %; chỉnh độ rộng (theo % bề ngang trang), độ đậm, độ nghiêng và màu chữ; chọn trang `all`, `first`, `last` hoặc như `1-3, 5`. Dấu nằm đúng chỗ cả trên trang đã xoay hoặc đã cắt lề. Chữ dùng font có sẵn trong mọi PDF (Helvetica Bold) nên chỉ vẽ được chữ Latin: phần lớn chữ có dấu tiếng Việt (ă, đ, ơ, ư, ệ...) bị từ chối kèm thông báo nêu rõ ký tự nào, không vẽ ra chữ lỗi — muốn dấu tiếng Việt thì đóng dấu bằng ảnh.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
@@ -98,12 +99,13 @@ npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
 npm run test:offline -- dist/zips/universal-file-converter-v1.2.1.zip   # kiểm tra file ZIP
-npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, crop, ocr, background
+npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, stamp, crop, ocr, background
 ```
 
 - Các mục được kiểm tra: ảnh → PDF và DOCX → PDF (jsPDF, mammoth); PDF → PNG với PDF có font nhúng,
   bản scan CCITT G4, JBIG2, JPEG 2000 (pdf.js + WebAssembly), kiểm tra ảnh xuất ra có nội dung;
-  PDF → text trong popup; cắt & lật ảnh PNG/JPG bằng cách kéo chuột và nhập số, kiểm tra kích thước
+  PDF → text trong popup; đánh số trang và đóng dấu PDF (chữ, ngày, ảnh chữ ký, cả trên trang đã xoay),
+  đọc lại bằng pdf.js để kiểm tra vị trí, và chữ có dấu tiếng Việt bị từ chối kèm lý do; cắt & lật ảnh PNG/JPG bằng cách kéo chuột và nhập số, kiểm tra kích thước
   và màu từng góc của file lưu ra; OCR ảnh (vie+eng) và OCR bản scan ra PDF tìm kiếm được (tesseract.js);
   OCR và PDF → PNG khi dashboard nằm ở tab nền (Chrome dừng animation frame ở tab nền);
   cuối cùng là **không có request nào ra khỏi gói extension**.

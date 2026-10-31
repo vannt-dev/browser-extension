@@ -6,7 +6,7 @@ import { readFileAsText } from '../engine/file-reader.js';
 import { IMAGE_EXTENSIONS, SPREADSHEET_EXTENSIONS, isPdfFile } from '../engine/file-types.js';
 import { askForAllSites, readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
-import { errorReason, passwordStatus } from '../shared/error-text.js';
+import { errorReason, shortStatus } from '../shared/error-text.js';
 
 // Heavy engines are fetched on first use so opening the popup does not have to
 // parse the OCR, DOCX and PDF runtimes up front.
@@ -306,7 +306,7 @@ convertBtn.addEventListener('click', async () => {
     } catch (err) {
       console.error('File conversion error:', err);
       if (statusEl) {
-        statusEl.textContent = passwordStatus(err) || t('statusError');
+        statusEl.textContent = shortStatus(err) || t('statusError');
         statusEl.title = errorReason(err, 'popup');
         statusEl.style.color = '#ef4444';
       }
