@@ -13,6 +13,28 @@ Extension chuyển đổi file đa năng **100% Client-Side (Privacy-First)** d�
 Các bản build chính thức được liệt kê tại [vannt-dev.github.io/official.html](https://vannt-dev.github.io/official.html);
 bản nào không có ở đó thì không phải do vannt-dev phát hành.
 
+```mermaid
+flowchart LR
+  subgraph input ["Đưa file vào"]
+    direction TB
+    popup["Popup<br/>kéo thả<br/>hoặc Ctrl+V"]
+    dash["Dashboard<br/>(thẻ công cụ)"]
+    menu["Chuột phải<br/>vào ảnh<br/>trên web"]
+    dl["Ảnh WebP, JFIF<br/>vừa tải về<br/>(tùy chọn)"]
+    popup ~~~ dash ~~~ menu ~~~ dl
+  end
+  subgraph local ["Xử lý 100% cục bộ trong trình duyệt"]
+    direction TB
+    img["Ảnh<br/>đổi định dạng,<br/>nén, cắt, lật"]
+    doc["Tài liệu & PDF<br/>DOCX, MD, PDF,<br/>gộp, tách"]
+    data["Dữ liệu<br/>JSON, CSV, XML,<br/>YAML, bảng tính"]
+    ocr["OCR<br/>Tesseract.js<br/>đóng gói sẵn"]
+  end
+  out["File tải về<br/>từng file<br/>hoặc ZIP"]
+
+  input --> local --> out
+```
+
 ## 🌟 Tính Năng Nổi Bật
 
 1. **📷 Chuyển Đổi Hình Ảnh**:
