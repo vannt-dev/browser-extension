@@ -237,7 +237,8 @@ function fromView(box, angle, x, y) {
  * @param {object} [options]
  * @param {string} [options.position] One of NUMBER_POSITIONS, as the page is seen
  * @param {string} [options.style] One of NUMBER_STYLES
- * @param {number} [options.start] The number of the first page; 0 leaves a cover unnumbered at 1
+ * @param {number} [options.start] The number of the first page, 0 or more; 0 leaves the first
+ *   page (a cover) unnumbered and numbers the next one 1
  * @param {string} [options.pages] A selection such as `2-`; left out, every page is numbered
  * @param {string} [options.password] The password, if the PDF is locked with one
  * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
@@ -250,6 +251,7 @@ export async function numberPdfPages(
   if (!NUMBER_STYLES.includes(style)) throw new Error(`"${style}" is not a way to write page numbers.`);
   const first = Number(start);
   if (!Number.isInteger(first)) throw new Error('The first page number has to be a whole number.');
+  if (first < 0) throw new Error('The first page number cannot be below 0.');
   const doc = await load(file, password);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const pageCount = doc.getPageCount();
@@ -257,6 +259,8 @@ export async function numberPdfPages(
   const indexes = String(pages).trim() ? selectedPages(pages, pageCount) : doc.getPageIndices();
   const [vertical, horizontal] = position.split('-');
   for (const index of indexes) {
+    // Page 0 is the cover: it keeps its place in the count but gets no number.
+    if (first + index === 0) continue;
     const page = doc.getPage(index);
     const angle = (((page.getRotation().angle % 360) + 360) % 360);
     const box = page.getCropBox();

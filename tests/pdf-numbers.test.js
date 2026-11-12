@@ -77,11 +77,24 @@ describe('numberPdfPages', () => {
     expect(pages.map((items) => items.map((i) => i.text).join(''))).toEqual(['', '1 / 3', '2 / 3', '3 / 3']);
   });
 
+  it('leaves the cover unnumbered when numbering starts at 0, with no pages named', async () => {
+    const file = await pdfFile('book.pdf', [{}, {}, {}, {}]);
+    const plain = await readNumbers((await numberPdfPages(file, { start: 0 })).blob);
+    expect(plain.map((items) => items.map((i) => i.text).join(''))).toEqual(['', '1', '2', '3']);
+    const ofTotal = await readNumbers((await numberPdfPages(file, { style: 'of-total', start: '0' })).blob);
+    expect(ofTotal.map((items) => items.map((i) => i.text).join(''))).toEqual(['', '1 / 3', '2 / 3', '3 / 3']);
+    // Naming the cover too does not give it a 0.
+    const named = await readNumbers((await numberPdfPages(file, { start: 0, pages: '1-2' })).blob);
+    expect(named.map((items) => items.map((i) => i.text).join(''))).toEqual(['', '1', '', '']);
+  });
+
   it('refuses a place, a style or a first number it does not know', async () => {
     const file = await pdfFile('x.pdf', [{}]);
     await expect(numberPdfPages(file, { position: 'middle' })).rejects.toThrow('is not a place');
     await expect(numberPdfPages(file, { style: 'roman' })).rejects.toThrow('is not a way');
     await expect(numberPdfPages(file, { start: 1.5 })).rejects.toThrow('whole number');
+    await expect(numberPdfPages(file, { start: -1 })).rejects.toThrow('cannot be below 0');
+    await expect(numberPdfPages(file, { start: '-3' })).rejects.toThrow('cannot be below 0');
     await expect(numberPdfPages(file, { pages: '9' })).rejects.toThrow('past the last page');
   });
 
