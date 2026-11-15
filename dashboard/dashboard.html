@@ -58,6 +58,7 @@
                 <option value="pdf-reorder" data-i18n="formatPdfReorder">Reorder PDF pages (.pdf)</option>
                 <option value="pdf-number" data-i18n="formatPdfNumber">Add page numbers to a PDF (.pdf)</option>
                 <option value="pdf-stamp" data-i18n="formatPdfStamp">Stamp a PDF with a text or a picture (.pdf)</option>
+                <option value="pdf-protect" data-i18n="formatPdfProtect">Protect a PDF with a password (.pdf)</option>
                 <option value="ocr-pdf" data-i18n="formatOcrPdf">Searchable PDF with OCR, from scans or images (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
@@ -140,6 +141,15 @@
               <input type="number" id="dash-stamp-rotation" class="dash-input" value="0" min="-180" max="180" step="5">
               <label for="dash-stamp-color" data-i18n="stampColorLabel">Text colour:</label>
               <input type="color" id="dash-stamp-color" value="#c62828">
+            </div>
+            <div class="form-group" id="dash-protect-group" style="display: none;">
+              <label for="dash-protect-password" data-i18n="protectPasswordLabel">Password to open the PDF with:</label>
+              <input type="password" id="dash-protect-password" class="dash-input" autocomplete="off" spellcheck="false">
+              <label for="dash-protect-confirm" data-i18n="protectConfirmLabel">The same password again:</label>
+              <input type="password" id="dash-protect-confirm" class="dash-input" autocomplete="off" spellcheck="false">
+              <label class="crop-check"><input type="checkbox" id="dash-protect-show"> <span data-i18n="protectShowLabel">Show the password</span></label>
+              <p id="dash-protect-error" role="alert" style="font-size: 13px; color: #ef4444; margin: 0; display: none;"></p>
+              <p style="font-size: 13px; color: var(--text-secondary); margin: 0;" data-i18n="protectHint">The PDF is encrypted on this computer (AES-256) and the password is not saved anywhere. A forgotten password cannot be recovered, so keep it somewhere safe.</p>
             </div>
             <div class="form-group" id="dash-pdf-password-group" style="display: none;">
               <label for="dash-pdf-password" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>

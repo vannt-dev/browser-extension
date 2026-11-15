@@ -1,6 +1,6 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 import { PDFDocument, StandardFonts, degrees, rgb } from '@cantoo/pdf-lib';
-import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfPasswordError } from './pdf-password.js';
+import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfAlreadyProtectedError, pdfPasswordError } from './pdf-password.js';
 import { stampTextError } from './stamp-text.js';
 
 /**
@@ -480,6 +480,35 @@ export async function stampPdf(
   return {
     blob: toBlob(await doc.save()),
     filename: `${baseName(file.name)}_stamped.pdf`,
+    pageCount: doc.getPageCount(),
+  };
+}
+
+/**
+ * Locks a PDF with a password: the copy that is saved asks for it before it shows a page
+ * (AES-256, which Acrobat, Chrome, Edge, Firefox and Preview open). The pages are not touched.
+ * A PDF that is already protected is refused rather than opened and locked again. The password
+ * is used here and nowhere else: it is not kept, and it is not part of any message.
+ * @param {File} file
+ * @param {string} newPassword What a reader will have to type; it cannot be empty
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function protectPdf(file, newPassword) {
+  if (typeof newPassword !== 'string' || !newPassword) {
+    throw new Error('Enter the password the PDF is to be protected with.');
+  }
+  let doc;
+  try {
+    doc = await PDFDocument.load(await file.arrayBuffer());
+  } catch (error) {
+    if (/encrypted/i.test(error?.message || '')) throw pdfAlreadyProtectedError(file.name);
+    throw new Error(`Cannot open ${file.name}: ${error?.message || 'it could not be read'}`);
+  }
+  // The same password as owner: there is no second one that would open the file in full.
+  doc.encrypt({ userPassword: newPassword, ownerPassword: newPassword });
+  return {
+    blob: toBlob(await doc.save()),
+    filename: `${baseName(file.name)}_protected.pdf`,
     pageCount: doc.getPageCount(),
   };
 }

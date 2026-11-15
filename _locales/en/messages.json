@@ -678,5 +678,37 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfProtect": {
+    "message": "Protect a PDF with a password (.pdf)"
+  },
+  "protectPasswordLabel": {
+    "message": "Password to open the PDF with:"
+  },
+  "protectConfirmLabel": {
+    "message": "The same password again:"
+  },
+  "protectShowLabel": {
+    "message": "Show the password"
+  },
+  "protectHint": {
+    "message": "The PDF is encrypted on this computer (AES-256) and the password is not saved anywhere. A forgotten password cannot be recovered, so keep it somewhere safe."
+  },
+  "protectPasswordEmpty": {
+    "message": "Enter a password first."
+  },
+  "protectPasswordMismatch": {
+    "message": "The two passwords are not the same. Type them again."
+  },
+  "statusAlreadyProtected": {
+    "message": "Already protected"
+  },
+  "pdfAlreadyProtected": {
+    "message": "$NAME$ is already protected with a password, so it was left as it is.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,crop,ocr,background]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'crop', 'ocr', 'background'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -625,8 +625,93 @@ try {
     })()`);
   });
 
+  // ---- pdf-lib encrypting a PDF, opened again with pdf.js as a viewer would
+  await group('protect', '7. Protect a PDF with a password (dashboard)', async () => {
+    const typed = (password, confirm) => ({ 'dash-protect-password': password, 'dash-protect-confirm': confirm });
+    const problem = () =>
+      dash.evaluate(`(() => {
+        const error = document.getElementById("dash-protect-error");
+        return getComputedStyle(error).display === "none" ? "" : error.textContent;
+      })()`);
+
+    let { state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-protect', {
+      seconds: 10,
+      fields: typed('', ''),
+      expectFile: false,
+    });
+    const shown = await dash.evaluate(`(() => {
+      const show = (id) => getComputedStyle(document.getElementById(id)).display;
+      return show("dash-protect-group") + "," + show("dash-pdf-password-group");
+    })()`);
+    check('the password fields show for "Protect a PDF", the one for locked PDFs does not', shown === 'flex,none', shown);
+    check('no password: asks for one and writes no file', (await problem()) === 'Enter a password first.' && !file, await problem());
+
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-protect', {
+      seconds: 10,
+      fields: typed('kit-secret', 'kit-secrte'),
+      expectFile: false,
+    }));
+    check(
+      'two different passwords: says so and writes no file',
+      (await problem()) === 'The two passwords are not the same. Type them again.' && state.text === 'Ready' && !file,
+      `${await problem()} ${JSON.stringify(state)}`
+    );
+
+    const types = await dash.evaluate(`(() => {
+      const show = document.getElementById("dash-protect-show");
+      const read = () => ["dash-protect-password", "dash-protect-confirm"].map((id) => document.getElementById(id).type).join(",");
+      const before = read();
+      show.click();
+      const shown = read();
+      show.click();
+      return [before, shown, read()].join(" > ");
+    })()`);
+    check('"Show the password" shows both fields and hides them again', types === 'password,password > text,text > password,password', types);
+
+    const password = 'kit mật khẩu';
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-protect', {
+      fields: typed(password, password),
+    }));
+    check('the same password twice: protecting ends as done', state.text === 'Done' && (await problem()) === '', JSON.stringify(state));
+    const read = async (withPassword) => {
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes), password: withPassword, verbosity: 0 }).promise;
+        const pages = [];
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const text = (await (await pdf.getPage(n)).getTextContent()).items.map((item) => item.str).join(' ');
+          pages.push(TEXT_DOC.pages.find((heading) => text.includes(heading)) ?? '-');
+        }
+        return JSON.stringify(pages);
+      } catch (error) {
+        return String(error?.name ?? error);
+      }
+    };
+    const opened = [await read(), await read('kit-secret'), await read(password)];
+    check(
+      'document_protected.pdf is encrypted: shut without the password, its three pages with it',
+      file?.name === 'document_protected.pdf' &&
+        isPdf(file) &&
+        file.bytes.includes('/Encrypt') &&
+        !file.bytes.includes(Buffer.from(password)) &&
+        JSON.stringify(opened) === JSON.stringify(['PasswordException', 'PasswordException', JSON.stringify(TEXT_DOC.pages)]),
+      `${describe(file)}: ${opened.join(' | ')}`
+    );
+
+    ({ state, file } = await dashConvert('locked.pdf', 'application/pdf', await lockedPdf('kit-pass'), 'pdf-protect', {
+      seconds: 30,
+      fields: typed(password, password),
+      expectFile: false,
+    }));
+    check(
+      'a PDF that already has a password: says so, writes no file',
+      state.text === 'Already protected' && /locked\.pdf is already protected/.test(state.why ?? '') && !file,
+      JSON.stringify(state)
+    );
+    await dash.evaluate(`for (const id of ["dash-protect-password", "dash-protect-confirm"]) document.getElementById(id).value = ""`);
+  });
+
   // ---- the canvas cropping and mirroring a picture, chosen by dragging and by typing
-  await group('crop', '7. Crop and flip a picture (dashboard)', async () => {
+  await group('crop', '8. Crop and flip a picture (dashboard)', async () => {
     // 200 x 120 in four quadrants: red, blue on top; green, black below.
     const quads = await picture(
       dash,
@@ -709,7 +794,7 @@ try {
   );
 
   // ---- tesseract.js: worker, core and language data
-  await group('ocr', '8. OCR (dashboard, AI Studio)', async () => {
+  await group('ocr', '9. OCR (dashboard, AI Studio)', async () => {
     let state = await dashOcr('words.png', 'image/png', words, 'vie+eng', 'text');
     check(
       'a picture is read in Vietnamese + English',
@@ -733,7 +818,7 @@ try {
 
   // ---- the same work while the user looks at another tab. Chrome stops animation frames and
   // throttles timers in a background tab; OCR has to finish anyway.
-  await group('background', '9. OCR with the dashboard in a background tab', async () => {
+  await group('background', '10. OCR with the dashboard in a background tab', async () => {
     let other;
     const toBackground = async () => {
       other = await newPage(browser);

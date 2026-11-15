@@ -5,6 +5,21 @@ export const PDF_PASSWORD_NEEDED = 'pdf-password-needed';
 /** A PDF that needs a password to open was given the wrong one. */
 export const PDF_PASSWORD_WRONG = 'pdf-password-wrong';
 
+/** A PDF that was to be given a password already has one, or already limits printing or copying. */
+export const PDF_ALREADY_PROTECTED = 'pdf-already-protected';
+
+/**
+ * The error for a PDF that is already protected and so is not given a new password. `code` lets a
+ * page show it in its own language; `fileName` says which file of a batch it was.
+ * @param {string} fileName
+ */
+export function pdfAlreadyProtectedError(fileName) {
+  return Object.assign(new Error(`${fileName} is already protected with a password, so it was left as it is.`), {
+    code: PDF_ALREADY_PROTECTED,
+    fileName,
+  });
+}
+
 /**
  * The error for a PDF that a password keeps shut. `code` lets a page show it in its own language;
  * `fileName` says which file of a batch it was.
