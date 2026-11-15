@@ -678,5 +678,37 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfProtect": {
+    "message": "Đặt mật khẩu bảo vệ PDF (.pdf)"
+  },
+  "protectPasswordLabel": {
+    "message": "Mật khẩu để mở PDF:"
+  },
+  "protectConfirmLabel": {
+    "message": "Nhập lại mật khẩu:"
+  },
+  "protectShowLabel": {
+    "message": "Hiện mật khẩu"
+  },
+  "protectHint": {
+    "message": "PDF được mã hoá ngay trên máy này (AES-256), mật khẩu không được lưu ở đâu cả. Quên mật khẩu thì không khôi phục được, nên hãy cất nó ở nơi an toàn."
+  },
+  "protectPasswordEmpty": {
+    "message": "Hãy nhập mật khẩu trước."
+  },
+  "protectPasswordMismatch": {
+    "message": "Hai mật khẩu không giống nhau. Hãy nhập lại."
+  },
+  "statusAlreadyProtected": {
+    "message": "Đã có mật khẩu"
+  },
+  "pdfAlreadyProtected": {
+    "message": "$NAME$ đã được bảo vệ bằng mật khẩu nên được giữ nguyên.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

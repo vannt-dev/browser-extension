@@ -1,15 +1,16 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
 import { t } from './i18n.js';
-import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG } from '../engine/pdf-password.js';
+import { PDF_ALREADY_PROTECTED, PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG } from '../engine/pdf-password.js';
 import { STAMP_TEXT_UNSUPPORTED } from '../engine/stamp-text.js';
 
 /**
- * A short status for a file a password kept shut, or whose stamp text cannot be drawn, in the
- * page's language; null for other errors.
+ * A short status for a file a password kept shut, one that is already protected, or one whose
+ * stamp text cannot be drawn, in the page's language; null for other errors.
  */
 export function shortStatus(err) {
   if (err?.code === PDF_PASSWORD_NEEDED) return t('statusPasswordNeeded');
   if (err?.code === PDF_PASSWORD_WRONG) return t('statusPasswordWrong');
+  if (err?.code === PDF_ALREADY_PROTECTED) return t('statusAlreadyProtected');
   if (err?.code === STAMP_TEXT_UNSUPPORTED) return t('statusStampTextUnsupported');
   return null;
 }
@@ -25,6 +26,7 @@ export function errorReason(err, page) {
     return page === 'popup' ? t('pdfPasswordNeededPopup', err.fileName) : t('pdfPasswordNeeded', err.fileName);
   }
   if (err?.code === PDF_PASSWORD_WRONG) return t('pdfPasswordWrong', err.fileName);
+  if (err?.code === PDF_ALREADY_PROTECTED) return t('pdfAlreadyProtected', err.fileName);
   if (err?.code === STAMP_TEXT_UNSUPPORTED) return t('stampTextUnsupported', err.characters);
   return err?.message || '';
 }

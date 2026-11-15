@@ -43,6 +43,22 @@ const STAMP_OPTIONS = () => ({
 });
 // One password for the batch: a PDF that needs none opens as before.
 const PDF_OPTIONS = () => ({ password: document.getElementById('dash-pdf-password')?.value || '' });
+// The password a PDF is to be protected with, and what is wrong with it as typed, if anything.
+const PROTECT_PASSWORD = () => field('dash-protect-password')?.value || '';
+function protectPasswordProblem() {
+  if (!PROTECT_PASSWORD()) return t('protectPasswordEmpty');
+  if (PROTECT_PASSWORD() !== (field('dash-protect-confirm')?.value || '')) return t('protectPasswordMismatch');
+  return '';
+}
+// The password of the batch that is running: every file of it gets the one that was checked, even
+// if the fields are typed in meanwhile. It is held only while the batch runs, and never stored.
+let protectPasswordInUse = '';
+function showProtectProblem(problem) {
+  const error = field('dash-protect-error');
+  if (!error) return;
+  error.textContent = problem;
+  error.style.display = problem ? 'block' : 'none';
+}
 // The jobs that change the pages of one PDF, each with the label of its page field.
 const PDF_PAGE_TOOLS = {
   'pdf-rotate': () => t('pagesToRotateLabel'),
@@ -70,6 +86,14 @@ const dashRotateGroup = document.getElementById('dash-rotate-group');
 const dashNumberGroup = document.getElementById('dash-number-group');
 const dashStampGroup = document.getElementById('dash-stamp-group');
 const dashStampCustomGroup = document.getElementById('dash-stamp-custom-group');
+const dashProtectGroup = document.getElementById('dash-protect-group');
+// The field for the password of a locked PDF only matters once there is a PDF to open, and not
+// when protecting: a PDF that already has a password is left as it is there.
+function showPdfPasswordField() {
+  const group = document.getElementById('dash-pdf-password-group');
+  if (!group) return;
+  group.style.display = dashFileQueue.some(isPdfFile) && dashTargetFormat?.value !== 'pdf-protect' ? 'block' : 'none';
+}
 // The page fields only mean something for the PDF job they belong to.
 function showFormatFields() {
   const format = dashTargetFormat?.value;
@@ -80,9 +104,19 @@ function showFormatFields() {
   if (dashNumberGroup) dashNumberGroup.style.display = format === 'pdf-number' ? 'block' : 'none';
   if (dashStampGroup) dashStampGroup.style.display = format === 'pdf-stamp' ? 'flex' : 'none';
   if (dashStampCustomGroup) dashStampCustomGroup.style.display = field('dash-stamp-position')?.value === 'custom' ? 'flex' : 'none';
+  if (dashProtectGroup) dashProtectGroup.style.display = format === 'pdf-protect' ? 'flex' : 'none';
+  showProtectProblem('');
+  showPdfPasswordField();
 }
 dashTargetFormat?.addEventListener('change', showFormatFields);
 field('dash-stamp-position')?.addEventListener('change', showFormatFields);
+field('dash-protect-show')?.addEventListener('change', (e) => {
+  for (const id of ['dash-protect-password', 'dash-protect-confirm']) field(id).type = e.target.checked ? 'text' : 'password';
+});
+// A complaint about the password goes away as soon as the password is typed again.
+for (const id of ['dash-protect-password', 'dash-protect-confirm']) {
+  field(id)?.addEventListener('input', () => showProtectProblem(''));
+}
 for (const id of ['dash-stamp-size', 'dash-stamp-opacity']) {
   field(id)?.addEventListener('input', (e) => {
     field(`${id}-val`).textContent = `${e.target.value}%`;
@@ -569,9 +603,7 @@ function addFilesToDashQueue(files) {
 }
 
 function renderDashQueue() {
-  // The password field only matters once there is a PDF to open.
-  const passwordGroup = document.getElementById('dash-pdf-password-group');
-  if (passwordGroup) passwordGroup.style.display = dashFileQueue.some(isPdfFile) ? 'block' : 'none';
+  showPdfPasswordField();
   if (!dashQueueList) return;
   dashQueueList.innerHTML = '';
 
@@ -629,11 +661,22 @@ function renderDashQueue() {
 async function executeDashBatchConversion() {
   if (!dashFileQueue.length) return;
 
+  const targetFormat = dashTargetFormat.value;
+  // An empty or mistyped password is said once, by its fields, before any file is touched.
+  if (targetFormat === 'pdf-protect') {
+    const problem = protectPasswordProblem();
+    showProtectProblem(problem);
+    if (problem) {
+      field(PROTECT_PASSWORD() ? 'dash-protect-confirm' : 'dash-protect-password')?.focus();
+      return;
+    }
+    protectPasswordInUse = PROTECT_PASSWORD();
+  }
+
   dashConvertBtn.disabled = true;
   dashConvertBtn.textContent = t('batchConverting');
   dashConvertedResults = [];
 
-  const targetFormat = dashTargetFormat.value;
   const quality = parseFloat(dashQualityRange.value) / 100;
 
   // Merging is the one job that takes the whole queue at once instead of file by file.
@@ -674,6 +717,7 @@ async function executeDashBatchConversion() {
     }
   }
 
+  protectPasswordInUse = '';
   dashConvertBtn.disabled = false;
   dashConvertBtn.textContent = t('dashConvert');
 
@@ -741,6 +785,12 @@ async function processDashSingleFile(file, targetFormat, quality) {
       return tools.stampPdf(file, { ...STAMP_OPTIONS(), pages: PAGE_TOOL_PAGES(), ...PDF_OPTIONS() });
     }
     return tools.reorderPdfPages(file, PAGE_TOOL_PAGES(), PDF_OPTIONS());
+  }
+
+  if (targetFormat === 'pdf-protect') {
+    if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
+    const { protectPdf } = await loadPdfTools();
+    return protectPdf(file, protectPasswordInUse);
   }
 
   // OCR reads scans and photos alike: both become a PDF with a text layer.
