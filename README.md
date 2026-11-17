@@ -43,7 +43,7 @@ flowchart LR
    - `BMP` xuất bằng encoder riêng (BITMAPV4HEADER 32-bit, giữ nguyên kênh alpha) và `ICO` xuất đa độ phân giải (16→256px), vì canvas của trình duyệt không mã hóa được 2 định dạng này.
    - Tùy chỉnh slider chất lượng nén, thay đổi kích thước (Resize), nén theo dung lượng mục tiêu (**Target Size KB/MB**).
    - Tự động xóa thông tin vị trí Exif GPS nhạy cảm khỏi ảnh.
-   - **Base64 Code Snippet** (cửa sổ extension): chọn định dạng đích này để lưu ảnh thành file `<tên>_base64.txt` chứa data URI (`data:image/...;base64,...`), dán thẳng vào HTML/CSS.
+   - **Base64 Code Snippet** (cửa sổ extension): chọn định dạng đích này để lưu ảnh thành file `<tên file kèm đuôi>_base64.txt` (vd. `photo.png_base64.txt`) chứa data URI (`data:image/...;base64,...`), dán thẳng vào HTML/CSS.
    - **Cắt & lật ảnh** (tab *Crop & Flip Images* trong Dashboard): kéo chuột trên ảnh để khoanh phần muốn giữ, hoặc nhập X, Y, chiều rộng, chiều cao (pixel); lật trái ↔ phải và/hoặc trên ↔ dưới. Ảnh `PNG`, `JPG`, `WebP`, `BMP` giữ nguyên định dạng (JPG có nền trắng chỗ trong suốt), ảnh khác (`GIF`, `HEIC`, `AVIF`…) lưu thành `PNG`; file lưu thành `<tên>_edited.<đuôi>`.
 
 2. **📄 Tài Liệu & PDF**:
