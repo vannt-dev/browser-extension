@@ -38,11 +38,12 @@ flowchart LR
 ## 🌟 Tính Năng Nổi Bật
 
 1. **📷 Chuyển Đổi Hình Ảnh**:
-   - Hỗ trợ `PNG`, `JPG`, `WebP`, `SVG`, `BMP`, `ICO`.
+   - Hỗ trợ `PNG`, `JPG`, `WebP`, `BMP`, `ICO` (đọc và xuất); `SVG` chỉ đọc làm ảnh đầu vào, không xuất ra SVG.
    - Đọc được thêm `GIF`, `AVIF` và `HEIC/HEIF` (ảnh iPhone) làm ảnh đầu vào. AVIF do trình duyệt tự giải mã; HEIC được giải mã ngay trong extension bằng libheif (gói `heic-to`, khoảng 3 MB, chỉ nạp khi gặp file HEIC) và nhận diện theo nội dung file, nên ảnh HEIC bị đổi đuôi vẫn đọc được. HEIC cũng dùng được cho OCR và Ảnh ➔ PDF. Chưa xuất ra AVIF/HEIC: canvas của Chrome không mã hóa được hai định dạng này.
    - `BMP` xuất bằng encoder riêng (BITMAPV4HEADER 32-bit, giữ nguyên kênh alpha) và `ICO` xuất đa độ phân giải (16→256px), vì canvas của trình duyệt không mã hóa được 2 định dạng này.
    - Tùy chỉnh slider chất lượng nén, thay đổi kích thước (Resize), nén theo dung lượng mục tiêu (**Target Size KB/MB**).
    - Tự động xóa thông tin vị trí Exif GPS nhạy cảm khỏi ảnh.
+   - **Base64 Code Snippet** (cửa sổ extension): chọn định dạng đích này để lưu ảnh thành file `<tên>_base64.txt` chứa data URI (`data:image/...;base64,...`), dán thẳng vào HTML/CSS.
    - **Cắt & lật ảnh** (tab *Crop & Flip Images* trong Dashboard): kéo chuột trên ảnh để khoanh phần muốn giữ, hoặc nhập X, Y, chiều rộng, chiều cao (pixel); lật trái ↔ phải và/hoặc trên ↔ dưới. Ảnh `PNG`, `JPG`, `WebP`, `BMP` giữ nguyên định dạng (JPG có nền trắng chỗ trong suốt), ảnh khác (`GIF`, `HEIC`, `AVIF`…) lưu thành `PNG`; file lưu thành `<tên>_edited.<đuôi>`.
 
 2. **📄 Tài Liệu & PDF**:
@@ -59,7 +60,9 @@ flowchart LR
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
-   - **Bảng tính** `XLSX / XLS / ODS ➔ CSV / JSON / XML / YAML`, và `CSV / JSON / XML / YAML ➔ XLSX / ODS`; đổi qua lại giữa XLSX, XLS và ODS. File nhiều sheet ra mỗi sheet một CSV (đóng gói ZIP), hoặc một JSON dạng `{ "tên sheet": [các dòng] }` — JSON dạng này chuyển ngược lại thành đủ các sheet. Dùng SheetJS Community Edition (Apache-2.0) đóng gói sẵn, khoảng 480 KB, chỉ nạp khi gặp bảng tính.
+   - `JSON / CSV / XML / YAML ➔ TypeScript (.ts) / Go struct (.go)` (cửa sổ extension): sinh kiểu dữ liệu từ nội dung file.
+   - **Developer Tools** (tab *💻 Developer Tools* trong Dashboard): dán JSON để sinh ngay TypeScript interface, Go struct, SQL `CREATE TABLE`, Python dataclass hoặc YAML, rồi bấm nút sao chép code.
+   - **Bảng tính** `XLSX / XLS / ODS ➔ CSV / JSON / XML / YAML`, và `CSV / JSON / XML / YAML ➔ XLSX / ODS`; đổi giữa các bảng tính: `XLSX ↔ ODS` và `XLS ➔ XLSX / ODS` (không xuất ra XLS). File nhiều sheet ra mỗi sheet một CSV (đóng gói ZIP), hoặc một JSON dạng `{ "tên sheet": [các dòng] }` — JSON dạng này chuyển ngược lại thành đủ các sheet. Dùng SheetJS Community Edition (Apache-2.0) đóng gói sẵn, khoảng 480 KB, chỉ nạp khi gặp bảng tính.
 
 4. **🤖 Xử Lý Ảnh Nâng Cao & Bảo Mật Offline**:
    - **Offline OCR**: Đọc trích xuất chữ từ ảnh/PDF scan (Tiếng Việt & Anh) bằng `Tesseract.js`. Toàn bộ WASM core và traineddata được đóng gói sẵn trong extension — không tải gì từ CDN.
@@ -121,7 +124,7 @@ và báo `PASS`/`FAIL` từng mục (mã thoát khác 0 nếu có mục lỗi):
 npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
-npm run test:offline -- dist/zips/universal-file-converter-v1.2.1.zip   # kiểm tra file ZIP
+npm run test:offline -- dist/zips/universal-file-converter-v1.7.0.zip   # kiểm tra file ZIP (số phiên bản theo package.json)
 npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, stamp, protect, crop, ocr, background
 ```
 
