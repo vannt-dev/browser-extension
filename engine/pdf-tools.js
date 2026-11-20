@@ -631,9 +631,15 @@ export function withoutExif(bytes) {
  */
 function imageSource(stream, context) {
   const get = (key) => stream.dict.lookup(PDFName.of(key));
-  if (get('ImageMask') || get('Mask') || get('Decode')) return null;
+  if (get('ImageMask')?.asBoolean?.() || get('Mask')) return null;
   if (plain(get('BitsPerComponent')) !== 8) return null;
   const channels = channelsOf(get('ColorSpace'), context);
+  // Only the usual /Decode, [0 1] for each channel, says the pixels mean what they say.
+  const decode = get('Decode');
+  if (decode) {
+    const values = decode instanceof PDFArray ? decode.asArray().map((value) => plain(context.lookup(value))) : [];
+    if (values.length !== channels * 2 || values.some((value, index) => value !== index % 2)) return null;
+  }
   const width = plain(get('Width'));
   const height = plain(get('Height'));
   if (!channels || !(width > 0) || !(height > 0)) return null;
@@ -641,10 +647,12 @@ function imageSource(stream, context) {
   const smask = get('SMask');
   if (smask instanceof PDFRawStream && smask.dict.lookup(PDFName.of('Matte'))) return null;
   const filter = plain(get('Filter'));
-  if (filter === 'DCTDecode') return { kind: 'jpeg', bytes: withoutExif(stream.contents) };
+  if (filter === 'DCTDecode') return { kind: 'jpeg', bytes: withoutExif(stream.contents), channels };
   if (filter !== 'FlateDecode') return null;
   let data = decodePDFRawStream(stream).decode();
-  const parms = get('DecodeParms');
+  // The parameters of the one filter, given on their own or in an array like the filter.
+  let parms = get('DecodeParms');
+  if (parms instanceof PDFArray) parms = parms.size() === 1 ? context.lookup(parms.get(0)) : null;
   const parm = (key, fallback) => plain(parms?.lookup?.(PDFName.of(key))) ?? fallback;
   const predictor = parm('Predictor', 1);
   if (predictor >= 10) {
@@ -654,8 +662,9 @@ function imageSource(stream, context) {
   } else if (predictor !== 1) {
     return null;
   }
-  if (data.length < width * height * channels) return null;
-  return { kind: 'pixels', data: data.subarray(0, width * height * channels), width, height, channels };
+  // Anything but exactly the pixels the picture says it has is a sign it was not understood.
+  if (data.length !== width * height * channels) return null;
+  return { kind: 'pixels', data, width, height, channels };
 }
 
 /**
@@ -665,7 +674,10 @@ function imageSource(stream, context) {
 async function recodeWithCanvas(source, { maxSide, quality }) {
   let bitmap;
   if (source.kind === 'jpeg') {
-    bitmap = await createImageBitmap(new Blob([source.bytes], { type: 'image/jpeg' }));
+    // The pixel values as stored: the PDF's colour space says what they mean, not the JPEG.
+    bitmap = await createImageBitmap(new Blob([source.bytes], { type: 'image/jpeg' }), {
+      colorSpaceConversion: 'none',
+    });
   } else {
     const { data, width, height, channels } = source;
     const rgba = new Uint8ClampedArray(width * height * 4);
@@ -733,8 +745,9 @@ export async function compressPdf(file, { level = 'medium', password = '', recod
   for (const [ref, stream] of pictures) {
     if (masks.has(ref.toString()) || stream.contents.length < MIN_IMAGE_BYTES) continue;
     let smaller = null;
+    let source = null;
     try {
-      const source = imageSource(stream, doc.context);
+      source = imageSource(stream, doc.context);
       if (source) smaller = await recode(source, { maxSide, quality: settings.quality });
     } catch {
       // A picture that does not decode, here or in the browser, is kept as it is.
@@ -743,10 +756,12 @@ export async function compressPdf(file, { level = 'medium', password = '', recod
     const dict = stream.dict.clone(doc.context);
     dict.set(PDFName.of('Width'), PDFNumber.of(smaller.width));
     dict.set(PDFName.of('Height'), PDFNumber.of(smaller.height));
-    dict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB'));
+    // The canvas writes RGB: a colour picture keeps its colour space, a grey one becomes RGB.
+    if (source.channels !== 3) dict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB'));
     dict.set(PDFName.of('BitsPerComponent'), PDFNumber.of(8));
     dict.set(PDFName.of('Filter'), PDFName.of('DCTDecode'));
     dict.delete(PDFName.of('DecodeParms'));
+    dict.delete(PDFName.of('Decode'));
     doc.context.assign(ref, PDFRawStream.of(dict, smaller.bytes));
     imagesCompressed++;
   }

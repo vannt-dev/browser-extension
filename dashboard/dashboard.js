@@ -114,6 +114,9 @@ function showFormatFields() {
   if (dashStampCustomGroup) dashStampCustomGroup.style.display = field('dash-stamp-position')?.value === 'custom' ? 'flex' : 'none';
   if (dashProtectGroup) dashProtectGroup.style.display = format === 'pdf-protect' ? 'flex' : 'none';
   if (dashCompressGroup) dashCompressGroup.style.display = format === 'pdf-compress' ? 'flex' : 'none';
+  // Compress PDF has its own choice of picture quality; the image slider would do nothing there.
+  const qualityGroup = field('dash-quality-group');
+  if (qualityGroup) qualityGroup.style.display = format === 'pdf-compress' ? 'none' : '';
   showProtectProblem('');
   showPdfPasswordField();
 }

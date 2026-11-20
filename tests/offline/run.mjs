@@ -920,9 +920,10 @@ try {
       const select = document.getElementById("dash-target-format");
       select.value = "pdf-compress";
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      return getComputedStyle(document.getElementById("dash-compress-group")).display;
+      const show = (id) => getComputedStyle(document.getElementById(id)).display;
+      return show("dash-compress-group") + "," + show("dash-quality-group");
     })()`);
-    check('the picture quality choice shows for "Compress a PDF"', shown === 'flex', shown);
+    check('the picture quality choice shows for "Compress a PDF", the image slider does not', shown === 'flex,none', shown);
 
     let { state, file } = await dashConvert('photos.pdf', 'application/pdf', photos, 'pdf-compress', {
       fields: { 'dash-compress-level': 'low' },
@@ -963,6 +964,33 @@ try {
       JSON.stringify(pictures.sort()) ===
         JSON.stringify(['/DCTDecode 1000x800 red,blue,green,black', '/DCTDecode 1056x792 red,blue,green,black']),
       JSON.stringify(pictures)
+    );
+
+    // A PDF Chrome printed (subset fonts, a vector figure): smaller or kept, its pages still read.
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-compress', {
+      seconds: 30,
+      fields: { 'dash-compress-level': 'medium' },
+      expectFile: false,
+    }));
+    let headings = 'kept';
+    if (file) {
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes), verbosity: 0 }).promise;
+        const found = [];
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const text = (await (await pdf.getPage(n)).getTextContent()).items.map((item) => item.str).join(' ');
+          found.push(TEXT_DOC.pages.find((heading) => text.includes(heading)) ?? '-');
+        }
+        headings = JSON.stringify(found) === JSON.stringify(TEXT_DOC.pages) ? 'read' : JSON.stringify(found);
+      } catch (error) {
+        headings = String(error);
+      }
+    }
+    check(
+      'a PDF the browser printed: either kept, or smaller with its three pages still read',
+      (state.text === 'Already small: kept' && headings === 'kept') ||
+        (/→/.test(state.text ?? '') && file?.bytes.length < textDoc.length && headings === 'read'),
+      `${JSON.stringify(state)} ${describe(file)} ${headings}`
     );
 
     const plain = await withText();

@@ -168,11 +168,8 @@ describe('compressPdf', () => {
     expect(Buffer.from(keptMask.bytes).equals(Buffer.from(mask.bytes))).toBe(true);
   });
 
-  it('undoes PNG predictors before handing the pixels over', async () => {
-    const width = 300;
-    const height = 200;
-    const pixels = noise(width, height, 3, 3);
-    // Each row: filter type 2 (Up), then the difference with the row above.
+  /** A Flate picture of `pixels` whose rows are written with the PNG Up predictor. */
+  function predicted(pixels, width, height) {
     const rows = [];
     for (let y = 0; y < height; y++) {
       const row = Buffer.alloc(1 + width * 3);
@@ -183,26 +180,65 @@ describe('compressPdf', () => {
       }
       rows.push(row);
     }
+    return new Uint8Array(deflateSync(Buffer.concat(rows)));
+  }
+
+  for (const [form, wrap] of [
+    ['as a dictionary', (value) => value],
+    ['in a one-element array', (value) => [value]],
+  ]) {
+    it(`undoes PNG predictors before handing the pixels over (parameters ${form})`, async () => {
+      const width = 300;
+      const height = 200;
+      const pixels = noise(width, height, 3, 3);
+      const file = await pdfWith(async (doc, page) => {
+        const stream = doc.context.stream(predicted(pixels, width, height), {
+          Type: 'XObject',
+          Subtype: 'Image',
+          Width: width,
+          Height: height,
+          BitsPerComponent: 8,
+          ColorSpace: 'DeviceRGB',
+          Filter: wrap('FlateDecode'),
+          DecodeParms: wrap({ Predictor: 15, Colors: 3, Columns: width, BitsPerComponent: 8 }),
+        });
+        page.node.newXObject('Im1', doc.context.register(stream));
+      });
+
+      const calls = [];
+      await compressPdf(file, { level: 'high', recode: sharpRecode(calls) });
+
+      expect(calls).toHaveLength(1);
+      expect(Buffer.from(calls[0].data).equals(pixels)).toBe(true);
+    });
+  }
+
+  it('takes pictures marked as not a mask, with the usual /Decode, and keeps an ICC colour space', async () => {
+    const width = 400;
+    const height = 300;
     const file = await pdfWith(async (doc, page) => {
-      const stream = doc.context.stream(new Uint8Array(deflateSync(Buffer.concat(rows))), {
+      const profile = doc.context.register(doc.context.stream(new Uint8Array(4096).fill(7), { N: 3 }));
+      const stream = doc.context.stream(new Uint8Array(deflateSync(noise(width, height, 3, 11))), {
         Type: 'XObject',
         Subtype: 'Image',
         Width: width,
         Height: height,
         BitsPerComponent: 8,
-        ColorSpace: 'DeviceRGB',
+        ColorSpace: ['ICCBased', profile],
+        ImageMask: false,
+        Decode: [0, 1, 0, 1, 0, 1],
         Filter: 'FlateDecode',
-        DecodeParms: { Predictor: 15, Colors: 3, Columns: width, BitsPerComponent: 8 },
       });
-      const ref = doc.context.register(stream);
-      page.node.newXObject('Im1', ref);
+      page.node.newXObject('Im1', doc.context.register(stream));
     });
 
     const calls = [];
-    await compressPdf(file, { level: 'high', recode: sharpRecode(calls) });
+    const result = await compressPdf(file, { level: 'low', recode: sharpRecode(calls) });
 
     expect(calls).toHaveLength(1);
-    expect(Buffer.from(calls[0].data).equals(pixels)).toBe(true);
+    const [image] = (await images(result.blob)).found;
+    expect(image.filter).toBe('/DCTDecode');
+    expect(image.colorSpace).toMatch(/^\[ \/ICCBased \d+ 0 R \]$/);
   });
 
   it('leaves alone the images it cannot re-encode faithfully', async () => {
