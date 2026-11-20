@@ -710,5 +710,51 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfCompress": {
+    "message": "Nén PDF (thu nhỏ ảnh) (.pdf)"
+  },
+  "compressLevelLabel": {
+    "message": "Chất lượng ảnh:"
+  },
+  "compressLevelLow": {
+    "message": "Thấp: file nhỏ nhất (96 dpi)"
+  },
+  "compressLevelMedium": {
+    "message": "Vừa: xem trên màn hình (150 dpi)"
+  },
+  "compressLevelHigh": {
+    "message": "Cao: để in (220 dpi)"
+  },
+  "compressHint": {
+    "message": "Chỉ các ảnh trong PDF được thu nhỏ, ngay trên máy này. Chữ vẫn là chữ, bôi đen và tìm được; PDF không nhỏ đi được thì giữ nguyên."
+  },
+  "statusCompressed": {
+    "message": "$BEFORE$ → $AFTER$ (−$SAVED$%)",
+    "placeholders": {
+      "before": {
+        "content": "$1"
+      },
+      "after": {
+        "content": "$2"
+      },
+      "saved": {
+        "content": "$3"
+      }
+    }
+  },
+  "statusNotSmaller": {
+    "message": "Đã gọn: giữ nguyên"
+  },
+  "pdfNotSmaller": {
+    "message": "$NAME$ ($SIZE$) không nhỏ đi được nên được giữ nguyên, không lưu file mới.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "size": {
+        "content": "$2"
+      }
+    }
   }
 }

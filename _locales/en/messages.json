@@ -710,5 +710,51 @@
         "content": "$1"
       }
     }
+  },
+  "formatPdfCompress": {
+    "message": "Compress a PDF (smaller pictures) (.pdf)"
+  },
+  "compressLevelLabel": {
+    "message": "Picture quality:"
+  },
+  "compressLevelLow": {
+    "message": "Low: smallest file (96 dpi)"
+  },
+  "compressLevelMedium": {
+    "message": "Medium: for the screen (150 dpi)"
+  },
+  "compressLevelHigh": {
+    "message": "High: for printing (220 dpi)"
+  },
+  "compressHint": {
+    "message": "Only the pictures in the PDF are made smaller, on this computer. Text stays text you can select and search, and a PDF that cannot get smaller is kept as it is."
+  },
+  "statusCompressed": {
+    "message": "$BEFORE$ → $AFTER$ (−$SAVED$%)",
+    "placeholders": {
+      "before": {
+        "content": "$1"
+      },
+      "after": {
+        "content": "$2"
+      },
+      "saved": {
+        "content": "$3"
+      }
+    }
+  },
+  "statusNotSmaller": {
+    "message": "Already small: kept"
+  },
+  "pdfNotSmaller": {
+    "message": "$NAME$ ($SIZE$) could not be made smaller, so the original is kept and no new file is saved.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "size": {
+        "content": "$2"
+      }
+    }
   }
 }

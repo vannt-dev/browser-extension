@@ -52,11 +52,12 @@ flowchart LR
    - `Markdown / TXT / HTML ➔ PDF`.
    - **Gộp PDF**: chọn nhiều file PDF rồi chọn định dạng đích "Gộp các file PDF thành một" — các file được nối theo thứ tự trong danh sách chờ, file không phải PDF bị bỏ qua.
    - **Tách PDF**: mỗi trang một file, hoặc (trong Dashboard) theo khoảng trang như `1-3, 5, 8-` — mỗi khoảng một file, nhiều file thì đóng gói ZIP. Gộp và tách sao chép nguyên trang (bằng bản `pdf-lib` còn được duy trì, `@cantoo/pdf-lib`), không render lại: chữ vẫn là chữ, không giảm chất lượng.
-   - **PDF có mật khẩu**: trong Dashboard, nhập mật khẩu vào ô *Mật khẩu PDF* (hiện ra khi hàng đợi có PDF); mọi việc với PDF (gộp, tách, xoay, xoá, sắp trang, sang ảnh, OCR) đều mở được, và file làm ra không còn mật khẩu. PDF chỉ cấm in/chép mở được mà không cần mật khẩu. Popup không có ô mật khẩu: nó báo mở file trong Dashboard.
+   - **PDF có mật khẩu**: trong Dashboard, nhập mật khẩu vào ô *Mật khẩu PDF* (hiện ra khi hàng đợi có PDF); mọi việc với PDF (gộp, tách, xoay, xoá, sắp trang, nén, sang ảnh, OCR) đều mở được, và file làm ra không còn mật khẩu. PDF chỉ cấm in/chép mở được mà không cần mật khẩu. Popup không có ô mật khẩu: nó báo mở file trong Dashboard.
    - **Xoay, xóa, sắp xếp lại trang PDF** (trong Dashboard): xoay 90°/180°/270° mọi trang hoặc các trang chọn như `1-3, 5`; xóa các trang chọn; đặt thứ tự trang mới như `3, 1-2` (trang không ghi giữ thứ tự cũ, xếp phía sau). Cửa sổ extension có sẵn lệnh xoay mọi trang. Cũng không render lại trang.
    - **Đánh số trang PDF** (trong Dashboard): số ở trên hoặc dưới, trái, giữa hoặc phải, kiểu `3` hay `3 / 12`; chọn số của trang đầu (0 để trang bìa không có số) và các trang cần đánh như `2-`. Số nằm đúng chỗ và đứng thẳng cả trên trang đã xoay. Phần còn lại của trang giữ nguyên.
    - **Đóng dấu PDF** (trong Dashboard): chữ như `APPROVED`, `CONFIDENTIAL`, `COPY` hay chữ tự gõ, thêm ngày hôm nay nếu muốn, và/hoặc một ảnh PNG/JPG (chữ ký, logo); đặt ở giữa, ở góc, giữa cạnh trên/dưới hoặc vị trí tự chọn theo %; chỉnh độ rộng (theo % bề ngang trang), độ đậm, độ nghiêng và màu chữ; chọn trang `all`, `first`, `last` hoặc như `1-3, 5`. Dấu nằm đúng chỗ cả trên trang đã xoay hoặc đã cắt lề. Chữ trên dấu dùng font Noto Sans Bold đi kèm extension (bản rút gọn chỉ gồm chữ Latin và tiếng Việt có dấu, giấy phép SIL Open Font License 1.1, xem `assets/fonts/OFL.txt`; gói build có `THIRD_PARTY_NOTICES.txt` và `licenses/NotoSans-OFL-1.1.txt`), nên `ĐÃ DUYỆT`, `Đã thanh toán` vẽ được; chữ font không có (Trung, Nhật, Ả Rập...) bị từ chối kèm thông báo nêu rõ ký tự nào, không vẽ ra chữ lỗi — với các chữ đó thì đóng dấu bằng ảnh.
    - **Đặt mật khẩu cho PDF** (trong Dashboard): chọn "Đặt mật khẩu bảo vệ PDF", nhập mật khẩu hai lần (có nút hiện mật khẩu) — file `<tên>_protected.pdf` làm ra được mã hoá AES-256 và chỉ mở được bằng mật khẩu đó trong Acrobat, Chrome, Edge, Firefox... Việc mã hoá chạy ngay trong trình duyệt; mật khẩu không được lưu hay gửi đi đâu, và quên thì không khôi phục được. PDF đã có mật khẩu (hoặc đã cấm in/chép) được giữ nguyên và báo rõ.
+   - **Nén PDF** (trong Dashboard): chọn "Nén PDF (thu nhỏ ảnh)" và mức chất lượng ảnh *Thấp* (file nhỏ nhất, 96 dpi), *Vừa* (xem trên màn hình, 150 dpi) hoặc *Cao* (để in, 220 dpi). Các ảnh trong PDF được thu nhỏ theo khổ trang và lưu lại thành JPEG ngay trong trình duyệt (`pdf-lib` + canvas); trang không bị render lại nên chữ vẫn là chữ, bôi đen và tìm được, hình vẽ vector và font giữ nguyên. Ảnh nào nén ra lớn hơn thì giữ ảnh cũ; ảnh làm mask, ảnh CMYK, ảnh màu chỉ mục và các kiểu ảnh khác mà JPEG sẽ làm sai màu cũng được giữ nguyên. Dòng trạng thái ghi dung lượng trước và sau (vd. `2.3 MB → 259 KB (−89%)`) và file lưu thành `<tên>_compressed.pdf`; PDF không nhỏ đi được (vd. chỉ có chữ) thì báo "Đã gọn: giữ nguyên" và không lưu file mới. PDF có mật khẩu mở bằng ô *Mật khẩu PDF*.
 
 3. **📊 Dữ Liệu Cấu Trúc**:
    - `JSON ↔ CSV ↔ XML ↔ YAML`.
@@ -125,7 +126,7 @@ npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
 npm run test:offline -- dist/zips/universal-file-converter-v1.7.0.zip   # kiểm tra file ZIP (số phiên bản theo package.json)
-npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, stamp, protect, crop, ocr, background
+npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, stamp, protect, crop, ocr, background, compress
 ```
 
 - Các mục được kiểm tra: ảnh → PDF và DOCX → PDF (jsPDF, mammoth); PDF → PNG với PDF có font nhúng,
@@ -134,6 +135,7 @@ npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: conver
   đọc lại bằng pdf.js để kiểm tra vị trí, cả chữ tiếng Việt có dấu; chữ font không có bị từ chối kèm lý do; đặt mật khẩu cho PDF (ô trống hoặc hai mật khẩu khác nhau bị báo lỗi, file xuất ra chỉ mở được bằng đúng mật khẩu); cắt & lật ảnh PNG/JPG bằng cách kéo chuột và nhập số, kiểm tra kích thước
   và màu từng góc của file lưu ra; OCR ảnh (vie+eng) và OCR bản scan ra PDF tìm kiếm được (tesseract.js);
   OCR và PDF → PNG khi dashboard nằm ở tab nền (Chrome dừng animation frame ở tab nền);
+  nén PDF (file nhỏ đi, chữ vẫn đọc được bằng pdf.js, ảnh JPEG mới đúng màu, đúng chiều và đúng cỡ; PDF chỉ có chữ được giữ nguyên);
   cuối cùng là **không có request nào ra khỏi gói extension**.
 - Trình duyệt: biến môi trường `CHROME=<đường dẫn chrome>`, nếu không có thì tự tìm Chromium của
   Playwright (`npx playwright install chromium`). Google Chrome bản thường từ 137 bỏ qua

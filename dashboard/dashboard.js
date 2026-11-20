@@ -59,6 +59,13 @@ function showProtectProblem(problem) {
   error.textContent = problem;
   error.style.display = problem ? 'block' : 'none';
 }
+// How much image quality Compress PDF keeps: low, medium or high.
+const COMPRESS_LEVEL = () => field('dash-compress-level')?.value || 'medium';
+// A size as people read it: 820 KB, 2.4 MB.
+function readableSize(bytes) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
 // The jobs that change the pages of one PDF, each with the label of its page field.
 const PDF_PAGE_TOOLS = {
   'pdf-rotate': () => t('pagesToRotateLabel'),
@@ -87,6 +94,7 @@ const dashNumberGroup = document.getElementById('dash-number-group');
 const dashStampGroup = document.getElementById('dash-stamp-group');
 const dashStampCustomGroup = document.getElementById('dash-stamp-custom-group');
 const dashProtectGroup = document.getElementById('dash-protect-group');
+const dashCompressGroup = document.getElementById('dash-compress-group');
 // The field for the password of a locked PDF only matters once there is a PDF to open, and not
 // when protecting: a PDF that already has a password is left as it is there.
 function showPdfPasswordField() {
@@ -105,6 +113,7 @@ function showFormatFields() {
   if (dashStampGroup) dashStampGroup.style.display = format === 'pdf-stamp' ? 'flex' : 'none';
   if (dashStampCustomGroup) dashStampCustomGroup.style.display = field('dash-stamp-position')?.value === 'custom' ? 'flex' : 'none';
   if (dashProtectGroup) dashProtectGroup.style.display = format === 'pdf-protect' ? 'flex' : 'none';
+  if (dashCompressGroup) dashCompressGroup.style.display = format === 'pdf-compress' ? 'flex' : 'none';
   showProtectProblem('');
   showPdfPasswordField();
 }
@@ -698,10 +707,19 @@ async function executeDashBatchConversion() {
 
     try {
       const res = await processDashSingleFile(file, targetFormat, quality);
+      // A PDF that Compress PDF could not make smaller is kept: there is nothing new to save.
+      if (res.smaller === false) {
+        setDashStatus(i, t('statusNotSmaller'), 'skipped');
+        if (statusEl) statusEl.title = t('pdfNotSmaller', file.name, readableSize(res.originalSize));
+        continue;
+      }
       dashConvertedResults.push(res);
 
       if (statusEl) {
-        statusEl.textContent = t('statusDone');
+        statusEl.textContent = res.smaller
+          ? t('statusCompressed', readableSize(res.originalSize), readableSize(res.compressedSize),
+            String(Math.round((1 - res.compressedSize / res.originalSize) * 100)))
+          : t('statusDone');
         statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
         statusEl.style.color = '#10b981';
       }
@@ -791,6 +809,12 @@ async function processDashSingleFile(file, targetFormat, quality) {
     if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
     const { protectPdf } = await loadPdfTools();
     return protectPdf(file, protectPasswordInUse);
+  }
+
+  if (targetFormat === 'pdf-compress') {
+    if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
+    const { compressPdf } = await loadPdfTools();
+    return compressPdf(file, { level: COMPRESS_LEVEL(), ...PDF_OPTIONS() });
   }
 
   // OCR reads scans and photos alike: both become a PDF with a text layer.
