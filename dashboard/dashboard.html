@@ -59,6 +59,7 @@
                 <option value="pdf-number" data-i18n="formatPdfNumber">Add page numbers to a PDF (.pdf)</option>
                 <option value="pdf-stamp" data-i18n="formatPdfStamp">Stamp a PDF with a text or a picture (.pdf)</option>
                 <option value="pdf-protect" data-i18n="formatPdfProtect">Protect a PDF with a password (.pdf)</option>
+                <option value="pdf-compress" data-i18n="formatPdfCompress">Compress a PDF (smaller pictures) (.pdf)</option>
                 <option value="ocr-pdf" data-i18n="formatOcrPdf">Searchable PDF with OCR, from scans or images (.pdf)</option>
                 <option value="docx">Word Document (.docx)</option>
                 <option value="json">JSON (.json)</option>
@@ -151,11 +152,20 @@
               <p id="dash-protect-error" role="alert" style="font-size: 13px; color: #ef4444; margin: 0; display: none;"></p>
               <p style="font-size: 13px; color: var(--text-secondary); margin: 0;" data-i18n="protectHint">The PDF is encrypted on this computer (AES-256) and the password is not saved anywhere. A forgotten password cannot be recovered, so keep it somewhere safe.</p>
             </div>
+            <div class="form-group" id="dash-compress-group" style="display: none;">
+              <label for="dash-compress-level" data-i18n="compressLevelLabel">Picture quality:</label>
+              <select id="dash-compress-level" class="dash-select">
+                <option value="low" data-i18n="compressLevelLow">Low: smallest file (96 dpi)</option>
+                <option value="medium" selected data-i18n="compressLevelMedium">Medium: for the screen (150 dpi)</option>
+                <option value="high" data-i18n="compressLevelHigh">High: for printing (220 dpi)</option>
+              </select>
+              <p style="font-size: 13px; color: var(--text-secondary); margin: 0;" data-i18n="compressHint">Only the pictures in the PDF are made smaller, on this computer. Text stays text you can select and search, and a PDF that cannot get smaller is kept as it is.</p>
+            </div>
             <div class="form-group" id="dash-pdf-password-group" style="display: none;">
               <label for="dash-pdf-password" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>
               <input type="password" id="dash-pdf-password" class="dash-input" autocomplete="off">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="dash-quality-group">
               <label><span data-i18n="dashQualityLabel">Compression quality:</span> <span id="dash-quality-val">90%</span></label>
               <input type="range" id="dash-quality-range" min="10" max="100" value="90">
             </div>

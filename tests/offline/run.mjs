@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -26,7 +26,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import JSZip from 'jszip';
 import sharp from 'sharp';
 import { launch, newPage, serviceWorker, sleep } from './cdp.mjs';
-import { PDFDocument, degrees } from '@cantoo/pdf-lib';
+import { PDFDocument, PDFName, StandardFonts, degrees } from '@cantoo/pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { SCAN_PAGES, TEXT_DOC, docx, g4ScanPdf, lockedPdf, picture, textPdf } from './fixtures.mjs';
 
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -874,6 +874,135 @@ try {
     } finally {
       await other?.close().catch(() => {});
     }
+  });
+
+  // ---- pdf-lib swapping the pictures of a PDF for JPEGs the browser's canvas wrote
+  await group('compress', '11. Compress a PDF (dashboard)', async () => {
+    // Four quadrants (red, blue / green, black) with grain, so the pictures are large to begin with.
+    const quadrants = (width, height, channels) => {
+      const data = Buffer.alloc(width * height * channels);
+      let seed = 7;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const top = y < height / 2;
+          const left = x < width / 2;
+          const colour = top ? (left ? [220, 0, 0] : [0, 0, 220]) : left ? [0, 220, 0] : [0, 0, 0];
+          for (let c = 0; c < channels; c++) {
+            seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+            data[(y * width + x) * channels + c] = c < 3 ? colour[c] + (seed >> 27) : 255;
+          }
+        }
+      }
+      return data;
+    };
+    // A JPEG whose EXIF says "turn 90°": PDF viewers do not, so neither may the new picture.
+    const jpeg = await sharp(quadrants(1600, 1200, 3), { raw: { width: 1600, height: 1200, channels: 3 } })
+      .withMetadata({ orientation: 6 })
+      .jpeg({ quality: 95 })
+      .toBuffer();
+    const png = await sharp(quadrants(1000, 800, 4), { raw: { width: 1000, height: 800, channels: 4 } })
+      .png()
+      .toBuffer();
+    const words = 'Compress kit: this line stays text';
+    const withText = async () => {
+      const doc = await PDFDocument.create();
+      const font = await doc.embedFont(StandardFonts.Helvetica);
+      const page = doc.addPage([612, 792]);
+      page.drawText(words, { x: 50, y: 740, size: 14, font });
+      return { doc, page };
+    };
+    const { doc, page } = await withText();
+    page.drawImage(await doc.embedJpg(jpeg), { x: 50, y: 400, width: 400, height: 300 });
+    page.drawImage(await doc.embedPng(png), { x: 50, y: 60, width: 400, height: 320 });
+    const photos = Buffer.from(await doc.save());
+
+    const shown = await dash.evaluate(`(() => {
+      const select = document.getElementById("dash-target-format");
+      select.value = "pdf-compress";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      const show = (id) => getComputedStyle(document.getElementById(id)).display;
+      return show("dash-compress-group") + "," + show("dash-quality-group");
+    })()`);
+    check('the picture quality choice shows for "Compress a PDF", the image slider does not', shown === 'flex,none', shown);
+
+    let { state, file } = await dashConvert('photos.pdf', 'application/pdf', photos, 'pdf-compress', {
+      fields: { 'dash-compress-level': 'low' },
+    });
+    check(
+      'photos.pdf: the status gives the size before and after',
+      /^\d+(\.\d)? (KB|MB) → \d+(\.\d)? (KB|MB) \(−\d+%\)$/.test(state.text ?? ''),
+      JSON.stringify(state)
+    );
+    check(
+      'photos_compressed.pdf is less than half the size',
+      file?.name === 'photos_compressed.pdf' && isPdf(file) && file.bytes.length < photos.length / 2,
+      `${describe(file)} from ${photos.length} bytes`
+    );
+    let text = '';
+    const pictures = [];
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes), verbosity: 0 }).promise;
+      text = (await (await pdf.getPage(1)).getTextContent()).items.map((item) => item.str).join(' ');
+      const out = await PDFDocument.load(file.bytes);
+      for (const [, object] of out.context.enumerateIndirectObjects()) {
+        const dict = object.dict;
+        if (dict?.get(PDFName.of('Subtype'))?.toString() !== '/Image') continue;
+        if (dict.get(PDFName.of('ColorSpace'))?.toString() === '/DeviceGray') continue; // the PNG's alpha
+        const bytes = Buffer.from(object.contents);
+        const { width, height } = await sharp(bytes).metadata();
+        const at = (fx, fy) => [Math.floor(width * fx), Math.floor(height * fy)];
+        const seen = await colours(bytes, [at(0.25, 0.25), at(0.75, 0.25), at(0.25, 0.75), at(0.75, 0.75)]);
+        pictures.push(`${dict.get(PDFName.of('Filter'))} ${seen.size} ${seen.at.join(',')}`);
+      }
+    } catch (error) {
+      text = String(error);
+    }
+    check('the text can still be selected and searched (pdf.js reads it)', text.includes(words), text.slice(0, 120));
+    // Low is 96 pixels per inch of the 11-inch page: at most 1056 pixels on the longer side.
+    check(
+      'both pictures are JPEGs again, scaled down, colours in place and not turned',
+      JSON.stringify(pictures.sort()) ===
+        JSON.stringify(['/DCTDecode 1000x800 red,blue,green,black', '/DCTDecode 1056x792 red,blue,green,black']),
+      JSON.stringify(pictures)
+    );
+
+    // A PDF Chrome printed (subset fonts, a vector figure): smaller or kept, its pages still read.
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-compress', {
+      seconds: 30,
+      fields: { 'dash-compress-level': 'medium' },
+      expectFile: false,
+    }));
+    let headings = 'kept';
+    if (file) {
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes), verbosity: 0 }).promise;
+        const found = [];
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const text = (await (await pdf.getPage(n)).getTextContent()).items.map((item) => item.str).join(' ');
+          found.push(TEXT_DOC.pages.find((heading) => text.includes(heading)) ?? '-');
+        }
+        headings = JSON.stringify(found) === JSON.stringify(TEXT_DOC.pages) ? 'read' : JSON.stringify(found);
+      } catch (error) {
+        headings = String(error);
+      }
+    }
+    check(
+      'a PDF the browser printed: either kept, or smaller with its three pages still read',
+      (state.text === 'Already small: kept' && headings === 'kept') ||
+        (/→/.test(state.text ?? '') && file?.bytes.length < textDoc.length && headings === 'read'),
+      `${JSON.stringify(state)} ${describe(file)} ${headings}`
+    );
+
+    const plain = await withText();
+    ({ state, file } = await dashConvert('plain.pdf', 'application/pdf', Buffer.from(await plain.doc.save()), 'pdf-compress', {
+      seconds: 30,
+      expectFile: false,
+    }));
+    check(
+      'a PDF that cannot get smaller: says so, keeps the original, writes no file',
+      state.text === 'Already small: kept' && /plain\.pdf .* could not be made smaller/.test(state.why ?? '') && !file,
+      JSON.stringify(state)
+    );
   });
 
   // ---- where everything went

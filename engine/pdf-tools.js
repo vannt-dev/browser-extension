@@ -1,5 +1,16 @@
 /*! SPDX-License-Identifier: MIT | Copyright (c) 2026 Van Nguyen | github.com/vannt-dev/browser-extension */
-import { PDFDocument, StandardFonts, degrees, rgb } from '@cantoo/pdf-lib';
+import {
+  PDFArray,
+  PDFDocument,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
+  PDFRef,
+  StandardFonts,
+  decodePDFRawStream,
+  degrees,
+  rgb,
+} from '@cantoo/pdf-lib';
 import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfAlreadyProtectedError, pdfPasswordError } from './pdf-password.js';
 import { stampTextError } from './stamp-text.js';
 
@@ -510,5 +521,260 @@ export async function protectPdf(file, newPassword) {
     blob: toBlob(await doc.save()),
     filename: `${baseName(file.name)}_protected.pdf`,
     pageCount: doc.getPageCount(),
+  };
+}
+
+/**
+ * How far Compress PDF goes at each level: the pictures get at most `dpi` pixels per inch of the
+ * largest page (a cap on the picture's longer side, so one drawn smaller than the page keeps a
+ * little more), and are saved as JPEG at `quality`. Named by the image quality that is kept.
+ */
+export const COMPRESS_LEVELS = {
+  low: { dpi: 96, quality: 0.5 },
+  medium: { dpi: 150, quality: 0.7 },
+  high: { dpi: 220, quality: 0.85 },
+};
+
+/** Pictures smaller than this are not worth the work. */
+const MIN_IMAGE_BYTES = 2048;
+
+/** A name such as /DeviceRGB or a number as a plain value; a one-element array as its element. */
+function plain(value) {
+  if (value instanceof PDFArray && value.size() === 1) return plain(value.get(0));
+  if (value instanceof PDFName) return value.decodeText();
+  if (value instanceof PDFNumber) return value.asNumber();
+  return value;
+}
+
+/** How many colour channels a colour space has, if its pixels can be redrawn as RGB; 0 if not. */
+function channelsOf(colorSpace, context) {
+  const space = plain(colorSpace);
+  if (space === 'DeviceRGB') return 3;
+  if (space === 'DeviceGray') return 1;
+  if (space instanceof PDFArray && space.size() === 2 && plain(space.get(0)) === 'ICCBased') {
+    const profile = context.lookup(space.get(1));
+    const n = profile instanceof PDFRawStream ? plain(profile.dict.lookup(PDFName.of('N'))) : 0;
+    return n === 3 || n === 1 ? n : 0;
+  }
+  return 0;
+}
+
+/** Undoes the PNG predictors (types 0-4) of `rows` rows, `columns` pixels of `bpp` bytes each. */
+function unpredictPng(data, columns, bpp, rows) {
+  const stride = columns * bpp;
+  if (data.length < rows * (stride + 1)) return null;
+  const out = new Uint8Array(rows * stride);
+  for (let y = 0; y < rows; y++) {
+    const type = data[y * (stride + 1)];
+    if (type > 4) return null;
+    const row = y * (stride + 1) + 1;
+    const at = y * stride;
+    for (let i = 0; i < stride; i++) {
+      const left = i >= bpp ? out[at + i - bpp] : 0;
+      const up = y ? out[at - stride + i] : 0;
+      const upLeft = y && i >= bpp ? out[at - stride + i - bpp] : 0;
+      let guess = 0;
+      if (type === 1) guess = left;
+      else if (type === 2) guess = up;
+      else if (type === 3) guess = (left + up) >> 1;
+      else if (type === 4) {
+        const p = left + up - upLeft;
+        const [pa, pb, pc] = [Math.abs(p - left), Math.abs(p - up), Math.abs(p - upLeft)];
+        guess = pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
+      }
+      out[at + i] = (data[row + i] + guess) & 0xff;
+    }
+  }
+  return out;
+}
+
+/**
+ * A JPEG without its EXIF block. PDF viewers draw a JPEG as it is stored and ignore EXIF, but
+ * browsers turn a picture the way its EXIF says when they decode it: without the block, the
+ * picture is decoded the way the PDF shows it. Anything that is not plainly a JPEG is given back
+ * as it is.
+ */
+export function withoutExif(bytes) {
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return bytes;
+  const parts = [bytes.subarray(0, 2)];
+  let at = 2;
+  let removed = false;
+  while (at + 4 <= bytes.length && bytes[at] === 0xff) {
+    const marker = bytes[at + 1];
+    // The scan follows: everything from here on is copied as it is.
+    if (marker === 0xda) break;
+    const length = (bytes[at + 2] << 8) | bytes[at + 3];
+    const end = at + 2 + length;
+    if (length < 2 || end > bytes.length) return bytes;
+    const exif =
+      marker === 0xe1 && String.fromCharCode(...bytes.subarray(at + 4, at + 8)) === 'Exif';
+    if (exif) removed = true;
+    else parts.push(bytes.subarray(at, end));
+    at = end;
+  }
+  if (!removed) return bytes;
+  parts.push(bytes.subarray(at));
+  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+/**
+ * What a picture of a PDF is, for the recoder: `{ kind: 'jpeg', bytes }` for a JPEG, or
+ * `{ kind: 'pixels', data, width, height, channels }` for 8-bit RGB or grey pixels. Null for a
+ * picture that cannot be redrawn as an RGB JPEG without changing how it looks: masks, CMYK,
+ * indexed colours, a /Decode array, other bit depths and other compressions.
+ */
+function imageSource(stream, context) {
+  const get = (key) => stream.dict.lookup(PDFName.of(key));
+  if (get('ImageMask')?.asBoolean?.() || get('Mask')) return null;
+  if (plain(get('BitsPerComponent')) !== 8) return null;
+  const channels = channelsOf(get('ColorSpace'), context);
+  // Only the usual /Decode, [0 1] for each channel, says the pixels mean what they say.
+  const decode = get('Decode');
+  if (decode) {
+    const values = decode instanceof PDFArray ? decode.asArray().map((value) => plain(context.lookup(value))) : [];
+    if (values.length !== channels * 2 || values.some((value, index) => value !== index % 2)) return null;
+  }
+  const width = plain(get('Width'));
+  const height = plain(get('Height'));
+  if (!channels || !(width > 0) || !(height > 0)) return null;
+  // A soft mask with /Matte goes with pixels mixed with a background colour: left as they are.
+  const smask = get('SMask');
+  if (smask instanceof PDFRawStream && smask.dict.lookup(PDFName.of('Matte'))) return null;
+  const filter = plain(get('Filter'));
+  if (filter === 'DCTDecode') return { kind: 'jpeg', bytes: withoutExif(stream.contents), channels };
+  if (filter !== 'FlateDecode') return null;
+  let data = decodePDFRawStream(stream).decode();
+  // The parameters of the one filter, given on their own or in an array like the filter.
+  let parms = get('DecodeParms');
+  if (parms instanceof PDFArray) parms = parms.size() === 1 ? context.lookup(parms.get(0)) : null;
+  const parm = (key, fallback) => plain(parms?.lookup?.(PDFName.of(key))) ?? fallback;
+  const predictor = parm('Predictor', 1);
+  if (predictor >= 10) {
+    if (parm('Colors', 1) !== channels || parm('Columns', 1) !== width || parm('BitsPerComponent', 8) !== 8) return null;
+    data = unpredictPng(data, width, channels, height);
+    if (!data) return null;
+  } else if (predictor !== 1) {
+    return null;
+  }
+  // Anything but exactly the pixels the picture says it has is a sign it was not understood.
+  if (data.length !== width * height * channels) return null;
+  return { kind: 'pixels', data, width, height, channels };
+}
+
+/**
+ * The browser's way to redraw a picture smaller: decode it, scale it to fit `maxSide`, and save
+ * it as a JPEG at `quality`.
+ */
+async function recodeWithCanvas(source, { maxSide, quality }) {
+  let bitmap;
+  if (source.kind === 'jpeg') {
+    // The pixel values as stored: the PDF's colour space says what they mean, not the JPEG.
+    bitmap = await createImageBitmap(new Blob([source.bytes], { type: 'image/jpeg' }), {
+      colorSpaceConversion: 'none',
+    });
+  } else {
+    const { data, width, height, channels } = source;
+    const rgba = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0, o = 0; o < rgba.length; i += channels, o += 4) {
+      rgba[o] = data[i];
+      rgba[o + 1] = data[channels === 3 ? i + 1 : i];
+      rgba[o + 2] = data[channels === 3 ? i + 2 : i];
+      rgba[o + 3] = 255;
+    }
+    bitmap = await createImageBitmap(new ImageData(rgba, width, height));
+  }
+  try {
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = new OffscreenCanvas(width, height);
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, width, height);
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(bitmap, 0, 0, width, height);
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality });
+    return { bytes: new Uint8Array(await blob.arrayBuffer()), width, height };
+  } finally {
+    bitmap.close?.();
+  }
+}
+
+/**
+ * Makes a PDF smaller by saving its pictures again as smaller JPEGs, scaled down to the level's
+ * pixels per inch. Pages are not redrawn: text stays text that can be selected and searched, and
+ * vectors and fonts are left as they are. A picture is only swapped for a smaller one, and masks,
+ * CMYK and other pictures a JPEG would change are kept. If the whole PDF comes out no smaller,
+ * the original file is given back with `smaller: false`.
+ * @param {File} file
+ * @param {object} [options]
+ * @param {'low'|'medium'|'high'} [options.level] The image quality kept; see COMPRESS_LEVELS
+ * @param {string} [options.password] The password, if the PDF is locked with one
+ * @param {Function} [options.recode] Turns a picture into a smaller JPEG; the browser's canvas
+ *   by default
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number, originalSize: number,
+ *   compressedSize: number, smaller: boolean, imagesCompressed: number }>}
+ */
+export async function compressPdf(file, { level = 'medium', password = '', recode = recodeWithCanvas } = {}) {
+  const settings = COMPRESS_LEVELS[level];
+  if (!settings) throw new Error(`"${level}" is not a compression level (low, medium or high).`);
+  const doc = await load(file, password);
+  const pageCount = doc.getPageCount();
+  const largestSide = Math.max(...doc.getPages().map((page) => Math.max(page.getWidth(), page.getHeight())));
+  const maxSide = Math.round((largestSide / 72) * settings.dpi);
+
+  // A picture that is another one's mask stays as it is: it has to stay grey and lossless.
+  const pictures = [];
+  const masks = new Set();
+  for (const [ref, object] of doc.context.enumerateIndirectObjects()) {
+    if (!(object instanceof PDFRawStream) || plain(object.dict.get(PDFName.of('Subtype'))) !== 'Image') continue;
+    pictures.push([ref, object]);
+    for (const key of ['SMask', 'Mask']) {
+      const mask = object.dict.get(PDFName.of(key));
+      if (mask instanceof PDFRef) masks.add(mask.toString());
+    }
+  }
+
+  let imagesCompressed = 0;
+  for (const [ref, stream] of pictures) {
+    if (masks.has(ref.toString()) || stream.contents.length < MIN_IMAGE_BYTES) continue;
+    let smaller = null;
+    let source = null;
+    try {
+      source = imageSource(stream, doc.context);
+      if (source) smaller = await recode(source, { maxSide, quality: settings.quality });
+    } catch {
+      // A picture that does not decode, here or in the browser, is kept as it is.
+    }
+    if (!smaller?.bytes?.length || smaller.bytes.length >= stream.contents.length) continue;
+    const dict = stream.dict.clone(doc.context);
+    dict.set(PDFName.of('Width'), PDFNumber.of(smaller.width));
+    dict.set(PDFName.of('Height'), PDFNumber.of(smaller.height));
+    // The canvas writes RGB: a colour picture keeps its colour space, a grey one becomes RGB.
+    if (source.channels !== 3) dict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB'));
+    dict.set(PDFName.of('BitsPerComponent'), PDFNumber.of(8));
+    dict.set(PDFName.of('Filter'), PDFName.of('DCTDecode'));
+    dict.delete(PDFName.of('DecodeParms'));
+    dict.delete(PDFName.of('Decode'));
+    doc.context.assign(ref, PDFRawStream.of(dict, smaller.bytes));
+    imagesCompressed++;
+  }
+
+  const bytes = await doc.save();
+  const smaller = bytes.length < file.size;
+  return {
+    blob: smaller ? toBlob(bytes) : file,
+    filename: smaller ? `${baseName(file.name)}_compressed.pdf` : file.name,
+    pageCount,
+    originalSize: file.size,
+    compressedSize: smaller ? bytes.length : file.size,
+    smaller,
+    imagesCompressed,
   };
 }
