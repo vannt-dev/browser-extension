@@ -161,6 +161,9 @@
   "formatPdfReorder": {
     "message": "Sắp xếp lại trang PDF (.pdf)"
   },
+  "formatPdfInsert": {
+    "message": "Chèn trang vào PDF (.pdf)"
+  },
   "formatOcrPdf": {
     "message": "PDF tìm kiếm được bằng OCR, từ bản scan hoặc ảnh (.pdf)"
   },
@@ -756,5 +759,44 @@
         "content": "$2"
       }
     }
+  },
+  "insertWhatLabel": {
+    "message": "Chèn gì:"
+  },
+  "insertWhatBlank": {
+    "message": "Trang trắng"
+  },
+  "insertWhatPdf": {
+    "message": "Trang của một PDF khác"
+  },
+  "insertCountLabel": {
+    "message": "Số trang trắng:"
+  },
+  "insertFileLabel": {
+    "message": "PDF để lấy trang:"
+  },
+  "insertPagesLabel": {
+    "message": "Các trang cần lấy (để trống = mọi trang):"
+  },
+  "insertPlaceLabel": {
+    "message": "Chèn vào đâu:"
+  },
+  "insertBefore": {
+    "message": "Trước một trang"
+  },
+  "insertAfter": {
+    "message": "Sau một trang"
+  },
+  "insertEnd": {
+    "message": "Ở cuối"
+  },
+  "insertPageLabel": {
+    "message": "Số của trang đó:"
+  },
+  "insertHint": {
+    "message": "Trang trắng có cùng khổ và cùng chiều xoay với trang bên cạnh. Mọi PDF trong danh sách đều được chèn cùng các trang mới; PDF có mật khẩu, kể cả PDF để lấy trang, mở bằng ô Mật khẩu PDF bên dưới."
+  },
+  "insertNeedsPdf": {
+    "message": "Hãy chọn PDF để lấy trang trước."
   }
 }

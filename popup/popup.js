@@ -16,7 +16,7 @@ const loadPdfEngine = () => import('../engine/pdf-engine.js').then((m) => m.PdfE
 const loadPdfTools = () => import('../engine/pdf-tools.js');
 const loadSheetEngine = () => import('../engine/sheet-engine.js');
 // The popup has no field for page ranges: a split here is always one file per page, and a
-// rotation turns every page. Deleting and reordering pages are in the dashboard.
+// rotation turns every page. Deleting, reordering and inserting pages are in the dashboard.
 const SPLIT_RANGES = () => '';
 const ROTATION_OF = (format) => Number(/^pdf-rotate-(\d+)$/.exec(format)?.[1]) || 0;
 

@@ -15,8 +15,8 @@ import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfAlreadyProtectedError, pdfP
 import { stampTextError } from './stamp-text.js';
 
 /**
- * Merging, splitting, rotating, deleting and reordering PDF pages, page for page and without
- * re-rendering: text stays text, vectors stay vectors, and nothing is recompressed.
+ * Merging, splitting, rotating, deleting, reordering and inserting PDF pages, page for page and
+ * without re-rendering: text stays text, vectors stay vectors, and nothing is recompressed.
  */
 
 function baseName(name) {
@@ -211,6 +211,68 @@ export async function reorderPdfPages(file, order, { password = '' } = {}) {
     blob: toBlob(await reordered.save()),
     filename: `${baseName(file.name)}_reordered.pdf`,
     pageCount,
+  };
+}
+
+/** Where new pages can go: before a page, after a page, or after the last page. */
+export const INSERT_PLACES = ['before', 'after', 'end'];
+
+/** The most blank pages put in at once. */
+export const MAX_BLANK_PAGES = 1000;
+
+/**
+ * Puts new pages into a PDF: blank pages, each the size of the page next to them and turned the
+ * same way, or pages copied from a second PDF.
+ * @param {File} file
+ * @param {object} [options]
+ * @param {'before'|'after'|'end'} [options.place] Where the new pages go
+ * @param {number} [options.page] The page they go before or after (not needed for `end`)
+ * @param {number} [options.blankPages] How many blank pages, when no second PDF is given
+ * @param {File|null} [options.from] A second PDF whose pages are put in instead of blank ones
+ * @param {string} [options.fromPages] A selection of its pages such as `3, 1-2`, in that order;
+ *   left out, every page
+ * @param {string} [options.password] The password of a locked PDF (the same for both files)
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function insertPdfPages(
+  file,
+  { place = 'end', page = 1, blankPages = 1, from = null, fromPages = '', password = '' } = {}
+) {
+  if (!INSERT_PLACES.includes(place)) throw new Error('New pages go before a page, after a page or at the end.');
+  const doc = await load(file, password);
+  const pageCount = doc.getPageCount();
+  let at = pageCount;
+  if (place !== 'end') {
+    const number = Number(page);
+    if (!Number.isInteger(number) || number < 1 || number > pageCount) {
+      throw new Error(`There is no page ${page}: ${file.name} has pages 1 to ${pageCount}.`);
+    }
+    at = place === 'before' ? number - 1 : number;
+  }
+  if (from) {
+    const source = await load(from, password);
+    const indexes = String(fromPages).trim()
+      ? parsePageRanges(fromPages, source.getPageCount()).flat()
+      : source.getPageIndices();
+    const pages = await doc.copyPages(source, indexes);
+    pages.forEach((copied, index) => doc.insertPage(at + index, copied));
+  } else {
+    const count = Number(blankPages);
+    if (!Number.isInteger(count) || count < 1 || count > MAX_BLANK_PAGES) {
+      throw new Error(`Put in 1 to ${MAX_BLANK_PAGES} blank pages.`);
+    }
+    // The page the new ones go next to: the one named, or the last one.
+    const neighbour = doc.getPage(place === 'end' ? pageCount - 1 : Number(page) - 1);
+    const { width, height } = neighbour.getCropBox();
+    const angle = neighbour.getRotation().angle;
+    for (let index = 0; index < count; index++) {
+      doc.insertPage(at + index, [width, height]).setRotation(degrees(angle));
+    }
+  }
+  return {
+    blob: toBlob(await doc.save()),
+    filename: `${baseName(file.name)}_pages_inserted.pdf`,
+    pageCount: doc.getPageCount(),
   };
 }
 

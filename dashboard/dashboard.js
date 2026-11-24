@@ -59,6 +59,21 @@ function showProtectProblem(problem) {
   error.textContent = problem;
   error.style.display = problem ? 'block' : 'none';
 }
+// What Insert pages puts in, and where: blank pages, or pages of the PDF chosen in its own field.
+const INSERT_FROM_PDF = () => field('dash-insert-what')?.value === 'pdf';
+const INSERT_OPTIONS = () => ({
+  place: field('dash-insert-place')?.value || 'end',
+  page: Number(field('dash-insert-page')?.value || 1),
+  blankPages: Number(field('dash-insert-count')?.value || 1),
+  from: INSERT_FROM_PDF() ? field('dash-insert-file')?.files?.[0] || null : null,
+  fromPages: field('dash-insert-pages')?.value || '',
+});
+function showInsertProblem(problem) {
+  const error = field('dash-insert-error');
+  if (!error) return;
+  error.textContent = problem;
+  error.style.display = problem ? 'block' : 'none';
+}
 // How much image quality Compress PDF keeps: low, medium or high.
 const COMPRESS_LEVEL = () => field('dash-compress-level')?.value || 'medium';
 // A size as people read it: 820 KB, 2.4 MB.
@@ -114,6 +129,17 @@ function showFormatFields() {
   if (dashStampCustomGroup) dashStampCustomGroup.style.display = field('dash-stamp-position')?.value === 'custom' ? 'flex' : 'none';
   if (dashProtectGroup) dashProtectGroup.style.display = format === 'pdf-protect' ? 'flex' : 'none';
   if (dashCompressGroup) dashCompressGroup.style.display = format === 'pdf-compress' ? 'flex' : 'none';
+  // Insert pages: the count or the other PDF, as chosen, and the page number unless at the end.
+  const insertShows = {
+    'dash-insert-group': format === 'pdf-insert',
+    'dash-insert-blank-group': !INSERT_FROM_PDF(),
+    'dash-insert-pdf-group': INSERT_FROM_PDF(),
+    'dash-insert-page-group': field('dash-insert-place')?.value !== 'end',
+  };
+  for (const [id, show] of Object.entries(insertShows)) {
+    if (field(id)) field(id).style.display = show ? 'flex' : 'none';
+  }
+  showInsertProblem('');
   // Compress PDF has its own choice of picture quality; the image slider would do nothing there.
   const qualityGroup = field('dash-quality-group');
   if (qualityGroup) qualityGroup.style.display = format === 'pdf-compress' ? 'none' : '';
@@ -122,6 +148,8 @@ function showFormatFields() {
 }
 dashTargetFormat?.addEventListener('change', showFormatFields);
 field('dash-stamp-position')?.addEventListener('change', showFormatFields);
+for (const id of ['dash-insert-what', 'dash-insert-place']) field(id)?.addEventListener('change', showFormatFields);
+field('dash-insert-file')?.addEventListener('change', () => showInsertProblem(''));
 field('dash-protect-show')?.addEventListener('change', (e) => {
   for (const id of ['dash-protect-password', 'dash-protect-confirm']) field(id).type = e.target.checked ? 'text' : 'password';
 });
@@ -684,6 +712,15 @@ async function executeDashBatchConversion() {
     }
     protectPasswordInUse = PROTECT_PASSWORD();
   }
+  // Pages of another PDF need that PDF: said once, by its field, before any file is touched.
+  if (targetFormat === 'pdf-insert' && INSERT_FROM_PDF()) {
+    const other = field('dash-insert-file')?.files?.[0];
+    if (!other || !isPdfFile(other)) {
+      showInsertProblem(t('insertNeedsPdf'));
+      field('dash-insert-file')?.focus();
+      return;
+    }
+  }
 
   dashConvertBtn.disabled = true;
   dashConvertBtn.textContent = t('batchConverting');
@@ -812,6 +849,12 @@ async function processDashSingleFile(file, targetFormat, quality) {
     if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
     const { protectPdf } = await loadPdfTools();
     return protectPdf(file, protectPasswordInUse);
+  }
+
+  if (targetFormat === 'pdf-insert') {
+    if (!isPdfFile(file)) throw new Error(t('statusSkippedNotPdf'));
+    const { insertPdfPages } = await loadPdfTools();
+    return insertPdfPages(file, { ...INSERT_OPTIONS(), ...PDF_OPTIONS() });
   }
 
   if (targetFormat === 'pdf-compress') {

@@ -161,6 +161,9 @@
   "formatPdfReorder": {
     "message": "Reorder PDF pages (.pdf)"
   },
+  "formatPdfInsert": {
+    "message": "Insert pages into a PDF (.pdf)"
+  },
   "formatOcrPdf": {
     "message": "Searchable PDF with OCR, from scans or images (.pdf)"
   },
@@ -756,5 +759,44 @@
         "content": "$2"
       }
     }
+  },
+  "insertWhatLabel": {
+    "message": "What to insert:"
+  },
+  "insertWhatBlank": {
+    "message": "Blank pages"
+  },
+  "insertWhatPdf": {
+    "message": "Pages of another PDF"
+  },
+  "insertCountLabel": {
+    "message": "How many blank pages:"
+  },
+  "insertFileLabel": {
+    "message": "The PDF to take the pages from:"
+  },
+  "insertPagesLabel": {
+    "message": "Its pages to insert (empty = every page):"
+  },
+  "insertPlaceLabel": {
+    "message": "Where they go:"
+  },
+  "insertBefore": {
+    "message": "Before a page"
+  },
+  "insertAfter": {
+    "message": "After a page"
+  },
+  "insertEnd": {
+    "message": "At the end"
+  },
+  "insertPageLabel": {
+    "message": "That page's number:"
+  },
+  "insertHint": {
+    "message": "Blank pages take the size of the page next to them and are turned the same way. Every PDF in the list gets the same new pages; a locked PDF, the other one included, opens with the PDF password below."
+  },
+  "insertNeedsPdf": {
+    "message": "Choose the PDF to take the pages from first."
   }
 }

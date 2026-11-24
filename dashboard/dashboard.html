@@ -56,6 +56,7 @@
                 <option value="pdf-rotate" data-i18n="formatPdfRotate">Rotate PDF pages (.pdf)</option>
                 <option value="pdf-delete" data-i18n="formatPdfDelete">Delete PDF pages (.pdf)</option>
                 <option value="pdf-reorder" data-i18n="formatPdfReorder">Reorder PDF pages (.pdf)</option>
+                <option value="pdf-insert" data-i18n="formatPdfInsert">Insert pages into a PDF (.pdf)</option>
                 <option value="pdf-number" data-i18n="formatPdfNumber">Add page numbers to a PDF (.pdf)</option>
                 <option value="pdf-stamp" data-i18n="formatPdfStamp">Stamp a PDF with a text or a picture (.pdf)</option>
                 <option value="pdf-protect" data-i18n="formatPdfProtect">Protect a PDF with a password (.pdf)</option>
@@ -83,6 +84,35 @@
                 <option value="180" data-i18n="rotate180">180°</option>
                 <option value="270" data-i18n="rotate270">90° counter-clockwise</option>
               </select>
+            </div>
+            <div class="form-group" id="dash-insert-group" style="display: none;">
+              <label for="dash-insert-what" data-i18n="insertWhatLabel">What to insert:</label>
+              <select id="dash-insert-what" class="dash-select">
+                <option value="blank" data-i18n="insertWhatBlank">Blank pages</option>
+                <option value="pdf" data-i18n="insertWhatPdf">Pages of another PDF</option>
+              </select>
+              <div class="form-group" id="dash-insert-blank-group">
+                <label for="dash-insert-count" data-i18n="insertCountLabel">How many blank pages:</label>
+                <input type="number" id="dash-insert-count" class="dash-input" value="1" min="1" max="1000" step="1">
+              </div>
+              <div class="form-group" id="dash-insert-pdf-group" style="display: none;">
+                <label for="dash-insert-file" data-i18n="insertFileLabel">The PDF to take the pages from:</label>
+                <input type="file" id="dash-insert-file" class="dash-input" accept=".pdf,application/pdf">
+                <label for="dash-insert-pages" data-i18n="insertPagesLabel">Its pages to insert (empty = every page):</label>
+                <input type="text" id="dash-insert-pages" class="dash-input" placeholder="e.g. 1-3, 5, 8-" data-i18n-placeholder="splitRangesPlaceholder">
+              </div>
+              <label for="dash-insert-place" data-i18n="insertPlaceLabel">Where they go:</label>
+              <select id="dash-insert-place" class="dash-select">
+                <option value="before" data-i18n="insertBefore">Before a page</option>
+                <option value="after" data-i18n="insertAfter">After a page</option>
+                <option value="end" data-i18n="insertEnd">At the end</option>
+              </select>
+              <div class="form-group" id="dash-insert-page-group">
+                <label for="dash-insert-page" data-i18n="insertPageLabel">That page's number:</label>
+                <input type="number" id="dash-insert-page" class="dash-input" value="1" min="1" step="1">
+              </div>
+              <p id="dash-insert-error" role="alert" style="font-size: 13px; color: #ef4444; margin: 0; display: none;"></p>
+              <p style="font-size: 13px; color: var(--text-secondary); margin: 0;" data-i18n="insertHint">Blank pages take the size of the page next to them and are turned the same way. Every PDF in the list gets the same new pages; a locked PDF, the other one included, opens with the PDF password below.</p>
             </div>
             <div class="form-group" id="dash-number-group" style="display: none;">
               <label for="dash-number-position" data-i18n="numberPositionLabel">Where the numbers go:</label>

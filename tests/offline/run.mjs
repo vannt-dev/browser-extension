@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress,insert]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress', 'insert'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -1003,6 +1003,113 @@ try {
       state.text === 'Already small: kept' && /plain\.pdf .* could not be made smaller/.test(state.why ?? '') && !file,
       JSON.stringify(state)
     );
+  });
+
+  // ---- pdf-lib putting pages in, read back with pdf.js: which page is where, and how wide
+  await group('insert', '12. Insert pages into a PDF (dashboard)', async () => {
+    const shown = await dash.evaluate(`(() => {
+      const select = document.getElementById("dash-target-format");
+      select.value = "pdf-insert";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      const display = (id) => getComputedStyle(document.getElementById(id)).display;
+      const what = document.getElementById("dash-insert-what");
+      const place = document.getElementById("dash-insert-place");
+      const before = [display("dash-insert-group"), display("dash-insert-blank-group"), display("dash-insert-pdf-group")];
+      what.value = "pdf";
+      what.dispatchEvent(new Event("change", { bubbles: true }));
+      place.value = "end";
+      place.dispatchEvent(new Event("change", { bubbles: true }));
+      const after = [display("dash-insert-blank-group"), display("dash-insert-pdf-group"), display("dash-insert-page-group")];
+      what.value = "blank";
+      what.dispatchEvent(new Event("change", { bubbles: true }));
+      place.value = "before";
+      place.dispatchEvent(new Event("change", { bubbles: true }));
+      return [...before, ...after].join(",");
+    })()`);
+    check(
+      'the insert fields show for "Insert pages", the other PDF and the page number on demand',
+      shown === 'flex,flex,none,none,flex,none',
+      shown
+    );
+
+    // Each page as its heading (or "blank") and its width, as pdf.js reads them.
+    async function pagesOf(file) {
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes), verbosity: 0 }).promise;
+        const pages = [];
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const page = await pdf.getPage(n);
+          const items = (await page.getTextContent()).items.map((item) => item.str.trim());
+          const heading = items.find((s) => TEXT_DOC.pages.includes(s) || /^Width \d+$/.test(s));
+          pages.push(`${heading ?? (items.some(Boolean) ? '?' : 'blank')}@${Math.round(page.getViewport({ scale: 1 }).width)}`);
+        }
+        return pages;
+      } catch (error) {
+        return String(error.message);
+      }
+    }
+    const original = await pagesOf({ bytes: textDoc });
+    const width = original[0]?.split('@')[1];
+    const [alpha, bravo, charlie] = TEXT_DOC.pages.map((heading) => `${heading}@${width}`);
+
+    let { state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-insert', {
+      fields: { 'dash-insert-what': 'blank', 'dash-insert-count': '2', 'dash-insert-place': 'after', 'dash-insert-page': '1' },
+    });
+    check('two blank pages after page 1: ends as done', state.text === 'Done', JSON.stringify(state));
+    let pages = file ? await pagesOf(file) : 'no file';
+    check(
+      'document_pages_inserted.pdf: Alpha, two blank pages its size, Bravo, Charlie',
+      file?.name === 'document_pages_inserted.pdf' &&
+        JSON.stringify(pages) === JSON.stringify([alpha, `blank@${width}`, `blank@${width}`, bravo, charlie]),
+      `${describe(file)}: ${JSON.stringify(pages)} (original ${JSON.stringify(original)})`
+    );
+
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-insert', {
+      seconds: 10,
+      fields: { 'dash-insert-what': 'pdf' },
+      expectFile: false,
+    }));
+    const problem = await dash.evaluate(`(() => {
+      const error = document.getElementById("dash-insert-error");
+      return getComputedStyle(error).display === "none" ? "" : error.textContent;
+    })()`);
+    check(
+      'pages of another PDF with none chosen: says so by the field, writes no file',
+      /Choose the PDF/.test(problem) && !file,
+      `${JSON.stringify(problem)} ${describe(file)}`
+    );
+
+    const locked = await lockedPdf('kit-pass');
+    await putFile(dash, 'dash-insert-file', 'locked.pdf', 'application/pdf', locked);
+    ({ state, file } = await dashConvert('document.pdf', 'application/pdf', textDoc, 'pdf-insert', {
+      seconds: 30,
+      fields: { 'dash-insert-what': 'pdf', 'dash-insert-place': 'end' },
+      expectFile: false,
+    }));
+    check(
+      'a locked other PDF and no password: says it needs one, names it, writes no file',
+      state.text === 'Needs a password' && /locked\.pdf/.test(state.why ?? '') && !file,
+      JSON.stringify(state)
+    );
+
+    ({ state, file } = await dashConvert('report.pdf', 'application/pdf', textDoc, 'pdf-insert', {
+      password: 'kit-pass',
+      fields: { 'dash-insert-what': 'pdf', 'dash-insert-pages': '3, 1', 'dash-insert-place': 'after', 'dash-insert-page': '2' },
+    }));
+    check('report.pdf, pages 3 and 1 of the locked PDF after page 2: ends as done', state.text === 'Done', JSON.stringify(state));
+    pages = file ? await pagesOf(file) : 'no file';
+    check(
+      'Alpha, Bravo, then the other PDF\'s pages 3 and 1 at their own size, then Charlie; no password',
+      file?.name === 'report_pages_inserted.pdf' &&
+        !file.bytes.includes('/Encrypt') &&
+        JSON.stringify(pages) === JSON.stringify([alpha, bravo, 'Width 500@500', 'Width 300@300', charlie]),
+      `${describe(file)}: ${JSON.stringify(pages)}`
+    );
+    await dash.evaluate(`(() => {
+      document.getElementById("dash-insert-file").value = "";
+      document.getElementById("dash-insert-what").value = "blank";
+      document.getElementById("dash-insert-pages").value = "";
+    })()`);
   });
 
   // ---- where everything went
