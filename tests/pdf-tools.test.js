@@ -3,6 +3,7 @@ import { PDFDocument, degrees } from '@cantoo/pdf-lib';
 import { jsPDF } from '../lib/jspdf.js';
 import {
   deletePdfPages,
+  insertPdfPages,
   mergePdfs,
   parsePageRanges,
   reorderPdfPages,
@@ -37,6 +38,26 @@ async function isEncrypted(blob) {
 async function pageWidths(blob) {
   const doc = await PDFDocument.load(await blob.arrayBuffer());
   return doc.getPages().map((page) => page.getWidth());
+}
+
+/**
+ * A PDF whose pages each carry a mark, so a blank page put in next to one can be told apart from
+ * it even when it has the same size. `sizes` are widths, or [width, height] pairs.
+ */
+async function markedPdfFile(name, sizes, rotations = []) {
+  const doc = await PDFDocument.create();
+  sizes.forEach((size, index) => {
+    const page = doc.addPage(Array.isArray(size) ? size : [size, 200]);
+    page.setRotation(degrees(rotations[index] ?? 0));
+    page.drawRectangle({ x: 10, y: 10, width: 20, height: 20 });
+  });
+  return new File([await doc.save()], name, { type: 'application/pdf' });
+}
+
+/** Each page as `width`, or `blank:width` for a page with nothing drawn on it. */
+async function pageMarks(blob) {
+  const doc = await PDFDocument.load(await blob.arrayBuffer());
+  return doc.getPages().map((page) => `${page.node.Contents() ? '' : 'blank:'}${page.getWidth()}`);
 }
 
 async function pageRotations(blob) {
@@ -183,6 +204,90 @@ describe('reorderPdfPages', () => {
   it('refuses a page named twice', async () => {
     const file = await pdfFile('three.pdf', [101, 102, 103]);
     await expect(reorderPdfPages(file, '2, 1-3')).rejects.toThrow('Page 2 is named more than once.');
+  });
+});
+
+describe('insertPdfPages', () => {
+  it('puts blank pages before, after or at the end, the size of the page next to them', async () => {
+    const file = await markedPdfFile('letter.pdf', [101, [102, 300], 103]);
+
+    const before = await insertPdfPages(file, { place: 'before', page: 2, blankPages: 2 });
+    expect(before.filename).toBe('letter_pages_inserted.pdf');
+    expect(before.pageCount).toBe(5);
+    expect(before.blob.type).toBe('application/pdf');
+    expect(await pageMarks(before.blob)).toEqual(['101', 'blank:102', 'blank:102', '102', '103']);
+    const saved = await PDFDocument.load(await before.blob.arrayBuffer());
+    expect(saved.getPages().map((page) => page.getHeight())).toEqual([200, 300, 300, 300, 200]);
+
+    const after = await insertPdfPages(file, { place: 'after', page: 2 });
+    expect(await pageMarks(after.blob)).toEqual(['101', '102', 'blank:102', '103']);
+
+    const end = await insertPdfPages(file, { place: 'end', blankPages: 1 });
+    expect(await pageMarks(end.blob)).toEqual(['101', '102', '103', 'blank:103']);
+
+    const first = await insertPdfPages(file, { place: 'before', page: 1 });
+    expect(await pageMarks(first.blob)).toEqual(['blank:101', '101', '102', '103']);
+  });
+
+  it('turns a blank page the way its neighbour is turned, so it shows the same way round', async () => {
+    const file = await markedPdfFile('scan.pdf', [101, 102], [0, 90]);
+    const result = await insertPdfPages(file, { place: 'after', page: 2 });
+    expect(await pageMarks(result.blob)).toEqual(['101', '102', 'blank:102']);
+    expect(await pageRotations(result.blob)).toEqual([0, 90, 90]);
+  });
+
+  it('puts in every page of a second PDF, or the pages named, in the order written', async () => {
+    const file = await markedPdfFile('report.pdf', [101, 102, 103]);
+    const extra = await markedPdfFile('appendix.pdf', [201, 202, 203], [0, 180, 0]);
+
+    const all = await insertPdfPages(file, { place: 'after', page: 1, from: extra });
+    expect(all.filename).toBe('report_pages_inserted.pdf');
+    expect(all.pageCount).toBe(6);
+    expect(await pageMarks(all.blob)).toEqual(['101', '201', '202', '203', '102', '103']);
+    expect(await pageRotations(all.blob)).toEqual([0, 0, 180, 0, 0, 0]);
+
+    const some = await insertPdfPages(file, { place: 'end', from: extra, fromPages: '3, 1' });
+    expect(await pageMarks(some.blob)).toEqual(['101', '102', '103', '203', '201']);
+
+    const front = await insertPdfPages(file, { place: 'before', page: 1, from: extra, fromPages: '2-' });
+    expect(await pageMarks(front.blob)).toEqual(['202', '203', '101', '102', '103']);
+  });
+
+  it('refuses a place, a page or a count that does not fit the document', async () => {
+    const file = await markedPdfFile('short.pdf', [101, 102]);
+    const extra = await markedPdfFile('extra.pdf', [201]);
+    await expect(insertPdfPages(file, { place: 'middle' })).rejects.toThrow('before a page, after a page or at the end');
+    await expect(insertPdfPages(file, { place: 'before', page: 3 })).rejects.toThrow('short.pdf has pages 1 to 2');
+    await expect(insertPdfPages(file, { place: 'after', page: 0 })).rejects.toThrow('short.pdf has pages 1 to 2');
+    await expect(insertPdfPages(file, { place: 'after', page: 1.5 })).rejects.toThrow('short.pdf has pages 1 to 2');
+    await expect(insertPdfPages(file, { place: 'end', blankPages: 0 })).rejects.toThrow('1 to 1000 blank pages');
+    await expect(insertPdfPages(file, { place: 'end', blankPages: 1001 })).rejects.toThrow('1 to 1000 blank pages');
+    await expect(insertPdfPages(file, { place: 'end', from: extra, fromPages: '2' })).rejects.toThrow(
+      'goes past the last page (1)'
+    );
+    const broken = new File(['this is not a pdf'], 'notes.pdf', { type: 'application/pdf' });
+    await expect(insertPdfPages(file, { from: broken })).rejects.toThrow(/^Cannot open notes\.pdf: /);
+  });
+
+  it('opens a locked PDF or a locked second PDF with the password, and saves no password', async () => {
+    const locked = await lockedPdfFile('secret.pdf', [101, 102], { user: 'abc' });
+    const lockedExtra = await lockedPdfFile('extra.pdf', [201], { user: 'abc' });
+
+    const blank = await insertPdfPages(locked, { place: 'before', page: 2, password: 'abc' });
+    expect(await isEncrypted(blank.blob)).toBe(false);
+    expect(await pageWidths(blank.blob)).toEqual([101, 102, 102]);
+
+    const both = await insertPdfPages(locked, { place: 'end', from: lockedExtra, password: 'abc' });
+    expect(await isEncrypted(both.blob)).toBe(false);
+    expect(await pageWidths(both.blob)).toEqual([101, 102, 201]);
+
+    const plain = await markedPdfFile('plain.pdf', [101]);
+    const error = await insertPdfPages(plain, { from: lockedExtra }).catch((caught) => caught);
+    expect(error.code).toBe(PDF_PASSWORD_NEEDED);
+    expect(error.fileName).toBe('extra.pdf');
+    const wrong = await insertPdfPages(locked, { from: lockedExtra, password: 'nope' }).catch((caught) => caught);
+    expect(wrong.code).toBe(PDF_PASSWORD_WRONG);
+    expect(wrong.fileName).toBe('secret.pdf');
   });
 });
 
