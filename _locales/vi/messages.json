@@ -798,5 +798,174 @@
   },
   "insertNeedsPdf": {
     "message": "Hãy chọn PDF để lấy trang trước."
+  },
+  "menuSign": {
+    "message": "✍️ Ký PDF"
+  },
+  "signTitle": {
+    "message": "✍️ Ký PDF"
+  },
+  "signIntro": {
+    "message": "Vẽ chữ ký hoặc chọn ảnh chữ ký, đặt lên các trang rồi lưu PDF đã ký. Mọi việc diễn ra ngay trên máy của bạn."
+  },
+  "signOpen": {
+    "message": "Mở"
+  },
+  "signPrev": {
+    "message": "◀ Trang trước"
+  },
+  "signNext": {
+    "message": "Trang sau ▶"
+  },
+  "signPlaceholder": {
+    "message": "Chọn một file PDF, rồi bấm vào trang để đặt chữ ký vào đó"
+  },
+  "signPlaceHint": {
+    "message": "Bấm vào trang để đặt chữ ký. Kéo chữ ký để di chuyển, kéo góc của nó để phóng to hoặc thu nhỏ, bấm ✕ để gỡ. Chuyển sang trang khác để ký thêm."
+  },
+  "signSignatureTitle": {
+    "message": "Chữ ký của bạn"
+  },
+  "signSourceLabel": {
+    "message": "Lấy chữ ký từ:"
+  },
+  "signSourceDraw": {
+    "message": "Vẽ tại đây"
+  },
+  "signSourcePicture": {
+    "message": "Ảnh chữ ký (PNG hoặc JPG)"
+  },
+  "signInkLabel": {
+    "message": "Màu mực:"
+  },
+  "signInkBlack": {
+    "message": "Đen"
+  },
+  "signInkBlue": {
+    "message": "Xanh"
+  },
+  "signStrokeLabel": {
+    "message": "Nét:"
+  },
+  "signUndo": {
+    "message": "↶ Hoàn tác"
+  },
+  "signClear": {
+    "message": "Xoá hết"
+  },
+  "signPictureHint": {
+    "message": "Ảnh PNG có nền trong suốt được dùng nguyên; với ảnh chụp hoặc scan trên giấy, phần trắng quanh nét mực được bỏ đi."
+  },
+  "signNoSignature": {
+    "message": "Chưa có chữ ký"
+  },
+  "signRemember": {
+    "message": "Nhớ chữ ký này trên máy tính này"
+  },
+  "signForget": {
+    "message": "Quên chữ ký đã lưu"
+  },
+  "signPlacedTitle": {
+    "message": "Vị trí chữ ký"
+  },
+  "signEveryPage": {
+    "message": "Cùng chỗ trên mọi trang"
+  },
+  "signRemoveAll": {
+    "message": "Gỡ hết"
+  },
+  "runSign": {
+    "message": "✍️ Ký và lưu PDF"
+  },
+  "signPictureEmpty": {
+    "message": "Không thấy chữ ký trong ảnh đó: ảnh trống hoặc toàn màu trắng."
+  },
+  "signPictureError": {
+    "message": "❌ Không đọc được ảnh: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "signPageOf": {
+    "message": "Trang $PAGE$ / $TOTAL$",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "signOpenError": {
+    "message": "❌ Không mở được PDF: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "signNotPdf": {
+    "message": "$NAME$ không phải file PDF.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "signPasswordNeeded": {
+    "message": "$NAME$ có mật khẩu: nhập mật khẩu vào ô Mật khẩu PDF rồi bấm Mở.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "signResize": {
+    "message": "Kéo để phóng to hoặc thu nhỏ"
+  },
+  "signRemoveOne": {
+    "message": "Gỡ chữ ký này"
+  },
+  "signPlacedOn": {
+    "message": "Trên trang $PAGES$ (tổng cộng $COUNT$)",
+    "placeholders": {
+      "pages": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "signPlacedNone": {
+    "message": "Chưa đặt trên trang nào: bấm vào trang để đặt chữ ký."
+  },
+  "signNeedSignature": {
+    "message": "Hãy vẽ hoặc chọn chữ ký trước."
+  },
+  "signWorking": {
+    "message": "Đang ký…"
+  },
+  "signDone": {
+    "message": "✅ Đã lưu $NAME$, đã ký trên $PAGES$ trang.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "pages": {
+        "content": "$2"
+      }
+    }
+  },
+  "signError": {
+    "message": "❌ Không ký được PDF: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   }
 }

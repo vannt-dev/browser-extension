@@ -18,6 +18,7 @@
         <button class="menu-item active" data-tab="converter">📂 Batch File Converter</button>
         <button class="menu-item" data-tab="ai-studio" data-i18n="menuAiStudio">🔎 OCR &amp; Background Removal</button>
         <button class="menu-item" data-tab="crop" data-i18n="menuCrop">📐 Crop &amp; Flip Images</button>
+        <button class="menu-item" data-tab="sign" data-i18n="menuSign">✍️ Sign a PDF</button>
         <button class="menu-item" data-tab="devtools">💻 Developer Tools</button>
         <button class="menu-item" data-tab="security">🛡️ Watermark &amp; Security</button>
         <button class="menu-item" data-tab="settings">⚙️ Settings &amp; Auto-Convert</button>
@@ -308,6 +309,78 @@
             <label class="crop-check"><input type="checkbox" id="flip-vertical"> <span data-i18n="flipVertical">Top to bottom (upside down)</span></label>
             <button id="run-crop-btn" class="dash-btn primary" disabled data-i18n="runCrop">📐 Crop, flip and save</button>
             <div id="crop-status" class="crop-status"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sign a PDF -->
+      <section id="tab-sign" class="tab-page">
+        <header class="page-header">
+          <h1 data-i18n="signTitle">✍️ Sign a PDF</h1>
+          <p data-i18n="signIntro">Draw your signature or choose a picture of it, put it on the pages and save the signed PDF. Everything happens on your device.</p>
+        </header>
+        <div class="workspace-grid crop-grid">
+          <div class="config-card">
+            <input type="file" id="sign-file-input" accept=".pdf,application/pdf" class="dash-input">
+            <div class="form-group" id="sign-password-group" hidden>
+              <label for="sign-password" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>
+              <div class="sign-row">
+                <input type="password" id="sign-password" class="dash-input" autocomplete="off">
+                <button id="sign-open-btn" class="dash-btn secondary" data-i18n="signOpen">Open</button>
+              </div>
+            </div>
+            <div id="sign-pager" class="sign-row sign-pager" hidden>
+              <button id="sign-prev-btn" class="dash-btn secondary" data-i18n="signPrev">◀ Previous page</button>
+              <span id="sign-page-label" class="crop-size"></span>
+              <button id="sign-next-btn" class="dash-btn secondary" data-i18n="signNext">Next page ▶</button>
+            </div>
+            <div id="sign-stage" class="crop-stage">
+              <div id="sign-frame" class="sign-frame" hidden></div>
+              <span id="sign-placeholder" class="crop-placeholder" data-i18n="signPlaceholder">Choose a PDF, then click on a page to put your signature there</span>
+            </div>
+            <p class="sign-hint" data-i18n="signPlaceHint">Click on the page to put the signature there. Drag it to move it, drag its corner to make it bigger or smaller, and ✕ takes it off. Go to other pages to sign them too.</p>
+          </div>
+          <div class="config-card">
+            <h3 data-i18n="signSignatureTitle">Your signature</h3>
+            <label for="sign-source" data-i18n="signSourceLabel">Signature from:</label>
+            <select id="sign-source" class="dash-select">
+              <option value="draw" data-i18n="signSourceDraw">Drawing it here</option>
+              <option value="picture" data-i18n="signSourcePicture">A picture of it (PNG or JPG)</option>
+            </select>
+            <div id="sign-draw-group" class="form-group">
+              <canvas id="sign-pad" class="sign-pad" width="1200" height="400"></canvas>
+              <div class="sign-row">
+                <label for="sign-ink" data-i18n="signInkLabel">Ink:</label>
+                <select id="sign-ink" class="dash-select">
+                  <option value="#111111" data-i18n="signInkBlack">Black</option>
+                  <option value="#1a3fb5" data-i18n="signInkBlue">Blue</option>
+                </select>
+                <label for="sign-stroke"><span data-i18n="signStrokeLabel">Line:</span> <span id="sign-stroke-val">3</span></label>
+                <input type="range" id="sign-stroke" min="1" max="8" value="3" step="1" class="dash-range">
+              </div>
+              <div class="sign-row">
+                <button id="sign-undo-btn" class="dash-btn secondary" disabled data-i18n="signUndo">↶ Undo</button>
+                <button id="sign-clear-btn" class="dash-btn secondary" disabled data-i18n="signClear">Clear</button>
+              </div>
+            </div>
+            <div id="sign-picture-group" class="form-group" hidden>
+              <input type="file" id="sign-picture-input" accept="image/png,image/jpeg" class="dash-input">
+              <p class="sign-hint" data-i18n="signPictureHint">A PNG with a see-through background is used as it is; on a picture of paper, the white around the ink is taken away.</p>
+            </div>
+            <div class="sign-preview">
+              <img id="sign-preview" alt="" hidden>
+              <span id="sign-preview-empty" class="crop-placeholder" data-i18n="signNoSignature">No signature yet</span>
+            </div>
+            <label class="crop-check"><input type="checkbox" id="sign-remember"> <span data-i18n="signRemember">Remember this signature on this computer</span></label>
+            <button id="sign-forget-btn" class="dash-btn secondary" hidden data-i18n="signForget">Forget the saved signature</button>
+            <h3 data-i18n="signPlacedTitle">Where it goes</h3>
+            <span id="sign-placed" class="crop-size"></span>
+            <div class="sign-row">
+              <button id="sign-every-page-btn" class="dash-btn secondary" disabled data-i18n="signEveryPage">Same place on every page</button>
+              <button id="sign-remove-all-btn" class="dash-btn secondary" disabled data-i18n="signRemoveAll">Take all off</button>
+            </div>
+            <button id="run-sign-btn" class="dash-btn primary" disabled data-i18n="runSign">✍️ Sign and save the PDF</button>
+            <div id="sign-status" class="crop-status" role="status"></div>
           </div>
         </div>
       </section>

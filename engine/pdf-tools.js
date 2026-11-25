@@ -13,6 +13,8 @@ import {
 } from '@cantoo/pdf-lib';
 import { PDF_PASSWORD_NEEDED, PDF_PASSWORD_WRONG, pdfAlreadyProtectedError, pdfPasswordError } from './pdf-password.js';
 import { stampTextError } from './stamp-text.js';
+import { fromView } from './page-view.js';
+import { checkPlacement, placementToPdf } from './signature.js';
 
 /**
  * Merging, splitting, rotating, deleting, reordering and inserting PDF pages, page for page and
@@ -287,24 +289,6 @@ const NUMBER_MARGIN = 24;
 const NUMBER_SIZE = 10;
 
 /**
- * Places a point given as the reader sees the page (origin at the bottom left of the page as
- * shown, after its /Rotate) in the page's own coordinates, with the turn text needs to read
- * upright there.
- */
-function fromView(box, angle, x, y) {
-  switch (angle) {
-    case 90:
-      return { x: box.x + box.width - y, y: box.y + x, rotate: 90 };
-    case 180:
-      return { x: box.x + box.width - x, y: box.y + box.height - y, rotate: 180 };
-    case 270:
-      return { x: box.x + y, y: box.y + box.height - x, rotate: 270 };
-    default:
-      return { x: box.x + x, y: box.y + y, rotate: 0 };
-  }
-}
-
-/**
  * Writes a number on pages of a PDF. The rest of each page is left as it is.
  * @param {File} file
  * @param {object} [options]
@@ -554,6 +538,44 @@ export async function stampPdf(
     blob: toBlob(await doc.save()),
     filename: `${baseName(file.name)}_stamped.pdf`,
     pageCount: doc.getPageCount(),
+  };
+}
+
+/**
+ * Signs a PDF: puts a signature, a PNG that is see-through around the ink, on pages of it, each
+ * time where and as wide as a placement says. The signature lands where the reader sees the page
+ * and stands upright, on turned and cropped pages too; the rest of each page is left as it is.
+ * @param {File} file
+ * @param {object} options
+ * @param {File|Blob|ArrayBuffer|Uint8Array} options.image The signature, as a PNG
+ * @param {{ page: number, x: number, y: number, width: number }[]} options.placements Where it
+ *   goes: the page number, and the top-left corner and width in shares (0 to 1) of the page as
+ *   seen, from its top left; one page can have several
+ * @param {string} [options.password] The password, if the PDF is locked with one
+ * @returns {Promise<{ blob: Blob, filename: string, pageCount: number }>}
+ */
+export async function signPdf(file, { image = null, placements = [], password = '' } = {}) {
+  if (!image) throw new Error('Draw or choose a signature first.');
+  if (!Array.isArray(placements) || !placements.length) throw new Error('Put the signature on a page first.');
+  const bytes = await pictureBytes(image);
+  if (!(bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47)) {
+    throw new Error('The signature has to be a PNG picture.');
+  }
+  const doc = await load(file, password);
+  const pageCount = doc.getPageCount();
+  for (const placement of placements) checkPlacement(placement, pageCount, file.name);
+  // Embedded once, however many pages it goes on.
+  const signature = await doc.embedPng(bytes);
+  const aspect = signature.height / signature.width;
+  for (const placement of placements) {
+    const page = doc.getPage(Number(placement.page) - 1);
+    const at = placementToPdf(placement, { box: page.getCropBox(), angle: page.getRotation().angle }, aspect);
+    page.drawImage(signature, { x: at.x, y: at.y, width: at.width, height: at.height, rotate: degrees(at.rotate) });
+  }
+  return {
+    blob: toBlob(await doc.save()),
+    filename: `${baseName(file.name)}_signed.pdf`,
+    pageCount,
   };
 }
 

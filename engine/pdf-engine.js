@@ -81,6 +81,38 @@ export class PdfEngine {
   }
 
   /**
+   * Opens a PDF to show its pages one at a time, as Sign PDF does: each page is drawn on its own
+   * new canvas, no larger than asked, the way the reader sees it (its turn and crop applied).
+   * @param {File} file
+   * @param {{ password?: string }} [options] The password, if the PDF is locked with one
+   * @returns {Promise<{ pageCount: number, render: Function, size: Function, close: Function }>}
+   *   `render(n, { maxWidth, maxHeight })` resolves to `{ canvas, width, height }`, the size in
+   *   points as seen; `size(n)` to that size alone, without drawing
+   */
+  static async openPages(file, { password = '' } = {}) {
+    const pdf = await openPdf(file, password);
+    return {
+      pageCount: pdf.numPages,
+      async render(pageNumber, { maxWidth = 900, maxHeight = 1200 } = {}) {
+        const page = await pdf.getPage(pageNumber);
+        const { width, height } = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: Math.min(maxWidth / width, maxHeight / height) });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(viewport.width));
+        canvas.height = Math.max(1, Math.round(viewport.height));
+        // 'print', as for pictures of pages: drawn without waiting for animation frames.
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport, intent: 'print' }).promise;
+        return { canvas, width, height };
+      },
+      async size(pageNumber) {
+        const { width, height } = (await pdf.getPage(pageNumber)).getViewport({ scale: 1 });
+        return { width, height };
+      },
+      close: () => pdf.destroy(),
+    };
+  }
+
+  /**
    * Extract all plain text from a PDF file
    * @param {{ password?: string }} [options] The password, if the PDF is locked with one
    */

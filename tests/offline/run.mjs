@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress,insert]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress,insert,sign]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress', 'insert'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress', 'insert', 'sign'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -1110,6 +1110,221 @@ try {
       document.getElementById("dash-insert-what").value = "blank";
       document.getElementById("dash-insert-pages").value = "";
     })()`);
+  });
+
+  await group('sign', '13. Sign a PDF (dashboard)', async () => {
+    // Three pages: upright, turned a quarter, upright. The signature goes on the first two.
+    const doc = await PDFDocument.create();
+    doc.addPage([600, 800]);
+    doc.addPage([600, 800]).setRotation(degrees(90));
+    doc.addPage([600, 800]);
+    const contract = Buffer.from(await doc.save());
+
+    const rectOf = async (selector) =>
+      JSON.parse(
+        await dash.evaluate(`(() => {
+          const element = document.querySelector(${JSON.stringify(selector)});
+          element.scrollIntoView({ block: "center" });
+          return JSON.stringify(element.getBoundingClientRect());
+        })()`)
+      );
+    const mouse = (type, { x, y }) =>
+      browser.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 }, dash.sessionId);
+    const drag = async (points) => {
+      await mouse('mouseMoved', points[0]);
+      await mouse('mousePressed', points[0]);
+      for (const point of points.slice(1)) await mouse('mouseMoved', point);
+      await mouse('mouseReleased', points.at(-1));
+    };
+    /** The signature boxes on the page shown, as shares of the page (from its top left). */
+    const boxesShown = async () =>
+      JSON.parse(
+        await dash.evaluate(`(() => {
+          const frame = document.getElementById("sign-frame").getBoundingClientRect();
+          return JSON.stringify([...document.querySelectorAll(".sign-box")].map((box) => {
+            const r = box.getBoundingClientRect();
+            return { x: (r.left - frame.left) / frame.width, y: (r.top - frame.top) / frame.height,
+                     width: r.width / frame.width, height: r.height / frame.height };
+          }));
+        })()`)
+      );
+    const centre = (box) => [box.x + box.width / 2, box.y + box.height / 2];
+    const close = (a, b, within = 0.01) => a.every((value, i) => Math.abs(value - b[i]) <= within);
+    const round = (values) => values.map((value) => value.toFixed(3)).join(', ');
+
+    await dash.evaluate(`document.querySelector('.menu-item[data-tab="sign"]').click()`);
+    await putFile(dash, 'sign-file-input', 'contract.pdf', 'application/pdf', contract);
+    const pageShown = (number) =>
+      poll(
+        dash,
+        `{ page: document.getElementById("sign-frame").dataset.page,
+           label: document.getElementById("sign-page-label").textContent,
+           shown: !document.getElementById("sign-frame").hidden }`,
+        (s) => s.shown && s.page === String(number),
+        20
+      );
+    let state = await pageShown(1);
+    check('the PDF opens on its first page, numbered 1 of 3', !state.timedOut && state.label === 'Page 1 of 3', JSON.stringify(state));
+
+    // A zigzag drawn on the pad with the real mouse.
+    const pad = await rectOf('#sign-pad');
+    const onPad = (x, y) => ({ x: pad.left + x * pad.width, y: pad.top + y * pad.height });
+    await drag([onPad(0.15, 0.6), onPad(0.3, 0.3), onPad(0.45, 0.7), onPad(0.6, 0.3), onPad(0.85, 0.55)]);
+    state = await poll(
+      dash,
+      `{ src: (document.getElementById("sign-preview").getAttribute("src") || "").slice(0, 22),
+         wide: document.getElementById("sign-preview").naturalWidth,
+         high: document.getElementById("sign-preview").naturalHeight }`,
+      (s) => s.src === 'data:image/png;base64,' && s.wide > 0,
+      10
+    );
+    // The line runs across 70% of a 1200 x 400 pad and 40% of its height: trimmed, it is much
+    // wider than tall, and far smaller than the pad.
+    check(
+      'drawing makes the signature, a PNG cut to the ink',
+      !state.timedOut && state.wide < 1000 && state.high < 260 && state.wide > 2 * state.high,
+      JSON.stringify(state)
+    );
+
+    // A click on the page puts the signature there, centred on the click.
+    let frame = await rectOf('#sign-frame');
+    let at = (x, y) => ({ x: frame.left + x * frame.width, y: frame.top + y * frame.height });
+    await drag([at(0.3, 0.75)]);
+    let [box] = await boxesShown();
+    check('a click on page 1 at (30%, 75%) puts the signature centred there', Boolean(box) && close(centre(box), [0.3, 0.75]), JSON.stringify(box));
+
+    // Dragged 10% right and 10% up, then made wider by its corner.
+    await drag([at(...centre(box)), at(0.35, 0.7), at(0.4, 0.65)]);
+    [box] = await boxesShown();
+    check('dragging it moves it to (40%, 65%)', close(centre(box), [0.4, 0.65]), round(centre(box)));
+    const before = box;
+    await drag([at(box.x + box.width, box.y + box.height), at(box.x + box.width + 0.05, box.y + box.height)]);
+    [box] = await boxesShown();
+    check(
+      'dragging its corner makes it 5% of the page wider, its top-left corner staying',
+      close([box.x, box.y, box.width], [before.x, before.y, before.width + 0.05], 0.012) &&
+        Math.abs(box.height / box.width - before.height / before.width) < 0.02,
+      `${round([before.x, before.y, before.width])} -> ${round([box.x, box.y, box.width])}`
+    );
+    const onFirst = box;
+
+    // Page 2 is turned: clicked at (75%, 25%) as it is seen.
+    await dash.evaluate(`document.getElementById("sign-next-btn").click()`);
+    state = await pageShown(2);
+    frame = await rectOf('#sign-frame');
+    at = (x, y) => ({ x: frame.left + x * frame.width, y: frame.top + y * frame.height });
+    check('page 2 shows turned, wider than tall', !state.timedOut && frame.width > frame.height, JSON.stringify({ ...state, frame }));
+    await drag([at(0.75, 0.25)]);
+    const [onSecond] = await boxesShown();
+    check('a click on page 2 at (75%, 25%) puts the signature centred there', Boolean(onSecond) && close(centre(onSecond), [0.75, 0.25]), JSON.stringify(onSecond));
+    const placed = await dash.evaluate(`document.getElementById("sign-placed").textContent`);
+    check('the list says pages 1 and 2, two signatures', placed === 'On page 1, 2 (2 in all)', placed);
+
+    // Remembered: kept in the browser's storage, shown again by a new dashboard; forgotten on demand.
+    await dash.evaluate(`(() => {
+      const box = document.getElementById("sign-remember");
+      box.checked = true;
+      box.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    const saved = async (page) => page.evaluate(`chrome.storage.local.get("savedSignature").then((s) => (s.savedSignature || "").slice(0, 22))`);
+    let kept = '';
+    for (let i = 0; i < 20 && !kept; i++) {
+      kept = await saved(dash);
+      if (!kept) await sleep(250);
+    }
+    const again = await newPage(browser, `${base}/${manifest.options_page}`);
+    const shownAgain = await poll(
+      again,
+      `{ src: (document.getElementById("sign-preview").getAttribute("src") || "").slice(0, 22),
+         remember: document.getElementById("sign-remember").checked,
+         forget: !document.getElementById("sign-forget-btn").hidden }`,
+      (s) => s.src && s.remember && s.forget,
+      10
+    );
+    check(
+      'a remembered signature is stored, and a new dashboard starts with it',
+      kept === 'data:image/png;base64,' && !shownAgain.timedOut,
+      JSON.stringify({ kept, shownAgain })
+    );
+    await again.evaluate(`document.getElementById("sign-forget-btn").click()`);
+    let gone = 'still there';
+    for (let i = 0; i < 20 && gone; i++) {
+      gone = await saved(again);
+      if (gone) await sleep(250);
+    }
+    const after = JSON.parse(await again.evaluate(`JSON.stringify({ remember: document.getElementById("sign-remember").checked, forget: !document.getElementById("sign-forget-btn").hidden })`));
+    check('Forget removes it from storage and unticks the box', gone === '' && !after.remember && !after.forget, JSON.stringify({ gone, after }));
+    await again.close();
+    await dash.front();
+
+    // Saved: read back with pdf.js, the picture is where it was put on pages 1 and 2, not on 3.
+    await dash.evaluate(`document.getElementById("run-sign-btn").click()`);
+    state = await poll(dash, `{ status: document.getElementById("sign-status").textContent }`, (s) => /^(✅|❌)/.test(s.status), 30);
+    const file = await nextDownload(state.timedOut ? 1 : 30);
+    check('signing ends with the file saved', /^✅/.test(state.status ?? ''), JSON.stringify(state));
+    let pictures = 'no file';
+    if (file) {
+      const multiply = (m, n) => [
+        m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
+        m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+        m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]
+      ];
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(file.bytes), verbosity: 0 }).promise;
+      pictures = [];
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const view = page.getViewport({ scale: 1 });
+        const { fnArray, argsArray } = await page.getOperatorList();
+        let ctm = [1, 0, 0, 1, 0, 0];
+        const stack = [];
+        const boxes = [];
+        fnArray.forEach((fn, i) => {
+          if (fn === pdfjsLib.OPS.save) stack.push(ctm);
+          else if (fn === pdfjsLib.OPS.restore) ctm = stack.pop() ?? ctm;
+          else if (fn === pdfjsLib.OPS.transform) ctm = multiply(ctm, argsArray[i]);
+          else if (fn === pdfjsLib.OPS.paintImageXObject) {
+            const m = multiply(view.transform, ctm);
+            const xs = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([u, v]) => (m[0] * u + m[2] * v + m[4]) / view.width);
+            const ys = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([u, v]) => (m[1] * u + m[3] * v + m[5]) / view.height);
+            boxes.push({ x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) });
+          }
+        });
+        pictures.push(boxes);
+      }
+    }
+    const matches = (found, shown) =>
+      Boolean(found && shown) && close([found.x, found.y, found.width, found.height], [shown.x, shown.y, shown.width, shown.height]);
+    check(
+      'contract_signed.pdf: the signature on pages 1 and 2 exactly where it was shown, none on page 3, see-through',
+      file?.name === 'contract_signed.pdf' &&
+        Array.isArray(pictures) &&
+        pictures.map((boxes) => boxes.length).join() === '1,1,0' &&
+        matches(pictures[0][0], onFirst) &&
+        matches(pictures[1][0], onSecond) &&
+        file.bytes.includes('/SMask'),
+      `${describe(file)}: ${JSON.stringify(pictures)} shown ${JSON.stringify([onFirst, onSecond])}`
+    );
+
+    // A picture of a signature on white paper: the paper goes, the bar of ink is what is left.
+    const scanned = await picture(dash, 400, 200, 'ctx.fillRect(50, 80, 300, 40);');
+    await dash.evaluate(`(() => {
+      const source = document.getElementById("sign-source");
+      source.value = "picture";
+      source.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await putFile(dash, 'sign-picture-input', 'signature.png', 'image/png', scanned);
+    state = await poll(
+      dash,
+      `{ wide: document.getElementById("sign-preview").naturalWidth, high: document.getElementById("sign-preview").naturalHeight }`,
+      (s) => s.wide < 400,
+      10
+    );
+    check('a picture on white paper is cut to its ink (300 x 40 and a little room)', Math.abs(state.wide - 304) <= 2 && Math.abs(state.high - 44) <= 2, JSON.stringify(state));
+
+    // The signature on page 2, copied to the same place on every page.
+    await dash.evaluate(`document.getElementById("sign-every-page-btn").click()`);
+    state = await poll(dash, `{ placed: document.getElementById("sign-placed").textContent }`, (s) => s.placed === 'On page 1, 2, 3 (3 in all)', 10);
+    check('"Same place on every page" puts it on all three pages', !state.timedOut, JSON.stringify(state));
   });
 
   // ---- where everything went
