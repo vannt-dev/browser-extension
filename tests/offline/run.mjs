@@ -3,7 +3,7 @@
 // fails if a feature breaks or anything tries to leave the package. See the README's section on
 // the offline browser test kit.
 //
-//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress,insert,sign]
+//   npm run test:offline -- [dist-folder-or-zip] [--only=convert,png,text,password,numbers,stamp,protect,crop,ocr,background,compress,insert,sign,compare]
 //                           [--cases=scan-g4.pdf,...] [--work=<dir>] [--verbose]
 //
 // --only runs some groups, --cases some files of the PDF -> PNG group, --work keeps the browser
@@ -45,7 +45,7 @@ const options = Object.fromEntries(
     })
 );
 const target = resolve(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'dist');
-const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress', 'insert', 'sign'];
+const groups = ['convert', 'png', 'text', 'password', 'numbers', 'stamp', 'protect', 'crop', 'ocr', 'background', 'compress', 'insert', 'sign', 'compare'];
 const only = options.only ? String(options.only).split(',') : groups;
 const say = (...parts) => console.log(...parts);
 
@@ -1325,6 +1325,195 @@ try {
     await dash.evaluate(`document.getElementById("sign-every-page-btn").click()`);
     state = await poll(dash, `{ placed: document.getElementById("sign-placed").textContent }`, (s) => s.placed === 'On page 1, 2, 3 (3 in all)', 10);
     check('"Same place on every page" puts it on all three pages', !state.timedOut, JSON.stringify(state));
+  });
+
+  await group('compare', '14. Compare two PDFs (dashboard)', async () => {
+    // Two versions of a three-page PDF: one word swapped on page 2 ("brown" -> "red"), page 3 of
+    // the later one on A4 instead of 600 x 800 with its text as far from the top. The later one is
+    // locked with a password.
+    const version = async ({ word, lastPage, password }) => {
+      const doc = await PDFDocument.create();
+      const font = await doc.embedFont(StandardFonts.Helvetica);
+      const pages = [
+        ['Offline kit comparison, page one.', 'Nothing changes on this page.'],
+        [`The quick ${word} fox jumps over the lazy dog.`, 'The second line stays the same.'],
+        ['Page three is set on another paper size.', 'Its words are the same.'],
+      ];
+      pages.forEach((lines, i) => {
+        const [width, height] = i === 2 ? lastPage : [600, 800];
+        const page = doc.addPage([width, height]);
+        lines.forEach((line, j) => page.drawText(line, { x: 50, y: height - 100 - j * 30, size: 18, font }));
+      });
+      if (password) doc.encrypt({ userPassword: password, ownerPassword: 'offline-kit-owner' });
+      return Buffer.from(await doc.save());
+    };
+    const draft = await version({ word: 'brown', lastPage: [600, 800] });
+    const final = await version({ word: 'red', lastPage: [595, 842], password: 'kit-pass' });
+
+    const shown = () =>
+      dash.evaluate(`JSON.stringify({
+        state: document.getElementById("compare-results").dataset.state,
+        page: document.getElementById("compare-results").dataset.page,
+        status: document.getElementById("compare-status").textContent,
+        summary: document.getElementById("compare-summary").textContent,
+        pageLabel: document.getElementById("compare-page-label").textContent,
+        changeLabel: document.getElementById("compare-change-label").textContent,
+        pageStatus: document.getElementById("compare-page-status").textContent,
+        removed: [...document.querySelectorAll("#compare-text-a .compare-removed")].map((n) => n.textContent + (n.classList.contains("current") ? "*" : "")),
+        added: [...document.querySelectorAll("#compare-text-b .compare-added")].map((n) => n.textContent + (n.classList.contains("current") ? "*" : "")),
+        gaps: document.querySelectorAll("#compare-text-view .compare-gap").length,
+        textA: document.getElementById("compare-text-a").textContent
+      })`).then(JSON.parse);
+    const click = (id) => dash.evaluate(`document.getElementById(${JSON.stringify(id)}).click()`);
+    const choose = (id, value) =>
+      dash.evaluate(`(() => {
+        const select = document.getElementById(${JSON.stringify(id)});
+        select.value = ${JSON.stringify(value)};
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      })()`);
+
+    await dash.evaluate(`document.querySelector('.menu-item[data-tab="compare"]').click()`);
+    await putFile(dash, 'compare-file-a', 'draft.pdf', 'application/pdf', draft);
+    await putFile(dash, 'compare-file-b', 'final.pdf', 'application/pdf', final);
+    await click('run-compare-btn');
+    let state = await poll(
+      dash,
+      `{ status: document.getElementById("compare-status").textContent,
+         asks: !document.getElementById("compare-password-b-group").hidden,
+         results: !document.getElementById("compare-results").hidden }`,
+      (s) => s.asks,
+      20
+    );
+    check(
+      'B locked with a password: asks for it by name and shows no results',
+      !state.timedOut && /final\.pdf/.test(state.status) && /password/i.test(state.status) && !state.results,
+      JSON.stringify(state)
+    );
+
+    await dash.evaluate(`document.getElementById("compare-password-b").value = "kit-pass"`);
+    await click('run-compare-btn');
+    state = await poll(dash, `{ state: document.getElementById("compare-results").dataset.state }`, (s) => s.state === 'done', 30);
+    let view = await shown();
+    check(
+      'the summary: text changed on 1 of 3 pages, one word added and one removed',
+      !state.timedOut &&
+        view.summary === 'Text changed on 1 of 3 pages. Words added: 1, words removed: 1.' &&
+        view.status === '✅ Compared 3 pages.',
+      JSON.stringify(view)
+    );
+    check(
+      'it opens on the change: page 2, "brown" struck out in A and "red" put in B, nothing else marked',
+      view.page === '1' &&
+        view.pageLabel === 'A page 2 ↔ B page 2 (2/3)' &&
+        view.changeLabel === 'Change 1 of 1' &&
+        JSON.stringify(view.removed) === '["brown*"]' &&
+        JSON.stringify(view.added) === '["red*"]' &&
+        view.gaps === 0 &&
+        view.textA.startsWith('The quick brown fox jumps over the lazy dog.'),
+      JSON.stringify(view)
+    );
+
+    await click('compare-prev-page-btn');
+    view = await shown();
+    check(
+      'page 1: the same text, nothing marked, no change before it',
+      view.page === '0' &&
+        view.pageStatus === 'The text of this page is the same in both.' &&
+        !view.removed.length &&
+        !view.added.length &&
+        (await dash.evaluate(`document.getElementById("compare-prev-change-btn").disabled`)),
+      JSON.stringify(view)
+    );
+    await click('compare-next-change-btn');
+    view = await shown();
+    check('"Next change" goes back to page 2 and marks the change', view.page === '1' && view.removed[0] === 'brown*', JSON.stringify(view));
+
+    /** The picture shown: its mode, how many pixels differ, and the red pixels' box in points from the top left. */
+    const picture = async () => {
+      await poll(dash, `{ state: document.getElementById("compare-picture").dataset.state }`, (s) => s.state !== 'drawing', 20);
+      return JSON.parse(
+        await dash.evaluate(`(() => {
+          const canvas = document.getElementById("compare-canvas");
+          const { data, width, height } = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+          let red = 0, top = height, bottom = -1, left = width, right = -1;
+          for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
+            if (data[i] === 220 && data[i + 1] === 38 && data[i + 2] === 38) {
+              red++; top = Math.min(top, y); bottom = Math.max(bottom, y); left = Math.min(left, x); right = Math.max(right, x);
+            }
+          }
+          return JSON.stringify({
+            state: document.getElementById("compare-picture").dataset.state,
+            changed: Number(document.getElementById("compare-picture").dataset.changed),
+            mode: canvas.dataset.mode, width, height, red,
+            box: red ? [left, top, right, bottom] : null,
+            note: document.getElementById("compare-visual-note").textContent
+          });
+        })()`)
+      );
+    };
+    await choose('compare-view', 'visual');
+    let seen = await picture();
+    // 600 x 800 points drawn 1000 x 1300 at most: 1.625 pixels a point. "brown" is at about
+    // 50 + 18 * 0.55 * 10 points from the left, 100 points from the top.
+    const scale = seen.width / 600;
+    const inPoints = seen.box?.map((value) => Math.round(value / scale));
+    check(
+      'pictures of page 2: only the swapped word differs, tinted red where "brown" was',
+      seen.state === 'drawn' &&
+        seen.mode === 'diff' &&
+        seen.changed > 0 &&
+        seen.red === seen.changed &&
+        seen.changed / (seen.width * seen.height) < 0.01 &&
+        Boolean(inPoints) && inPoints[0] >= 125 && inPoints[2] <= 500 && inPoints[1] >= 80 && inPoints[3] <= 110,
+      JSON.stringify({ ...seen, inPoints })
+    );
+    await choose('compare-mode', 'b');
+    seen = await picture();
+    check('the picture switches to PDF B, with no red', seen.mode === 'b' && seen.red === 0, JSON.stringify(seen));
+    await choose('compare-mode', 'diff');
+    await click('compare-prev-page-btn');
+    seen = await picture();
+    check('pictures of page 1: no difference', seen.state === 'drawn' && seen.changed === 0 && seen.red === 0, JSON.stringify(seen));
+    await click('compare-next-page-btn');
+    await click('compare-next-page-btn');
+    seen = await picture();
+    check(
+      'page 3 on another paper size: said so, lined up at the top left, nothing differs',
+      seen.state === 'drawn' &&
+        /not the same size \(A 600 × 800, B 595 × 842 points\)/.test(seen.note) &&
+        seen.changed === 0,
+      JSON.stringify(seen)
+    );
+    await choose('compare-view', 'text');
+
+    await click('compare-report-btn');
+    const file = await nextDownload(20);
+    const report = file?.bytes.toString('utf8') ?? '';
+    check(
+      'the report: draft_vs_final_changes.html lists page 2, "brown" -> "red", and nothing else',
+      file?.name === 'draft_vs_final_changes.html' &&
+        report.includes('<del>brown</del> &rarr; <ins>red</ins>') &&
+        (report.match(/<li>/g) ?? []).length === 1 &&
+        report.includes('A page 2 ↔ B page 2') &&
+        !/<script|https?:/.test(report),
+      `${describe(file)}`
+    );
+
+    // Comparing again closes the PDFs opened the first time (pdf.js 6 frees them its own way).
+    await click('run-compare-btn');
+    state = await poll(
+      dash,
+      `{ state: document.getElementById("compare-results").dataset.state,
+         summary: document.getElementById("compare-summary").textContent }`,
+      (s) => s.state === 'done',
+      30
+    );
+    check(
+      'comparing again closes the first PDFs and gives the same result',
+      !state.timedOut && state.summary === 'Text changed on 1 of 3 pages. Words added: 1, words removed: 1.',
+      JSON.stringify(state)
+    );
   });
 
   // ---- where everything went

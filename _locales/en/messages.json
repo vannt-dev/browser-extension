@@ -967,5 +967,273 @@
         "content": "$1"
       }
     }
+  },
+  "menuCompare": {
+    "message": "🔍 Compare two PDFs"
+  },
+  "compareTitle": {
+    "message": "🔍 Compare two PDFs"
+  },
+  "compareIntro": {
+    "message": "Choose two versions of a PDF to see what changed: the words taken out and put in, page by page, and the pages laid one over the other. Everything happens on your device."
+  },
+  "compareFileA": {
+    "message": "PDF A (the earlier one):"
+  },
+  "compareFileB": {
+    "message": "PDF B (the later one):"
+  },
+  "runCompare": {
+    "message": "🔍 Compare"
+  },
+  "comparePrevChange": {
+    "message": "↑ Previous change"
+  },
+  "compareNextChange": {
+    "message": "Next change ↓"
+  },
+  "compareViewLabel": {
+    "message": "Show:"
+  },
+  "compareViewText": {
+    "message": "The text, side by side"
+  },
+  "compareViewVisual": {
+    "message": "Pictures of the pages"
+  },
+  "compareReport": {
+    "message": "💾 Save a report (HTML)"
+  },
+  "compareLegend": {
+    "message": "Taken out of A: red and struck through. Put in by B: green."
+  },
+  "compareModeLabel": {
+    "message": "Picture:"
+  },
+  "compareModeDiff": {
+    "message": "Differences (in red)"
+  },
+  "compareModeA": {
+    "message": "PDF A"
+  },
+  "compareModeB": {
+    "message": "PDF B"
+  },
+  "comparePasswordNeeded": {
+    "message": "$NAME$ is password-protected: enter its password below, then Compare again.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareNotPdf": {
+    "message": "$NAME$ is not a PDF.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareReading": {
+    "message": "Reading the text: page $PAGE$ of $TOTAL$…",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareWorking": {
+    "message": "Comparing: page $PAGE$ of $TOTAL$…",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareDone": {
+    "message": "✅ Compared $PAGES$ pages.",
+    "placeholders": {
+      "pages": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareError": {
+    "message": "❌ Could not compare the PDFs: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareSummary": {
+    "message": "Text changed on $CHANGED$ of $PAGES$ pages. Words added: $ADDED$, words removed: $REMOVED$.",
+    "placeholders": {
+      "changed": {
+        "content": "$1"
+      },
+      "pages": {
+        "content": "$2"
+      },
+      "added": {
+        "content": "$3"
+      },
+      "removed": {
+        "content": "$4"
+      }
+    }
+  },
+  "compareSummarySame": {
+    "message": "The text of the two PDFs is the same on all $PAGES$ pages. Show the pictures of the pages to see changes in how they look.",
+    "placeholders": {
+      "pages": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareOnlyAPages": {
+    "message": "Pages only in A (taken out in B): $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareOnlyBPages": {
+    "message": "Pages only in B (put in by B): $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareRough": {
+    "message": "Some pages differ too much to compare word by word: their text shows as all taken out and all put in."
+  },
+  "compareOnlyA": {
+    "message": "Page $PAGE$, only in A",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareOnlyB": {
+    "message": "Page $PAGE$, only in B",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      }
+    }
+  },
+  "comparePair": {
+    "message": "A page $A$ ↔ B page $B$",
+    "placeholders": {
+      "a": {
+        "content": "$1"
+      },
+      "b": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareChangeOf": {
+    "message": "Change $N$ of $TOTAL$",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareChangeCount": {
+    "message": "Changes in all: $TOTAL$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareNoChanges": {
+    "message": "No changes in the text"
+  },
+  "compareMissingPage": {
+    "message": "This page is only in the other PDF."
+  },
+  "compareNoText": {
+    "message": "No text on this page (a scan?). Show the pictures of the pages to compare it."
+  },
+  "comparePageChanged": {
+    "message": "On this page: words added $ADDED$, words removed $REMOVED$.",
+    "placeholders": {
+      "added": {
+        "content": "$1"
+      },
+      "removed": {
+        "content": "$2"
+      }
+    }
+  },
+  "comparePageSame": {
+    "message": "The text of this page is the same in both."
+  },
+  "compareDrawing": {
+    "message": "Drawing the pages…"
+  },
+  "compareSizesDiffer": {
+    "message": "The pages are not the same size (A $WA$ × $HA$, B $WB$ × $HB$ points): they are lined up at the top left.",
+    "placeholders": {
+      "wa": {
+        "content": "$1"
+      },
+      "ha": {
+        "content": "$2"
+      },
+      "wb": {
+        "content": "$3"
+      },
+      "hb": {
+        "content": "$4"
+      }
+    }
+  },
+  "compareVisualChanged": {
+    "message": "$SHARE$ of the page looks different (in red).",
+    "placeholders": {
+      "share": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareVisualSame": {
+    "message": "No visible difference on this page."
+  },
+  "compareReportTitle": {
+    "message": "Changes from $A$ to $B$",
+    "placeholders": {
+      "a": {
+        "content": "$1"
+      },
+      "b": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareReportSaved": {
+    "message": "✅ Saved the report as $NAME$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

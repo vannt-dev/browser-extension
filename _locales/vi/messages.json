@@ -967,5 +967,273 @@
         "content": "$1"
       }
     }
+  },
+  "menuCompare": {
+    "message": "🔍 So sánh hai PDF"
+  },
+  "compareTitle": {
+    "message": "🔍 So sánh hai PDF"
+  },
+  "compareIntro": {
+    "message": "Chọn hai bản của một PDF để xem chỗ nào đã đổi: chữ bị bỏ đi và được thêm vào, từng trang một, và hình hai trang chồng lên nhau. Mọi việc diễn ra trên máy của bạn."
+  },
+  "compareFileA": {
+    "message": "PDF A (bản trước):"
+  },
+  "compareFileB": {
+    "message": "PDF B (bản sau):"
+  },
+  "runCompare": {
+    "message": "🔍 So sánh"
+  },
+  "comparePrevChange": {
+    "message": "↑ Chỗ khác trước"
+  },
+  "compareNextChange": {
+    "message": "Chỗ khác tiếp ↓"
+  },
+  "compareViewLabel": {
+    "message": "Xem:"
+  },
+  "compareViewText": {
+    "message": "Chữ, đặt cạnh nhau"
+  },
+  "compareViewVisual": {
+    "message": "Hình các trang"
+  },
+  "compareReport": {
+    "message": "💾 Lưu báo cáo (HTML)"
+  },
+  "compareLegend": {
+    "message": "Bị bỏ khỏi A: màu đỏ, gạch ngang. Được thêm vào ở B: màu xanh lá."
+  },
+  "compareModeLabel": {
+    "message": "Hình:"
+  },
+  "compareModeDiff": {
+    "message": "Chỗ khác nhau (tô đỏ)"
+  },
+  "compareModeA": {
+    "message": "PDF A"
+  },
+  "compareModeB": {
+    "message": "PDF B"
+  },
+  "comparePasswordNeeded": {
+    "message": "$NAME$ có mật khẩu: nhập mật khẩu ở ô bên dưới rồi bấm So sánh lại.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareNotPdf": {
+    "message": "$NAME$ không phải file PDF.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareReading": {
+    "message": "Đang đọc chữ: trang $PAGE$ / $TOTAL$…",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareWorking": {
+    "message": "Đang so sánh: trang $PAGE$ / $TOTAL$…",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareDone": {
+    "message": "✅ Đã so sánh $PAGES$ trang.",
+    "placeholders": {
+      "pages": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareError": {
+    "message": "❌ Không so sánh được: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareSummary": {
+    "message": "Chữ khác nhau trên $CHANGED$ / $PAGES$ trang. Số từ thêm vào: $ADDED$, số từ bỏ đi: $REMOVED$.",
+    "placeholders": {
+      "changed": {
+        "content": "$1"
+      },
+      "pages": {
+        "content": "$2"
+      },
+      "added": {
+        "content": "$3"
+      },
+      "removed": {
+        "content": "$4"
+      }
+    }
+  },
+  "compareSummarySame": {
+    "message": "Chữ của hai PDF giống hệt nhau trên cả $PAGES$ trang. Chọn xem hình các trang để thấy thay đổi về hình thức.",
+    "placeholders": {
+      "pages": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareOnlyAPages": {
+    "message": "Trang chỉ có ở A (B đã bỏ): $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareOnlyBPages": {
+    "message": "Trang chỉ có ở B (B thêm vào): $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareRough": {
+    "message": "Có trang khác nhau quá nhiều để so từng từ: chữ của trang đó hiện như bỏ hết rồi thêm mới hết."
+  },
+  "compareOnlyA": {
+    "message": "Trang $PAGE$, chỉ có ở A",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareOnlyB": {
+    "message": "Trang $PAGE$, chỉ có ở B",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      }
+    }
+  },
+  "comparePair": {
+    "message": "Trang $A$ của A ↔ trang $B$ của B",
+    "placeholders": {
+      "a": {
+        "content": "$1"
+      },
+      "b": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareChangeOf": {
+    "message": "Chỗ khác $N$ / $TOTAL$",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareChangeCount": {
+    "message": "Tổng số chỗ khác: $TOTAL$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareNoChanges": {
+    "message": "Chữ không có chỗ nào khác"
+  },
+  "compareMissingPage": {
+    "message": "Trang này chỉ có ở PDF kia."
+  },
+  "compareNoText": {
+    "message": "Trang này không có chữ (bản scan?). Chọn xem hình các trang để so sánh."
+  },
+  "comparePageChanged": {
+    "message": "Trang này: thêm $ADDED$ từ, bỏ $REMOVED$ từ.",
+    "placeholders": {
+      "added": {
+        "content": "$1"
+      },
+      "removed": {
+        "content": "$2"
+      }
+    }
+  },
+  "comparePageSame": {
+    "message": "Chữ của trang này giống nhau ở cả hai bản."
+  },
+  "compareDrawing": {
+    "message": "Đang vẽ các trang…"
+  },
+  "compareSizesDiffer": {
+    "message": "Hai trang không cùng khổ (A $WA$ × $HA$, B $WB$ × $HB$ point): chúng được canh theo góc trên bên trái.",
+    "placeholders": {
+      "wa": {
+        "content": "$1"
+      },
+      "ha": {
+        "content": "$2"
+      },
+      "wb": {
+        "content": "$3"
+      },
+      "hb": {
+        "content": "$4"
+      }
+    }
+  },
+  "compareVisualChanged": {
+    "message": "$SHARE$ diện tích trang trông khác nhau (tô đỏ).",
+    "placeholders": {
+      "share": {
+        "content": "$1"
+      }
+    }
+  },
+  "compareVisualSame": {
+    "message": "Trang này không có chỗ nào trông khác nhau."
+  },
+  "compareReportTitle": {
+    "message": "Thay đổi từ $A$ sang $B$",
+    "placeholders": {
+      "a": {
+        "content": "$1"
+      },
+      "b": {
+        "content": "$2"
+      }
+    }
+  },
+  "compareReportSaved": {
+    "message": "✅ Đã lưu báo cáo thành $NAME$.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
   }
 }

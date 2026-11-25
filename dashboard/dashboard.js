@@ -8,6 +8,7 @@ import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../share
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
 import { errorReason, shortStatus } from '../shared/error-text.js';
 import { setupSignTool, showSignTexts } from './sign-tool.js';
+import { setupCompareTool, showCompareTexts } from './compare-tool.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -220,6 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupAiStudio();
   setupCropTool();
   setupSignTool();
+  setupCompareTool();
   setupLightbox();
   setupDevTools();
   setupSettingsPersistence();
@@ -1028,6 +1030,7 @@ function setupSettingsPersistence() {
       showFormatFields();
       showCropArea();
       showSignTexts();
+      showCompareTexts();
     });
   }
 
