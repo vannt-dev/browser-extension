@@ -7,6 +7,7 @@ import { IMAGE_EXTENSIONS, SPREADSHEET_EXTENSIONS, isPdfFile } from '../engine/f
 import { readAutoConvert, turnOffAutoConvert, turnOnAutoConvert } from '../shared/site-access.js';
 import { applyI18n, bindLanguageSelect, loadLanguage, t } from '../shared/i18n.js';
 import { errorReason, shortStatus } from '../shared/error-text.js';
+import { setupSignTool, showSignTexts } from './sign-tool.js';
 
 // Heavy engines are fetched on first use so opening the dashboard does not have
 // to parse the OCR, DOCX and PDF runtimes up front.
@@ -218,6 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupDashDropZone();
   setupAiStudio();
   setupCropTool();
+  setupSignTool();
   setupLightbox();
   setupDevTools();
   setupSettingsPersistence();
@@ -1025,6 +1027,7 @@ function setupSettingsPersistence() {
       renderDashQueue();
       showFormatFields();
       showCropArea();
+      showSignTexts();
     });
   }
 

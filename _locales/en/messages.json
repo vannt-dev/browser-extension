@@ -798,5 +798,174 @@
   },
   "insertNeedsPdf": {
     "message": "Choose the PDF to take the pages from first."
+  },
+  "menuSign": {
+    "message": "✍️ Sign a PDF"
+  },
+  "signTitle": {
+    "message": "✍️ Sign a PDF"
+  },
+  "signIntro": {
+    "message": "Draw your signature or choose a picture of it, put it on the pages and save the signed PDF. Everything happens on your device."
+  },
+  "signOpen": {
+    "message": "Open"
+  },
+  "signPrev": {
+    "message": "◀ Previous page"
+  },
+  "signNext": {
+    "message": "Next page ▶"
+  },
+  "signPlaceholder": {
+    "message": "Choose a PDF, then click on a page to put your signature there"
+  },
+  "signPlaceHint": {
+    "message": "Click on the page to put the signature there. Drag it to move it, drag its corner to make it bigger or smaller, and ✕ takes it off. Go to other pages to sign them too."
+  },
+  "signSignatureTitle": {
+    "message": "Your signature"
+  },
+  "signSourceLabel": {
+    "message": "Signature from:"
+  },
+  "signSourceDraw": {
+    "message": "Drawing it here"
+  },
+  "signSourcePicture": {
+    "message": "A picture of it (PNG or JPG)"
+  },
+  "signInkLabel": {
+    "message": "Ink:"
+  },
+  "signInkBlack": {
+    "message": "Black"
+  },
+  "signInkBlue": {
+    "message": "Blue"
+  },
+  "signStrokeLabel": {
+    "message": "Line:"
+  },
+  "signUndo": {
+    "message": "↶ Undo"
+  },
+  "signClear": {
+    "message": "Clear"
+  },
+  "signPictureHint": {
+    "message": "A PNG with a see-through background is used as it is; on a picture of paper, the white around the ink is taken away."
+  },
+  "signNoSignature": {
+    "message": "No signature yet"
+  },
+  "signRemember": {
+    "message": "Remember this signature on this computer"
+  },
+  "signForget": {
+    "message": "Forget the saved signature"
+  },
+  "signPlacedTitle": {
+    "message": "Where it goes"
+  },
+  "signEveryPage": {
+    "message": "Same place on every page"
+  },
+  "signRemoveAll": {
+    "message": "Take all off"
+  },
+  "runSign": {
+    "message": "✍️ Sign and save the PDF"
+  },
+  "signPictureEmpty": {
+    "message": "No signature was found in that picture: it is empty or all white."
+  },
+  "signPictureError": {
+    "message": "❌ Could not read the picture: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "signPageOf": {
+    "message": "Page $PAGE$ of $TOTAL$",
+    "placeholders": {
+      "page": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "signOpenError": {
+    "message": "❌ Could not open the PDF: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "signNotPdf": {
+    "message": "$NAME$ is not a PDF.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "signPasswordNeeded": {
+    "message": "$NAME$ is locked with a password: enter it in the PDF password field and press Open.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "signResize": {
+    "message": "Drag to make it bigger or smaller"
+  },
+  "signRemoveOne": {
+    "message": "Take this signature off"
+  },
+  "signPlacedOn": {
+    "message": "On page $PAGES$ ($COUNT$ in all)",
+    "placeholders": {
+      "pages": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "signPlacedNone": {
+    "message": "Not on any page yet: click on the page to put it there."
+  },
+  "signNeedSignature": {
+    "message": "Draw or choose your signature first."
+  },
+  "signWorking": {
+    "message": "Signing…"
+  },
+  "signDone": {
+    "message": "✅ Saved $NAME$, signed on $PAGES$ page(s).",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "pages": {
+        "content": "$2"
+      }
+    }
+  },
+  "signError": {
+    "message": "❌ Could not sign the PDF: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   }
 }

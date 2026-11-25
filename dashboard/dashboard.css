@@ -314,6 +314,123 @@ textarea {
   cursor: pointer;
 }
 
+/* Sign a PDF: the page on the left, the signature on the right. Boxes are placed in percent of
+   the frame, which is exactly the size the page is shown at. */
+.sign-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.sign-pager {
+  justify-content: space-between;
+}
+
+.sign-pager[hidden],
+.form-group[hidden] {
+  display: none;
+}
+
+.sign-frame {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  cursor: copy;
+  touch-action: none;
+  user-select: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.sign-frame[hidden] {
+  display: none;
+}
+
+.sign-frame canvas {
+  max-width: 100%;
+  max-height: 640px;
+  background: #fff;
+}
+
+.sign-box {
+  position: absolute;
+  border: 1px dashed var(--accent-color);
+  cursor: move;
+}
+
+.sign-box.selected {
+  border: 2px solid var(--accent-color);
+}
+
+.sign-box img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sign-handle {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--accent-color);
+  border: 2px solid #fff;
+  cursor: nwse-resize;
+}
+
+.sign-remove {
+  position: absolute;
+  top: -11px;
+  right: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.sign-pad {
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  background: #fff;
+  border-radius: 8px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.sign-preview {
+  min-height: 70px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sign-preview img {
+  max-width: 100%;
+  max-height: 90px;
+}
+
+.sign-preview [hidden],
+.sign-box [hidden] {
+  display: none;
+}
+
+.sign-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
 /* Until the page's text is in the user's language: the HTML itself is written in English.
    Should the script never get that far, the page shows itself after a second all the same.
    Opacity, not visibility: visibility is inherited, and every control with "transition: all"
