@@ -127,7 +127,7 @@ và báo `PASS`/`FAIL` từng mục (mã thoát khác 0 nếu có mục lỗi):
 npm run build
 npm run test:offline                     # kiểm tra thư mục dist/
 npm run zip
-npm run test:offline -- dist/zips/universal-file-converter-v1.8.0.zip   # kiểm tra file ZIP (số phiên bản theo package.json)
+npm run test:offline -- dist/zips/universal-file-converter-v1.9.0.zip   # kiểm tra file ZIP (số phiên bản theo package.json)
 npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: convert, png, text, password, numbers, stamp, protect, crop, ocr, background, compress, insert, sign
 ```
 
