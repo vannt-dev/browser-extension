@@ -139,7 +139,7 @@ npm run test:offline -- --only=png,ocr   # chỉ chạy một số nhóm: conver
   OCR và PDF → PNG khi dashboard nằm ở tab nền (Chrome dừng animation frame ở tab nền);
   nén PDF (file nhỏ đi, chữ vẫn đọc được bằng pdf.js, ảnh JPEG mới đúng màu, đúng chiều và đúng cỡ; PDF chỉ có chữ được giữ nguyên);
   chèn trang trắng và trang của một PDF có mật khẩu (đọc lại bằng pdf.js: đúng thứ tự, đúng khổ, file lưu ra không còn mật khẩu);
-  ký PDF: vẽ chữ ký bằng chuột thật, bấm/kéo/kéo góc trên trang thường và trang đã xoay, nhớ rồi quên chữ ký, đọc lại bằng pdf.js (chữ ký đúng trang, đúng chỗ và đúng cỡ như trên màn hình, nền trong suốt);
+  ký PDF: vẽ chữ ký bằng chuột thật, bấm/kéo/kéo góc trên trang thường và trang đã xoay, nhớ rồi quên chữ ký, ảnh chữ ký trên giấy trắng được cắt sát nét mực, *Cùng chỗ trên mọi trang*, đọc lại bằng pdf.js (chữ ký đúng trang, đúng chỗ và đúng cỡ như trên màn hình, nền trong suốt);
   cuối cùng là **không có request nào ra khỏi gói extension**.
 - Trình duyệt: biến môi trường `CHROME=<đường dẫn chrome>`, nếu không có thì tự tìm Chromium của
   Playwright (`npx playwright install chromium`). Google Chrome bản thường từ 137 bỏ qua

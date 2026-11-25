@@ -1304,6 +1304,27 @@ try {
         file.bytes.includes('/SMask'),
       `${describe(file)}: ${JSON.stringify(pictures)} shown ${JSON.stringify([onFirst, onSecond])}`
     );
+
+    // A picture of a signature on white paper: the paper goes, the bar of ink is what is left.
+    const scanned = await picture(dash, 400, 200, 'ctx.fillRect(50, 80, 300, 40);');
+    await dash.evaluate(`(() => {
+      const source = document.getElementById("sign-source");
+      source.value = "picture";
+      source.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await putFile(dash, 'sign-picture-input', 'signature.png', 'image/png', scanned);
+    state = await poll(
+      dash,
+      `{ wide: document.getElementById("sign-preview").naturalWidth, high: document.getElementById("sign-preview").naturalHeight }`,
+      (s) => s.wide < 400,
+      10
+    );
+    check('a picture on white paper is cut to its ink (300 x 40 and a little room)', Math.abs(state.wide - 304) <= 2 && Math.abs(state.high - 44) <= 2, JSON.stringify(state));
+
+    // The signature on page 2, copied to the same place on every page.
+    await dash.evaluate(`document.getElementById("sign-every-page-btn").click()`);
+    state = await poll(dash, `{ placed: document.getElementById("sign-placed").textContent }`, (s) => s.placed === 'On page 1, 2, 3 (3 in all)', 10);
+    check('"Same place on every page" puts it on all three pages', !state.timedOut, JSON.stringify(state));
   });
 
   // ---- where everything went
