@@ -217,7 +217,8 @@ export function compareTexts(textA, textB, options) {
  */
 export function alignPages(textsA, textsB) {
   const key = (text) => tokenize(text).map((token) => token.text).join(' ');
-  const { runs } = diffSequences(textsA.map(key), textsB.map(key), { maxEdits: Infinity });
+  // Capped like a page: past it, the pages between the shared start and end pair in order.
+  const { runs } = diffSequences(textsA.map(key), textsB.map(key));
   const pairs = [];
   for (let i = 0; i < runs.length; i++) {
     const run = runs[i];

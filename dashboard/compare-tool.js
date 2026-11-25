@@ -40,8 +40,23 @@ function setStatus(text) {
   el('compare-status').textContent = text;
 }
 
-/** Lets the page draw and take clicks between two pieces of work. */
-const breathe = () => new Promise((done) => setTimeout(done, 0));
+/**
+ * Lets the page draw and take clicks between two pieces of work. A posted message, not a timer:
+ * Chrome slows timers in a tab in the background to one a second or less, and a long comparison
+ * would crawl while the user looks at another tab.
+ */
+const breathe = () =>
+  new Promise((done) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      done();
+    };
+    channel.port2.postMessage(null);
+  });
+
+/** How long the comparison works before it lets the page breathe, in milliseconds. */
+const WORK_SLICE = 50;
 
 function closeDocs() {
   for (const side of SIDES) {
@@ -116,10 +131,14 @@ async function runCompare() {
 
     const pairs = alignPages(texts.a, texts.b);
     const pages = [];
+    let since = performance.now();
     for (const [index, pair] of pairs.entries()) {
-      setStatus(t('compareWorking', index + 1, pairs.length));
-      if (index % 4 === 0) await breathe();
-      if (stale()) return;
+      if (performance.now() - since > WORK_SLICE) {
+        setStatus(t('compareWorking', index + 1, pairs.length));
+        await breathe();
+        if (stale()) return;
+        since = performance.now();
+      }
       const textA = pair.a ? texts.a[pair.a - 1] : '';
       const textB = pair.b ? texts.b[pair.b - 1] : '';
       pages.push({ ...pair, result: compareTexts(textA, textB), empty: !textA.trim() && !textB.trim() });

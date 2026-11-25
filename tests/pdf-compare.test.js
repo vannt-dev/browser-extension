@@ -341,3 +341,15 @@ describe('the report', () => {
     expect(html).not.toMatch(/<script|https?:/);
   });
 });
+
+describe('big documents', () => {
+  it('pairs pages in order when too many differ to pair them by content', () => {
+    const textsA = Array.from({ length: 1100 }, (_, i) => `first version page ${i}`);
+    const textsB = Array.from({ length: 1101 }, (_, i) => `second version page ${i}`);
+    const pairs = alignPages(textsA, textsB);
+    expect(pairs).toHaveLength(1101);
+    expect(pairs[0]).toEqual({ a: 1, b: 1 });
+    expect(pairs[1099]).toEqual({ a: 1100, b: 1100 });
+    expect(pairs[1100]).toEqual({ a: null, b: 1101 });
+  });
+});
