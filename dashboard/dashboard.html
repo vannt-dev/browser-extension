@@ -19,6 +19,7 @@
         <button class="menu-item" data-tab="ai-studio" data-i18n="menuAiStudio">🔎 OCR &amp; Background Removal</button>
         <button class="menu-item" data-tab="crop" data-i18n="menuCrop">📐 Crop &amp; Flip Images</button>
         <button class="menu-item" data-tab="sign" data-i18n="menuSign">✍️ Sign a PDF</button>
+        <button class="menu-item" data-tab="compare" data-i18n="menuCompare">🔍 Compare two PDFs</button>
         <button class="menu-item" data-tab="devtools">💻 Developer Tools</button>
         <button class="menu-item" data-tab="security">🛡️ Watermark &amp; Security</button>
         <button class="menu-item" data-tab="settings">⚙️ Settings &amp; Auto-Convert</button>
@@ -381,6 +382,87 @@
             </div>
             <button id="run-sign-btn" class="dash-btn primary" disabled data-i18n="runSign">✍️ Sign and save the PDF</button>
             <div id="sign-status" class="crop-status" role="status"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Compare two PDFs -->
+      <section id="tab-compare" class="tab-page">
+        <header class="page-header">
+          <h1 data-i18n="compareTitle">🔍 Compare two PDFs</h1>
+          <p data-i18n="compareIntro">Choose two versions of a PDF to see what changed: the words taken out and put in, page by page, and the pages laid one over the other. Everything happens on your device.</p>
+        </header>
+        <div class="config-card">
+          <div class="compare-files">
+            <div class="form-group">
+              <label for="compare-file-a" data-i18n="compareFileA">PDF A (the earlier one):</label>
+              <input type="file" id="compare-file-a" accept=".pdf,application/pdf" class="dash-input">
+              <div class="form-group" id="compare-password-a-group" hidden>
+                <label for="compare-password-a" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>
+                <input type="password" id="compare-password-a" class="dash-input" autocomplete="off">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="compare-file-b" data-i18n="compareFileB">PDF B (the later one):</label>
+              <input type="file" id="compare-file-b" accept=".pdf,application/pdf" class="dash-input">
+              <div class="form-group" id="compare-password-b-group" hidden>
+                <label for="compare-password-b" data-i18n="pdfPasswordLabel">PDF password (only for a PDF locked with one):</label>
+                <input type="password" id="compare-password-b" class="dash-input" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="sign-row">
+            <button id="run-compare-btn" class="dash-btn primary" disabled data-i18n="runCompare">🔍 Compare</button>
+            <div id="compare-status" class="crop-status" role="status"></div>
+          </div>
+        </div>
+        <div id="compare-results" class="config-card compare-results" hidden>
+          <p id="compare-summary" class="compare-summary"></p>
+          <div class="sign-row compare-nav">
+            <button id="compare-prev-page-btn" class="dash-btn secondary" data-i18n="signPrev">◀ Previous page</button>
+            <span id="compare-page-label" class="crop-size"></span>
+            <button id="compare-next-page-btn" class="dash-btn secondary" data-i18n="signNext">Next page ▶</button>
+          </div>
+          <div class="sign-row compare-nav">
+            <button id="compare-prev-change-btn" class="dash-btn secondary" data-i18n="comparePrevChange">↑ Previous change</button>
+            <span id="compare-change-label" class="crop-size"></span>
+            <button id="compare-next-change-btn" class="dash-btn secondary" data-i18n="compareNextChange">Next change ↓</button>
+          </div>
+          <div class="sign-row">
+            <label for="compare-view" data-i18n="compareViewLabel">Show:</label>
+            <select id="compare-view" class="dash-select compare-select">
+              <option value="text" data-i18n="compareViewText">The text, side by side</option>
+              <option value="visual" data-i18n="compareViewVisual">Pictures of the pages</option>
+            </select>
+            <button id="compare-report-btn" class="dash-btn secondary" disabled data-i18n="compareReport">💾 Save a report (HTML)</button>
+          </div>
+          <div id="compare-text-view">
+            <p class="sign-hint" data-i18n="compareLegend">Taken out of A: red and struck through. Put in by B: green.</p>
+            <p id="compare-page-status" class="crop-size"></p>
+            <div class="compare-columns">
+              <div class="compare-column">
+                <h4 id="compare-head-a"></h4>
+                <div id="compare-text-a" class="compare-text"></div>
+              </div>
+              <div class="compare-column">
+                <h4 id="compare-head-b"></h4>
+                <div id="compare-text-b" class="compare-text"></div>
+              </div>
+            </div>
+          </div>
+          <div id="compare-visual-view" hidden>
+            <div class="sign-row">
+              <label for="compare-mode" data-i18n="compareModeLabel">Picture:</label>
+              <select id="compare-mode" class="dash-select compare-select">
+                <option value="diff" data-i18n="compareModeDiff">Differences (in red)</option>
+                <option value="a" data-i18n="compareModeA">PDF A</option>
+                <option value="b" data-i18n="compareModeB">PDF B</option>
+              </select>
+            </div>
+            <p id="compare-visual-note" class="crop-size"></p>
+            <div id="compare-picture" class="compare-picture">
+              <canvas id="compare-canvas" width="1" height="1"></canvas>
+            </div>
           </div>
         </div>
       </section>

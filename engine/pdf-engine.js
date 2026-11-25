@@ -85,18 +85,20 @@ export class PdfEngine {
    * new canvas, no larger than asked, the way the reader sees it (its turn and crop applied).
    * @param {File} file
    * @param {{ password?: string }} [options] The password, if the PDF is locked with one
-   * @returns {Promise<{ pageCount: number, render: Function, size: Function, close: Function }>}
-   *   `render(n, { maxWidth, maxHeight })` resolves to `{ canvas, width, height }`, the size in
-   *   points as seen; `size(n)` to that size alone, without drawing
+   * @returns {Promise<{ pageCount: number, render: Function, size: Function, text: Function, close: Function }>}
+   *   `render(n, { maxWidth, maxHeight, scale })` resolves to `{ canvas, width, height }`, the size
+   *   in points as seen; a `scale` (pixels per point) draws at that scale instead of fitting the
+   *   page in the box, so two pages can be drawn alike. `size(n)` resolves to the size alone,
+   *   without drawing, and `text(n)` to the page's text, a line break where pdf.js ends a line
    */
   static async openPages(file, { password = '' } = {}) {
     const pdf = await openPdf(file, password);
     return {
       pageCount: pdf.numPages,
-      async render(pageNumber, { maxWidth = 900, maxHeight = 1200 } = {}) {
+      async render(pageNumber, { maxWidth = 900, maxHeight = 1200, scale } = {}) {
         const page = await pdf.getPage(pageNumber);
         const { width, height } = page.getViewport({ scale: 1 });
-        const viewport = page.getViewport({ scale: Math.min(maxWidth / width, maxHeight / height) });
+        const viewport = page.getViewport({ scale: scale ?? Math.min(maxWidth / width, maxHeight / height) });
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(viewport.width));
         canvas.height = Math.max(1, Math.round(viewport.height));
@@ -108,7 +110,14 @@ export class PdfEngine {
         const { width, height } = (await pdf.getPage(pageNumber)).getViewport({ scale: 1 });
         return { width, height };
       },
-      close: () => pdf.destroy(),
+      async text(pageNumber) {
+        // pdf.js gives the spaces between words as items of their own, and splits a word into
+        // several items where its font or spacing changes: joined with nothing, words stay whole.
+        const { items } = await (await pdf.getPage(pageNumber)).getTextContent();
+        return items.map((item) => (item.str ?? '') + (item.hasEOL ? '\n' : '')).join('');
+      },
+      // pdf.js 6 dropped destroy() from the document: its loading task frees it and its worker.
+      close: () => pdf.loadingTask.destroy(),
     };
   }
 

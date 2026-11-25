@@ -314,6 +314,109 @@ textarea {
   cursor: pointer;
 }
 
+/* Compare two PDFs: the two files side by side, then the results across the page. */
+.compare-files {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.compare-results {
+  margin-top: 20px;
+}
+
+.compare-results[hidden],
+#compare-text-view[hidden],
+#compare-visual-view[hidden] {
+  display: none;
+}
+
+.compare-summary {
+  white-space: pre-line;
+  font-weight: 600;
+}
+
+.compare-nav {
+  justify-content: space-between;
+}
+
+.compare-select {
+  width: auto;
+}
+
+.compare-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.compare-column h4 {
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.compare-text {
+  max-height: 560px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.compare-removed {
+  background: #fde2e2;
+  color: #9b1c1c;
+}
+
+.compare-added {
+  background: #dcfce7;
+  color: #14532d;
+  text-decoration: none;
+}
+
+.compare-gap {
+  display: inline-block;
+  width: 0;
+  height: 1.2em;
+  vertical-align: text-bottom;
+  border-left: 2px solid #9ca3af;
+}
+
+.compare-removed.current,
+.compare-added.current,
+.compare-gap.current {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+.compare-note {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.compare-picture {
+  margin-top: 8px;
+  line-height: 0;
+}
+
+.compare-picture canvas {
+  max-width: 100%;
+  max-height: 900px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 900px) {
+  .compare-files,
+  .compare-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Sign a PDF: the page on the left, the signature on the right. Boxes are placed in percent of
    the frame, which is exactly the size the page is shown at. */
 .sign-row {
